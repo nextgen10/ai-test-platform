@@ -137,7 +137,7 @@ export default function AnalyticGenieLanding() {
           borderColor: 'divider',
         }}
       >
-        <Container maxWidth="xl" sx={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl" sx={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 2, sm: 3, md: 4 } }}>
           {/* Brand */}
           <Box
             onClick={() => router.push('/')}
@@ -221,7 +221,7 @@ export default function AnalyticGenieLanding() {
         borderColor: 'divider',
         textAlign: 'center',
       }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
           <Box sx={{ maxWidth: 860, mx: 'auto' }}>
             {/* Status pill */}
             <Box sx={{
@@ -284,7 +284,7 @@ export default function AnalyticGenieLanding() {
       </Box>
 
       {/* Inside a run — Where the chain stops itself */}
-      <Container maxWidth="xl" sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, md: 4 } }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, sm: 3, md: 4 } }}>
         <Box sx={{ mb: 4, maxWidth: 720 }}>
           <Typography variant="overline" sx={{ letterSpacing: '0.1em', color: 'primary.main', fontWeight: 800, fontSize: '0.8rem' }}>
             CONTROL FLOW
@@ -352,7 +352,7 @@ export default function AnalyticGenieLanding() {
         borderBottom: '1px solid',
         borderColor: 'divider'
       }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, md: 6 }}>
               <Paper elevation={0} sx={{ p: 3.5, borderRadius: 3, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', height: '100%' }}>
@@ -413,7 +413,7 @@ export default function AnalyticGenieLanding() {
 
       {/* OUR TEAM SECTION */}
       <Box id="team" sx={{ py: { xs: 8, md: 10 }, scrollMarginTop: '70px' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
           <Box sx={{ textAlign: 'center', maxWidth: 780, mx: 'auto', mb: 6 }}>
             <Typography variant="overline" sx={{ letterSpacing: '0.1em', color: 'primary.main', fontWeight: 800, fontSize: '0.8rem' }}>
               LEADERSHIP &amp; ARCHITECTURE
@@ -502,7 +502,7 @@ export default function AnalyticGenieLanding() {
           scrollMarginTop: '70px',
         }}
       >
-        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
           <Box sx={{ textAlign: 'center', maxWidth: 780, mx: 'auto', mb: 6 }}>
             <Typography variant="overline" sx={{ letterSpacing: '0.1em', color: 'primary.main', fontWeight: 800, fontSize: '0.8rem' }}>
               FREQUENTLY ASKED QUESTIONS
@@ -562,7 +562,7 @@ export default function AnalyticGenieLanding() {
 
       {/* Clean Minimal Footer */}
       <Box sx={{ py: 4, bgcolor: (t) => t.palette.mode === 'light' ? '#FFFFFF' : 'background.paper' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <UbsLogoFull

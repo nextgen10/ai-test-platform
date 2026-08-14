@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, Container } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
 import {
     LayoutDashboard, Sparkles, ListChecks, BookOpen, Bot, Gauge, SlidersHorizontal, Home,
@@ -53,22 +53,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 actions={<ThemeToggle />}
             />
 
-            <Box
+            <Container
                 component="main"
+                maxWidth="xl"
                 sx={{
-                    width: '100%',
                     flexGrow: 1,
-                    px: { xs: 2, md: 4 },
-                    pt: 3,
-                    pb: 3,
+                    px: { xs: 2, sm: 3, md: 4 },
+                    py: 3,
                     display: 'flex',
                     flexDirection: 'column',
-                    maxWidth: 1536,
-                    mx: 'auto',
                 }}
             >
                 {children}
-            </Box>
+            </Container>
         </Box>
     );
 }

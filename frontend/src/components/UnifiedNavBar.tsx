@@ -95,13 +95,23 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                     top: 0,
                     zIndex: 1200,
                     width: '100%',
-                    bgcolor: 'background.paper',
+                    bgcolor: (t) => t.palette.mode === 'light' ? 'rgba(255,255,255,0.92)' : 'rgba(18,22,29,0.92)',
+                    backdropFilter: 'blur(12px)',
                     borderBottom: '1px solid',
                     borderColor: 'divider',
-                    ...(isLight && { boxShadow: '0 1px 0 rgba(0,0,0,0.04)' }),
                 }}
             >
-                <Container maxWidth="xl" sx={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 2, md: 4 }, position: 'relative' }}>
+                <Container
+                    maxWidth="xl"
+                    sx={{
+                        height: 60,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        px: { xs: 2, sm: 3, md: 4 },
+                        position: 'relative',
+                    }}
+                >
                     {/* Brand */}
                     <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
                         <Box onClick={onLogoClick} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}>
