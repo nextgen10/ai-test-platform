@@ -10,7 +10,7 @@ interface AnimatedQualarisWordProps {
     sx?: SxProps<Theme>;
 }
 
-export default function AnimatedQualarisWord({ word = 'ANALYTIC GENIE', withDots = false, sx }: AnimatedQualarisWordProps) {
+export default function AnimatedQualarisWord({ word = 'Analytic Genie', withDots = false, sx }: AnimatedQualarisWordProps) {
     const letters = word.split('');
 
     return (
@@ -20,8 +20,10 @@ export default function AnimatedQualarisWord({ word = 'ANALYTIC GENIE', withDots
                 display: 'inline-flex',
                 alignItems: 'center',
                 fontWeight: 700,
+                fontSize: '1.05rem',
                 letterSpacing: '-0.01em',
                 whiteSpace: 'nowrap',
+                textTransform: 'none',
                 ...sx,
             }}
         >

@@ -54,7 +54,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
             letterSpacing: '-0.01em',
             color: 'text.primary',
             whiteSpace: 'nowrap',
-            fontSize: { xs: '0.95rem', md: '1.125rem' },
+            fontSize: { xs: '0.95rem', md: '1.05rem' },
         };
         const titleUpper = titleStr.toUpperCase();
         const isGenie = titleUpper.includes('GENIE') || titleUpper === 'QUALARIS';
@@ -62,7 +62,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
         if (titleUpper === 'ANALYTIC GENIE' || titleUpper === 'QUALARIS') {
             return (
                 <Typography variant="h6" sx={titleSx}>
-                    <AnimatedQualarisWord word="ANALYTIC GENIE" />
+                    <AnimatedQualarisWord word="Analytic Genie" />
                 </Typography>
             );
         }
@@ -101,12 +101,12 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                     ...(isLight && { boxShadow: '0 1px 0 rgba(0,0,0,0.04)' }),
                 }}
             >
-                <Container maxWidth="xl" sx={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 2, md: 4 }, position: 'relative' }}>
+                <Container maxWidth="xl" sx={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 2, md: 4 }, position: 'relative' }}>
                     {/* Brand */}
                     <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1 }}>
                         <Box onClick={onLogoClick} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}>
                             <UbsLogoFull
-                                height={isMobile ? 28 : 36}
+                                height={isMobile ? 22 : 26}
                                 keysColor={isLight ? theme.palette.text.primary : theme.palette.primary.main}
                                 wordmarkColor={isLight ? theme.palette.primary.main : '#FFFFFF'}
                             />

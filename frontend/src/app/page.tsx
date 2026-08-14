@@ -144,12 +144,12 @@ export default function AnalyticGenieLanding() {
             sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
           >
             <UbsLogoFull
-              height={30}
+              height={26}
               keysColor={isLight ? theme.palette.text.primary : theme.palette.primary.main}
               wordmarkColor={isLight ? theme.palette.primary.main : '#FFFFFF'}
             />
             <BrandPipe />
-            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.05rem' }}>
               <AnimatedQualarisWord />
             </Typography>
           </Box>

@@ -11,7 +11,7 @@ export const BrandPipe = () => (
         sx={{
             width: '1.5px',
             minWidth: '1.5px',
-            height: 28,
+            height: 20,
             bgcolor: '#8C96A5',
             flexShrink: 0,
         }}

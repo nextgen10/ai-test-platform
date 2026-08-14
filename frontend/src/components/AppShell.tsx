@@ -47,7 +47,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             }}
         >
             <UnifiedNavBar
-                title="ANALYTIC GENIE"
+                title="Analytic Genie"
                 items={items}
                 onLogoClick={() => router.push('/')}
                 actions={<ThemeToggle />}
@@ -58,9 +58,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 sx={{
                     width: '100%',
                     flexGrow: 1,
-                    px: { xs: 2, md: 3 },
-                    pt: 2,
-                    pb: 2,
+                    px: { xs: 2, md: 4 },
+                    pt: 3,
+                    pb: 3,
                     display: 'flex',
                     flexDirection: 'column',
                     maxWidth: 1536,
