@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-testing
+  labels:
+    name: ai-testing
+    # Pod Security Standards, enforced at the namespace boundary (blueprint §40).
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ai-testing-quota
+  namespace: ai-testing
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    count/jobs.batch: "50"
+    persistentvolumeclaims: "4"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ai-testing-limits
+  namespace: ai-testing
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "2"
+        memory: 4Gi
+      defaultRequest:
+        cpu: 500m
+        memory: 1Gi
+      max:
+        cpu: "4"
+        memory: 8Gi

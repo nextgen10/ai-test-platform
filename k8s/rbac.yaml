@@ -1,0 +1,48 @@
+# The orchestrator may manage Jobs and read Pod logs in its own namespace, and
+# nothing else. The runner gets an identity with no API permissions at all.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-test-orchestrator
+  namespace: ai-testing
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-test-runner
+  namespace: ai-testing
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ai-test-orchestrator
+  namespace: ai-testing
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs/status"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ai-test-orchestrator
+  namespace: ai-testing
+subjects:
+  - kind: ServiceAccount
+    name: ai-test-orchestrator
+    namespace: ai-testing
+roleRef:
+  kind: Role
+  name: ai-test-orchestrator
+  apiGroup: rbac.authorization.k8s.io

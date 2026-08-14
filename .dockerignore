@@ -1,0 +1,10 @@
+# Build context hygiene for the runner and orchestrator images.
+frontend/node_modules
+frontend/.next
+artifacts
+logs
+*.db
+.env
+.git
+**/__pycache__
+**/*.pyc

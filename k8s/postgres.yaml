@@ -1,0 +1,112 @@
+# Job metadata store. The blueprint calls for PostgreSQL for job metadata, with
+# generated files kept in artifact storage rather than in the database.
+#
+# This is a single-replica Deployment with a PVC — adequate to mimic production
+# locally. A real production deployment would use a managed database or an
+# operator-managed cluster with backups and failover.
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: orchestrator-db
+  namespace: ai-testing
+type: Opaque
+stringData:
+  POSTGRES_USER: aitest
+  POSTGRES_PASSWORD: aitest-local-dev
+  POSTGRES_DB: aitest
+  # Consumed by the orchestrator. psycopg 3 driver.
+  DATABASE_URL: postgresql+psycopg://aitest:aitest-local-dev@postgres:5432/aitest
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: ai-testing
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: ai-testing
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # never two writers against one RWO volume
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999       # the postgres user in the official image
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:16
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          envFrom:
+            - secretRef:
+                name: orchestrator-db
+          env:
+            # The mount root is not empty (lost+found), so initdb needs a subdir.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+              name: postgres
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "aitest", "-d", "aitest"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "aitest", "-d", "aitest"]
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: postgres-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: ai-testing
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: postgres
+  type: ClusterIP

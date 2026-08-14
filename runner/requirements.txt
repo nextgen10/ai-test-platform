@@ -1,0 +1,3 @@
+# Runner dependencies — deliberately minimal. The runner is disposable and
+# should carry nothing beyond what the workflow needs (blueprint §13).
+jsonschema==4.23.0

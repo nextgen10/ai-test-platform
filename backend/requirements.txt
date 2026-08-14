@@ -1,0 +1,13 @@
+# Pinned to the versions this platform was built and verified against.
+# Re-pin deliberately; do not float to latest in a production image (blueprint §16).
+fastapi==0.139.0
+uvicorn[standard]==0.34.2
+sqlalchemy==2.0.51
+pydantic==2.13.4
+python-multipart==0.0.20
+
+# Optional: required only when EXECUTOR=kubernetes
+# kubernetes==31.0.0
+
+# Optional: required only when DATABASE_URL points at PostgreSQL
+# psycopg[binary]==3.2.3

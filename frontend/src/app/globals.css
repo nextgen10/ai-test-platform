@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+/* Design system tokens - MUI theme controls body via CssBaseline */
+:root {
+  --scrollbar-track: #f5f7fa;
+  --scrollbar-thumb: #c9d1dc;
+  --scrollbar-thumb-hover: #8c96a5;
+}
+
+/* Dark mode scrollbar */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --scrollbar-track: #161b22;
+    --scrollbar-thumb: #30363d;
+    --scrollbar-thumb-hover: #484f58;
+  }
+}
+
+/* Theme class override - when MUI theme mode is explicitly set */
+html[data-theme="dark"] {
+  --scrollbar-track: #161b22;
+  --scrollbar-thumb: #30363d;
+  --scrollbar-thumb-hover: #484f58;
+}
+
+html[data-theme="light"] {
+  --scrollbar-track: #f5f7fa;
+  --scrollbar-thumb: #c9d1dc;
+  --scrollbar-thumb-hover: #8c96a5;
+}
+
+html {
+  scrollbar-gutter: stable both-edges;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+/* UBS brand font */
+:root {
+  --font-ubs-brand: 'Audela', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Body: MUI CssBaseline sets background/color from theme. */
+body {
+  font-family: 'Audela', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.4);
+  }
+}
+
+/* Allow text selection in inputs */
+input,
+textarea,
+select,
+[contenteditable="true"],
+.selectable-text,
+.selectable-text * {
+  -webkit-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Breathing Border Animation */
+@keyframes border-breathe {
+  0% {
+    border-color: rgba(249, 115, 22, 0.3);
+    box-shadow: 0 0 0 rgba(249, 115, 22, 0);
+  }
+
+  50% {
+    border-color: rgba(249, 115, 22, 1);
+    box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+  }
+
+  100% {
+    border-color: rgba(249, 115, 22, 0.3);
+    box-shadow: 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.animate-border-breathe {
+  animation: border-breathe 2s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2.5s infinite;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 10s linear infinite;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-strong {
+  background: rgba(22, 22, 30, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Ensure no injected border shadows or animated glows persist */
+#preact-border-shadow-host,
+[id*="preact-border-shadow-host"],
+.animate-breathing {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

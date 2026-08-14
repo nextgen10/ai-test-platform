@@ -1,0 +1,119 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://qualaris.local/schemas/quality-report.schema.json",
+  "title": "Requirement Quality Report",
+  "description": "INVEST-based assessment of a requirement, scored before any test case is generated. Deliberately tolerant of extra keys: over-strict schemas fail real model output for no benefit.",
+  "type": "object",
+  "required": [
+    "criteria",
+    "overall"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "requirement_reference": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional: the job already knows this."
+    },
+    "summary": {
+      "type": "string"
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "rating",
+          "rationale"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "independent",
+              "negotiable",
+              "valuable",
+              "estimable",
+              "small",
+              "testable",
+              "acceptance_criteria",
+              "unambiguous"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable label. Falls back to id when absent."
+          },
+          "rating": {
+            "type": "string",
+            "enum": [
+              "bad",
+              "average",
+              "good",
+              "very_good"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Why this rating, citing the requirement text."
+          },
+          "improvement": {
+            "type": "string",
+            "description": "Concrete change that would raise this rating. Omit when already very_good."
+          }
+        }
+      }
+    },
+    "overall": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "score",
+        "rating"
+      ],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Mean of the eight criteria on a 1-4 scale (bad=1 .. very_good=4)."
+        },
+        "rating": {
+          "type": "string",
+          "enum": [
+            "bad",
+            "average",
+            "good",
+            "very_good"
+          ]
+        },
+        "verdict": {
+          "type": "string",
+          "description": "One line on whether this requirement is ready for test design."
+        }
+      }
+    },
+    "blocking_issues": {
+      "type": "array",
+      "description": "Problems severe enough that generated tests would be unreliable.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "missing_information": {
+      "type": "array",
+      "description": "Specific facts the requirement does not state but test design needs.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

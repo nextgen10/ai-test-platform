@@ -1,0 +1,43 @@
+# Runner egress is deny-by-default. It may resolve DNS and reach the internet on
+# 443 (for the Copilot API) — and nothing else. In particular it cannot reach the
+# Kubernetes API, the orchestrator, the database, or any in-cluster service.
+#
+# Tighten `to` further with an egress gateway or CIDR allowlist for GitHub once
+# you have the address range your environment permits (blueprint §20).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ai-test-runner-egress
+  namespace: ai-testing
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-test-runner
+  policyTypes:
+    - Egress
+    - Ingress
+  ingress: []          # nothing may connect to a runner pod
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.169.254/32   # cloud instance metadata
+      ports:
+        - protocol: TCP
+          port: 443

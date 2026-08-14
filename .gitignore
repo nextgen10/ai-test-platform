@@ -1,0 +1,26 @@
+# OS & IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Generated job workspaces and artifacts
+artifacts/
+logs/
+
+# Local job database
+*.db
+
+# Environment
+.env
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/next-env.d.ts
+frontend/tsconfig.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/

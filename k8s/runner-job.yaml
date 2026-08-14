@@ -1,0 +1,70 @@
+# Reference Job manifest — the shape the orchestrator generates at runtime
+# (see backend/app/executors/kubernetes_exec.py::build_manifest).
+#
+# Apply this by hand to prove the runner works in-cluster before wiring the API
+# to it (blueprint §8 phase 3). Replace JOB_ID with any value.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: testgen-JOB_ID
+  namespace: ai-testing
+  labels:
+    app: ai-test-runner
+    workflow: test-case-generation
+    job-id: JOB_ID
+spec:
+  backoffLimit: 0                 # retry policy is decided by the orchestrator
+  ttlSecondsAfterFinished: 3600   # K8s cleans up; job history lives in Postgres
+  activeDeadlineSeconds: 600      # hard timeout
+  template:
+    metadata:
+      labels:
+        app: ai-test-runner
+        job-id: JOB_ID
+    spec:
+      restartPolicy: Never
+      serviceAccountName: ai-test-runner
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: runner
+          image: ai-test-runner:dev
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false   # the workspace is written in-place
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: JOB_ID
+              value: "JOB_ID"
+            - name: ENGINE
+              value: "copilot"
+            - name: WORKSPACE
+              value: "/workspace"
+            - name: COPILOT_GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: copilot-auth
+                  key: COPILOT_GITHUB_TOKEN
+                  optional: true
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: artifacts
+              mountPath: /workspace
+              subPath: JOB_ID       # one workspace per job; jobs cannot see each other
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim:
+            claimName: ai-test-artifacts

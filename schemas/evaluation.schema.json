@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://qualaris.local/schemas/evaluation.schema.json",
+  "title": "Test Suite Evaluation",
+  "description": "Independent assessment of a generated test suite against its source requirement.",
+  "type": "object",
+  "required": [
+    "scores",
+    "overall"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "requirement_reference": {
+      "type": "string"
+    },
+    "scores": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "score"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "coverage",
+              "completeness",
+              "traceability",
+              "correctness",
+              "uniqueness"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "0-100. Independent of the other dimensions."
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 10
+          }
+        }
+      }
+    },
+    "overall": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "score",
+        "rating"
+      ],
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Weighted: 0.30 coverage + 0.25 completeness + 0.20 traceability + 0.15 correctness + 0.10 uniqueness."
+        },
+        "rating": {
+          "type": "string",
+          "enum": [
+            "bad",
+            "average",
+            "good",
+            "very_good"
+          ]
+        },
+        "verdict": {
+          "type": "string"
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "description": "Specific scenarios the suite does not cover.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 10
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Actionable changes. These are fed back verbatim on a reprocess run.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "detail"
+        ],
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 10
+          },
+          "target_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
