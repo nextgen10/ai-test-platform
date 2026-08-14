@@ -38,6 +38,93 @@ Before setting up on a brand new machine, ensure you have the required tools ins
 
 ## 2. OS-Specific Installation Guide
 
+---
+
+### Linux (Ubuntu / Debian / AWS EC2 / GCP / Azure VM)
+
+For a fresh Linux instance (Ubuntu 22.04 / 24.04 LTS or Debian 12), run these commands to install everything in one go:
+
+```bash
+# 1. Update system & install base development tools
+sudo apt update && sudo apt install -y curl wget git build-essential python3 python3-pip python3-venv
+
+# 2. Install Node.js 22 LTS
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# 3. Install Docker Engine (Recommended container runtime on Linux)
+sudo apt install -y docker.io
+sudo usermod -aG docker $USER
+# Activate group changes immediately (or log out and back in):
+newgrp docker
+
+# 4. Install kubectl CLI
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+rm kubectl
+
+# 5. Install Minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+rm minikube-linux-amd64
+
+# 6. Verify all software versions
+python3 --version
+node --version
+docker --version
+kubectl version --client
+minikube version
+```
+
+---
+
+### Linux (RHEL / Rocky Linux / Fedora / AlmaLinux)
+
+```bash
+# 1. Install base utilities & Python
+sudo dnf install -y curl git gcc make python3 python3-pip python3-devel
+
+# 2. Install Node.js 22 LTS
+sudo dnf module enable -y nodejs:22 || curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
+sudo dnf install -y nodejs
+
+# 3. Install Podman & Container Tools
+sudo dnf install -y podman
+
+# 4. Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+rm kubectl
+
+# 5. Install Minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+rm minikube-linux-amd64
+```
+
+---
+
+### Remote Headless Linux Server Access (AWS / GCP / Azure)
+
+If deploying on a remote cloud Linux server without a local web browser, you can access the UI from your local computer using either:
+
+1. **SSH Port Forwarding (Most Secure)**:
+   ```bash
+   # From your laptop/local machine:
+   ssh -L 3100:localhost:3100 -L 8100:localhost:8100 user@your-linux-server-ip
+   ```
+   Then open `http://localhost:3100` in your local laptop browser!
+
+2. **Public Binding**:
+   ```bash
+   # On the Linux server:
+   kubectl -n ai-testing port-forward --address 0.0.0.0 svc/ai-test-ui 3100:80 &
+   kubectl -n ai-testing port-forward --address 0.0.0.0 svc/ai-test-orchestrator 8100:80 &
+   ```
+   *(Ensure ports `3100` and `8100` are allowed in your cloud security group/firewall).*
+
+---
+
 ### macOS (Apple Silicon & Intel)
 
 Install all dependencies via [Homebrew](https://brew.sh):
@@ -61,30 +148,6 @@ minikube version
 
 > [!IMPORTANT]
 > **macOS Driver Rule**: Always use `--driver=vfkit` when starting Minikube on macOS. Never use `--driver=podman` for Minikube on macOS because rootless Podman lacks bridge CNI networking and will cause cluster DNS failures.
-
----
-
-### Linux (Ubuntu / Debian)
-
-```bash
-# 1. Install base utilities and Python
-sudo apt update && sudo apt install -y curl git python3 python3-pip python3-venv
-
-# 2. Install Node.js 22 LTS
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt install -y nodejs
-
-# 3. Install Podman or Docker
-sudo apt install -y podman # or: sudo apt install -y docker.io
-
-# 4. Install kubectl
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-# 5. Install Minikube
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube
-```
 
 ---
 
