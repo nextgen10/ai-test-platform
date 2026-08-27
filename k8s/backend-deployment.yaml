@@ -10,7 +10,10 @@ spec:
   # before the new pod mounts it, preventing multi-attach volume deadlocks.
   strategy:
     type: Recreate
-  replicas: 1
+  # Safe above 1 since jobs carry a lease: a worker claims a row with a
+  # conditional UPDATE, so exactly one wins, and a worker that stops renewing
+  # returns its job to the queue rather than having it failed as orphaned.
+  replicas: 2
   selector:
     matchLabels:
       app: ai-test-orchestrator
@@ -51,6 +54,29 @@ spec:
               value: "/artifacts"
             - name: CORS_ORIGINS
               value: "http://localhost:3100"
+            - name: AUTH_MODE
+              value: "token"
+            # "<token>:<name>:<role>[,...]" — reader | operator | author | admin.
+            # The API refuses to start in token mode without this.
+            - name: API_TOKENS
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrator-auth
+                  key: API_TOKENS
+            # Per-job credentials, deliberately off the artifact volume: every
+            # file under ARTIFACT_ROOT is downloadable through the API.
+            - name: JOB_RUNTIME_ROOT
+              value: "/job-runtime"
+            - name: LOG_FORMAT
+              value: "json"
+            # Both default on. Set RUN_WORKER=false for an API-only replica when
+            # serving and executing should scale independently.
+            - name: RUN_WORKER
+              value: "true"
+            - name: RUN_SCHEDULER
+              value: "true"
+            - name: WORKER_CONCURRENCY
+              value: "2"
             # PostgreSQL is required here: the root filesystem is read-only, so
             # the SQLite fallback has nowhere to write.
             - name: DATABASE_URL
@@ -72,22 +98,32 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 20
           readinessProbe:
+            # /ready checks the database, artifact storage, the agent hub and
+            # the execution engine. /health only says the process is alive.
             httpGet:
-              path: /api/v1/health
+              path: /api/v1/ready
               port: http
-            initialDelaySeconds: 3
+            initialDelaySeconds: 5
             periodSeconds: 10
           volumeMounts:
             - name: artifacts
               mountPath: /artifacts
             - name: tmp
               mountPath: /tmp
+            - name: job-runtime
+              mountPath: /job-runtime
       volumes:
         - name: artifacts
           persistentVolumeClaim:
             claimName: ai-test-artifacts
         - name: tmp
           emptyDir: {}
+        # Per-job credentials. In memory, never on disk, and gone with the pod —
+        # and separate from the artifacts PVC, which the API serves.
+        - name: job-runtime
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi
 ---
 apiVersion: v1
 kind: Service

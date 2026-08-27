@@ -82,6 +82,7 @@ export default function JobsPage() {
                                 <TableRow>
                                     <TableCell>Job</TableCell>
                                     <TableCell>Workflow</TableCell>
+                                    <TableCell>Engine</TableCell>
                                     <TableCell>Status</TableCell>
                                     <TableCell>Created by</TableCell>
                                     <TableCell align="right">Cases</TableCell>
@@ -107,6 +108,17 @@ export default function JobsPage() {
                                             {job.id}
                                         </TableCell>
                                         <TableCell>{job.workflow}</TableCell>
+                                        <TableCell>
+                                            {job.provenance?.engine ? (
+                                                <Chip
+                                                    size="small"
+                                                    variant="outlined"
+                                                    label={job.provenance.engine === 'mock' ? 'Mock' : 'GHCP'}
+                                                    color={job.provenance.engine === 'mock' ? 'warning' : 'primary'}
+                                                    sx={{ height: 20, fontSize: '0.68rem', fontWeight: 800 }}
+                                                />
+                                            ) : '—'}
+                                        </TableCell>
                                         <TableCell>
                                             <Chip size="small" label={job.status} color={STATUS_COLOR[job.status]} />
                                         </TableCell>

@@ -2,6 +2,11 @@
 name: test-evaluator
 description: Independently scores a generated test suite against its source requirement, identifying coverage gaps and emitting actionable recommendations that a reprocess run consumes.
 tools: ["read", "write"]
+role: "Suite Quality Scorer & Recommendation Engine"
+stage: evaluate
+input_artifact: output/test_cases.json
+output_artifact: output/evaluation.json
+output_schema: schemas/evaluation.schema.json
 ---
 
 # Test Evaluator

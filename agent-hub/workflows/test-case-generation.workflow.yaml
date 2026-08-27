@@ -1,0 +1,69 @@
+id: test-case-generation
+name: Test Design & Evaluation
+description: >
+  Generate comprehensive, traceable test cases from business requirements using
+  a multi-agent chain: Requirement Analyst → Test Designer → Test Generator →
+  Test Reviewer, with optional 5-D evaluation and gap-closure reprocessing.
+version: "1.0"
+skill: test-case-generation
+
+# This workflow is driven by the hand-written runner/agent_chain.py, not the
+# declarative engine: it has a human approval gate, schema validation and a
+# reprocess loop that the generic runner does not model.
+runner: bespoke
+approval_gate: true
+available: true
+
+has_custom_ui: true
+custom_ui_route: /generate
+category: testing
+icon: flask-conical
+badge: "Custom UI"
+
+agents:
+  - id: requirement-analyst
+    stage: quality
+    optional: false
+    description: Score the requirement against INVEST criteria before design begins
+
+  - id: test-designer
+    stage: design
+    optional: false
+    description: Produce a structured test design with scenarios and coverage dimensions
+
+  - id: test-generator
+    stage: generate
+    optional: false
+    description: Convert the test design into concrete, schema-valid test cases
+
+  - id: test-reviewer
+    stage: review
+    optional: false
+    description: Review draft cases for gaps, duplicates, and weak expected results
+
+  - id: test-evaluator
+    stage: evaluate
+    optional: true
+    description: Score the final suite across 5 quality dimensions
+
+  - id: gap-closer
+    stage: reprocess
+    optional: true
+    description: Amend the suite to close gaps named by the evaluator
+
+input:
+  type: text
+  label: Business Requirement
+  placeholder: Paste your business requirement here...
+  min_length: 20
+  max_length: 50000
+
+output:
+  type: json
+  schema: schemas/test-case.schema.json
+  primary_artifact: output/test_cases.json
+
+tags:
+  - testing
+  - quality-assurance
+  - requirements

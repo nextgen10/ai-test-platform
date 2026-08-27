@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -12,21 +12,19 @@ import {
   Collapse,
   IconButton,
   Grid,
+  Tooltip,
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles,
   Play,
   CheckCircle2,
-  AlertCircle,
-  ShieldAlert,
-  Sliders,
   ChevronDown,
   ChevronUp,
   ArrowRight,
   Gauge,
-  Layers,
   FileCheck2,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -264,33 +262,48 @@ export default function InteractiveSimulator() {
   const [activeAgentIndex, setActiveAgentIndex] = useState<number>(5);
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
   const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
+  const [copiedCaseId, setCopiedCaseId] = useState<string | null>(null);
+  const simulationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Both timers outlive the component if it unmounts mid-run (navigating away
+  // while the simulation ticks), so tear them down explicitly.
+  useEffect(
+    () => () => {
+      if (simulationTimerRef.current) clearInterval(simulationTimerRef.current);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    },
+    []
+  );
 
   const scenario = SCENARIO_PRESETS.find((s) => s.id === activeScenarioId) || SCENARIO_PRESETS[0];
 
   const agentSteps = [
     '1. Requirement Analyst (INVEST Scoring)',
     '2. Human Approval Gatekeeper',
-    '3. Test Designer (Coverage Matrix)',
-    '4. Test Generator (Concrete Specs)',
-    '5. Test Reviewer (Schema Gate)',
+    '3. Test Designer (5-Category Matrix)',
+    '4. Test Generator (Concrete Steps)',
+    '5. Test Reviewer (Draft-07 Schema Gate)',
     '6. Test Evaluator (5-D RQS Scoring)'
   ];
 
   const handleRunSimulation = () => {
+    if (simulationTimerRef.current) clearInterval(simulationTimerRef.current);
     setIsSimulating(true);
     setSimulationProgress(0);
     setActiveAgentIndex(0);
 
-    const interval = setInterval(() => {
+    simulationTimerRef.current = setInterval(() => {
       setSimulationProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsSimulating(false);
-          setActiveAgentIndex(5);
-          return 100;
-        }
+        if (prev >= 100) return 100;
         const next = prev + 20;
         setActiveAgentIndex(Math.min(5, Math.floor(next / 18)));
+        if (next >= 100) {
+          if (simulationTimerRef.current) clearInterval(simulationTimerRef.current);
+          simulationTimerRef.current = null;
+          setIsSimulating(false);
+          setActiveAgentIndex(5);
+        }
         return next;
       });
     }, 280);
@@ -299,6 +312,25 @@ export default function InteractiveSimulator() {
   const handleOpenInGenerator = () => {
     sessionStorage.setItem('benchmark_req', scenario.rawRequirement);
     router.push('/generate');
+  };
+
+  const handleCopyTestCase = async (
+    tc: ScenarioPreset['testCases'][number],
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(tc, null, 2));
+    } catch {
+      // Insecure context, unfocused document, or denied permission — say
+      // nothing rather than showing a "Copied!" tick for a copy that failed.
+      return;
+    }
+    setCopiedCaseId(tc.id);
+    // Reset the previous case's timer, or copying a second case within 2s
+    // would clear the new tick early when the old timer fires.
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopiedCaseId(null), 2000);
   };
 
   const filteredCases = scenario.testCases.filter(
@@ -319,26 +351,26 @@ export default function InteractiveSimulator() {
   return (
     <Box sx={{ width: '100%' }}>
       {/* Header */}
-      <Box sx={{ textAlign: 'center', mb: 5, maxWidth: 780, mx: 'auto' }}>
+      <Box sx={{ textAlign: 'center', mb: 5, maxWidth: 800, mx: 'auto' }}>
         <Box sx={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 1,
           px: 2,
           py: 0.6,
-          mb: 2,
+          mb: 1.5,
           borderRadius: 4,
           bgcolor: (t) => t.palette.mode === 'light' ? '#FFE5E5' : 'rgba(208,0,0,0.12)',
           border: '1px solid',
           borderColor: (t) => t.palette.mode === 'light' ? 'rgba(208,0,0,0.2)' : 'rgba(208,0,0,0.3)',
         }}>
           <Sparkles size={16} color={RED} />
-          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.04em' }}>
+          <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.06em', fontSize: '0.72rem' }}>
             LIVE INTERACTIVE PLAYGROUND
           </Typography>
         </Box>
 
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1.5, fontSize: { xs: '1.85rem', md: '2.4rem' } }}>
+        <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
           Experience Autonomous Test Generation in 1 Click
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
@@ -370,12 +402,12 @@ export default function InteractiveSimulator() {
                 borderRadius: 2.5,
                 px: 2.5,
                 py: 1.2,
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '0.88rem',
                 borderColor: isSelected ? 'primary.main' : 'divider',
                 bgcolor: isSelected ? 'primary.main' : 'background.paper',
                 color: isSelected ? '#fff' : 'text.primary',
-                boxShadow: isSelected ? '0 4px 14px rgba(208,0,0,0.25)' : 'none',
+                boxShadow: isSelected ? '0 6px 18px rgba(208,0,0,0.28)' : 'none',
                 '&:hover': {
                   bgcolor: isSelected ? 'primary.dark' : alpha(theme.palette.text.primary, 0.05)
                 }
@@ -384,14 +416,14 @@ export default function InteractiveSimulator() {
               <Box sx={{ textAlign: 'left' }}>
                 <Typography variant="caption" sx={{
                   display: 'block',
-                  fontSize: '0.65rem',
+                  fontSize: '0.66rem',
                   fontWeight: 800,
                   letterSpacing: '0.04em',
-                  opacity: 0.85
+                  opacity: 0.9
                 }}>
                   {preset.badge}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                <Typography variant="body2" sx={{ fontWeight: 800 }}>
                   {preset.title}
                 </Typography>
               </Box>
@@ -406,11 +438,14 @@ export default function InteractiveSimulator() {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        boxShadow: isLight
+          ? '0 16px 40px -12px rgba(0,0,0,0.08)'
+          : '0 16px 40px -12px rgba(0,0,0,0.6)',
       }}>
         {/* Top toolbar */}
         <Box sx={{
-          p: { xs: 2, md: 3 },
+          p: { xs: 2, md: 2.5 },
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: (t) => t.palette.mode === 'light' ? '#F9FBFC' : 'rgba(255,255,255,0.02)',
@@ -420,13 +455,13 @@ export default function InteractiveSimulator() {
           justifyContent: 'space-between',
           gap: 2
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Chip
               label={scenario.category}
               size="small"
-              sx={{ fontWeight: 700, bgcolor: alpha(RED, 0.12), color: RED }}
+              sx={{ fontWeight: 800, bgcolor: alpha(RED, 0.12), color: RED, fontSize: '0.72rem' }}
             />
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '1.05rem' }}>
               {scenario.title}
             </Typography>
           </Box>
@@ -438,7 +473,7 @@ export default function InteractiveSimulator() {
               onClick={handleRunSimulation}
               disabled={isSimulating}
               startIcon={<Play size={14} />}
-              sx={{ fontWeight: 600, borderRadius: 2 }}
+              sx={{ fontWeight: 700, borderRadius: 2 }}
             >
               {isSimulating ? 'Simulating Agents...' : 'Re-Run Simulation'}
             </Button>
@@ -448,7 +483,7 @@ export default function InteractiveSimulator() {
               size="small"
               onClick={handleOpenInGenerator}
               endIcon={<ArrowRight size={14} />}
-              sx={{ fontWeight: 600, borderRadius: 2 }}
+              sx={{ fontWeight: 700, borderRadius: 2 }}
             >
               Open in Live Generator
             </Button>
@@ -458,17 +493,17 @@ export default function InteractiveSimulator() {
         {/* Live Simulation Progress Stepper Bar */}
         <Box sx={{
           px: 3,
-          py: 2,
+          py: 1.75,
           borderBottom: '1px solid',
           borderColor: 'divider',
           bgcolor: (t) => t.palette.mode === 'light' ? '#FFF' : 'background.paper'
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75, fontSize: '0.76rem' }}>
               <Gauge size={14} color={isSimulating ? RED : GREEN} />
               {isSimulating ? `RUNNING: ${agentSteps[activeAgentIndex]}` : 'CHAIN COMPLETE: All 6 Agents Succeeded & Validated'}
             </Typography>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', fontSize: '0.76rem' }}>
               {simulationProgress}%
             </Typography>
           </Box>
@@ -493,20 +528,20 @@ export default function InteractiveSimulator() {
         <Grid container>
           {/* Left: Raw Requirement & INVEST scorecard */}
           <Grid size={{ xs: 12, lg: 5 }} sx={{ borderRight: { lg: '1px solid' }, borderColor: 'divider', p: { xs: 2.5, md: 3 } }}>
-            <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em' }}>
+            <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em', fontSize: '0.72rem' }}>
               SOURCE REQUIREMENT SPECIFICATION
             </Typography>
 
             <Box sx={{
               mt: 1.5,
               mb: 3,
-              p: 2.5,
+              p: 2,
               borderRadius: 2.5,
               bgcolor: (t) => t.palette.mode === 'light' ? '#F5F7FA' : '#161B22',
               border: '1px solid',
               borderColor: 'divider',
               fontFamily: 'ui-monospace, monospace',
-              fontSize: '0.82rem',
+              fontSize: '0.8rem',
               lineHeight: 1.6,
               whiteSpace: 'pre-wrap'
             }}>
@@ -514,7 +549,7 @@ export default function InteractiveSimulator() {
             </Box>
 
             {/* Quality Evaluation Summary */}
-            <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em' }}>
+            <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em', fontSize: '0.72rem' }}>
               PRE-GENERATION INVEST GATE
             </Typography>
 
@@ -533,18 +568,18 @@ export default function InteractiveSimulator() {
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <CheckCircle2 size={16} color={GREEN} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: GREEN }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: GREEN, fontSize: '0.85rem' }}>
                     INVEST Score: {scenario.investScore.score} / 4.0
                   </Typography>
                 </Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.75rem' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.74rem' }}>
                   {scenario.investScore.verdict}
                 </Typography>
               </Box>
               <Chip
                 label="PASS GATE"
                 size="small"
-                sx={{ fontWeight: 800, bgcolor: GREEN, color: '#FFF', fontSize: '0.7rem' }}
+                sx={{ fontWeight: 800, bgcolor: GREEN, color: '#FFF', fontSize: '0.68rem' }}
               />
             </Box>
 
@@ -564,18 +599,18 @@ export default function InteractiveSimulator() {
               <Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                   <FileCheck2 size={16} color={BLUE} />
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: BLUE }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: BLUE, fontSize: '0.85rem' }}>
                     RQS Evaluation: {scenario.rqsScore.score}% ({scenario.rqsScore.rating})
                   </Typography>
                 </Box>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.75rem' }}>
-                  Weighted scoring on Coverage, Completeness, Traceability, Correctness & Uniqueness.
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.74rem' }}>
+                  Weighted scoring on Coverage, Completeness, Traceability, Correctness &amp; Uniqueness.
                 </Typography>
               </Box>
               <Chip
                 label="VERIFIED"
                 size="small"
-                sx={{ fontWeight: 800, bgcolor: BLUE, color: '#FFF', fontSize: '0.7rem' }}
+                sx={{ fontWeight: 800, bgcolor: BLUE, color: '#FFF', fontSize: '0.68rem' }}
               />
             </Box>
           </Grid>
@@ -584,11 +619,11 @@ export default function InteractiveSimulator() {
           <Grid size={{ xs: 12, lg: 7 }} sx={{ p: { xs: 2.5, md: 3 } }}>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mb: 2 }}>
               <Box>
-                <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em' }}>
+                <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em', fontSize: '0.72rem' }}>
                   GENERATED TEST SUITE ({scenario.testCases.length} CASES)
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                  Complies with <code style={{ color: RED }}>schemas/test-case.schema.json</code>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.74rem' }}>
+                  Complies with <code style={{ color: RED, fontWeight: 700 }}>schemas/test-case.schema.json</code>
                 </Typography>
               </Box>
 
@@ -602,8 +637,8 @@ export default function InteractiveSimulator() {
                     clickable
                     onClick={() => setSelectedCategoryFilter(cat)}
                     sx={{
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
+                      fontSize: '0.66rem',
+                      fontWeight: 800,
                       bgcolor: selectedCategoryFilter === cat ? (isLight ? '#1C1F24' : '#FFF') : 'transparent',
                       color: selectedCategoryFilter === cat ? (isLight ? '#FFF' : '#000') : 'text.secondary',
                       border: '1px solid',
@@ -619,6 +654,7 @@ export default function InteractiveSimulator() {
               {filteredCases.map((tc) => {
                 const isExpanded = expandedCaseId === tc.id;
                 const catColor = getCategoryColor(tc.category);
+                const isCopied = copiedCaseId === tc.id;
 
                 return (
                   <Paper
@@ -626,12 +662,16 @@ export default function InteractiveSimulator() {
                     elevation={0}
                     sx={{
                       p: 2,
-                      borderRadius: 2,
+                      borderRadius: 2.5,
                       border: '1px solid',
                       borderColor: isExpanded ? catColor : 'divider',
                       bgcolor: isExpanded ? alpha(catColor, 0.04) : 'background.paper',
                       transition: 'all 0.2s ease',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      '&:hover': {
+                        borderColor: catColor,
+                        boxShadow: `0 4px 14px ${alpha(catColor, 0.12)}`
+                      }
                     }}
                     onClick={() => setExpandedCaseId(isExpanded ? null : tc.id)}
                   >
@@ -647,14 +687,14 @@ export default function InteractiveSimulator() {
                             px: 1,
                             py: 0.4,
                             borderRadius: 1,
-                            fontSize: '0.75rem'
+                            fontSize: '0.74rem'
                           }}
                         >
                           {tc.id}
                         </Typography>
 
                         <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.88rem' }}>
                             {tc.title}
                           </Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
@@ -663,9 +703,9 @@ export default function InteractiveSimulator() {
                               size="small"
                               sx={{
                                 height: 18,
-                                fontSize: '0.65rem',
-                                fontWeight: 700,
-                                bgcolor: alpha(catColor, 0.1),
+                                fontSize: '0.64rem',
+                                fontWeight: 800,
+                                bgcolor: alpha(catColor, 0.12),
                                 color: catColor
                               }}
                             />
@@ -674,9 +714,9 @@ export default function InteractiveSimulator() {
                               size="small"
                               sx={{
                                 height: 18,
-                                fontSize: '0.65rem',
-                                fontWeight: 700,
-                                bgcolor: tc.priority === 'critical' ? alpha(RED, 0.1) : alpha(AMBER, 0.1),
+                                fontSize: '0.64rem',
+                                fontWeight: 800,
+                                bgcolor: tc.priority === 'critical' ? alpha(RED, 0.12) : alpha(AMBER, 0.12),
                                 color: tc.priority === 'critical' ? RED : AMBER
                               }}
                             />
@@ -684,9 +724,20 @@ export default function InteractiveSimulator() {
                         </Box>
                       </Box>
 
-                      <IconButton size="small">
-                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </IconButton>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Tooltip title={isCopied ? "Copied!" : "Copy Test Case"}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleCopyTestCase(tc, e)}
+                            sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+                          >
+                            {isCopied ? <Check size={14} color={GREEN} /> : <Copy size={14} />}
+                          </IconButton>
+                        </Tooltip>
+                        <IconButton size="small">
+                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        </IconButton>
+                      </Box>
                     </Box>
 
                     {/* Expandable test case body */}
@@ -694,19 +745,19 @@ export default function InteractiveSimulator() {
                       <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
                         {/* Preconditions */}
                         <Box sx={{ mb: 1.5 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, fontSize: '0.72rem' }}>
                             PRECONDITIONS:
                           </Typography>
                           {tc.preconditions.map((p, i) => (
                             <Typography key={i} variant="body2" sx={{ fontSize: '0.8rem', color: 'text.secondary', pl: 1 }}>
-                              • {p}
+                              &bull; {p}
                             </Typography>
                           ))}
                         </Box>
 
                         {/* Steps */}
                         <Box sx={{ mb: 1.5 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, fontSize: '0.72rem' }}>
                             EXECUTION STEPS:
                           </Typography>
                           {tc.steps.map((s, i) => (
@@ -724,10 +775,10 @@ export default function InteractiveSimulator() {
                           border: '1px solid',
                           borderColor: alpha(GREEN, 0.25)
                         }}>
-                          <Typography variant="caption" sx={{ fontWeight: 800, color: GREEN, display: 'block', mb: 0.25 }}>
-                            ASSERTION & EXPECTED RESULT:
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: GREEN, display: 'block', mb: 0.25, fontSize: '0.72rem' }}>
+                            ASSERTION &amp; EXPECTED RESULT:
                           </Typography>
-                          <Typography variant="body2" sx={{ fontSize: '0.82rem', color: 'text.primary' }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.82rem', color: 'text.primary', fontWeight: 500 }}>
                             {tc.expectedResult}
                           </Typography>
                         </Box>

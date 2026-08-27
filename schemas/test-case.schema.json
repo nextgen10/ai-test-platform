@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://qualaris.local/schemas/test-case.schema.json",
+  "$id": "https://agenthub.local/schemas/test-case.schema.json",
   "title": "Generated Test Case Suite",
   "type": "object",
   "required": ["test_cases"],

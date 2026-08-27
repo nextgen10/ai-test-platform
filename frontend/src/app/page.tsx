@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -8,43 +8,40 @@ import {
   Paper,
   Grid,
   Button,
-  alpha,
-  Stack,
   useTheme,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
-  Avatar,
-  Divider,
+  Card,
+  alpha,
 } from '@mui/material';
 import {
   ArrowRight,
-  UserCheck,
-  RefreshCw,
-  RotateCcw,
-  Layers,
-  ShieldCheck,
   BookOpen,
   Users,
   HelpCircle,
-  ChevronDown,
-  Lock,
+  FlaskConical,
+  FileSearch,
+  Layers,
+  Terminal,
   Sparkles,
-  Award,
+  ExternalLink,
+  GitBranch,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import ThemeToggle from '@/components/ThemeToggle';
-import { UbsLogoFull } from '../components/UbsLogoFull';
-import { BrandPipe } from '@/components/BrandPipe';
-import AnimatedQualarisWord from '@/components/AnimatedQualarisWord';
+import { UnifiedNavBar, UnifiedBrand } from '@/components/UnifiedNavBar';
 import RealtimeFlowDiagram from '@/components/landing/RealtimeFlowDiagram';
+import ComparisonSection from '@/components/landing/ComparisonSection';
+import FeatureBentoGrid from '@/components/landing/FeatureBentoGrid';
+import PipelineExplorer from '@/components/landing/PipelineExplorer';
+import DomainSkillsSection from '@/components/landing/DomainSkillsSection';
+import InteractiveSimulator from '@/components/landing/InteractiveSimulator';
+import TechnicalFAQ from '@/components/landing/TechnicalFAQ';
+import { mapWorkflowsToUseCases, type UseCaseItem } from '@/config/nav';
+import { hubApi } from '@/lib/hub-api';
 
-const AMBER = '#D9822B';
-const GREEN = '#1F8A70';
 const RED = '#D00000';
-const BLUE = '#2D6CDF';
+const GREEN = '#1F8A70';
 
 const TEAM_MEMBERS = [
   {
@@ -81,39 +78,19 @@ const TEAM_MEMBERS = [
   },
 ];
 
-const FAQS = [
-  {
-    q: 'How does Analytic Genie prevent hallucinations and ungrounded test cases?',
-    a: 'Analytic Genie prevents hallucinations through a 3-tier defense-in-depth architecture. First, the Requirement Analyst grounds all terms against 8 INVEST criteria. Second, the Test Designer constructs a deterministic 5-category coverage matrix before test authoring begins. Third, the Test Reviewer acts as an independent critic with bounded retries, rejecting test cases that lack direct requirement traceability or reference invented parameters.',
-  },
-  {
-    q: 'Why does Analytic Genie pause for human approval rather than auto-executing?',
-    a: 'Enterprise quality requires human accountability. Catching ambiguities, unstated assumptions, or missing requirements during INVEST analysis saves immense compute and engineering cycles. If a requirement is scored as unready, the human operator can reject the run (halting execution with zero wasted tokens) or approve it with customized instructions.',
-  },
-  {
-    q: 'What happens if generated test cases fail JSON schema validation?',
-    a: 'The system triggers a bounded self-correction retry loop (maximum 2 attempts). The Test Reviewer provides precise schema error diagnostics back to the generator. If validation fails after all retries, the orchestrator safely terminates the job without writing corrupted output.',
-  },
-  {
-    q: 'How does the non-destructive Gap Closer reprocess suites without wiping verified tests?',
-    a: 'Full re-generation is non-deterministic and can introduce regressions into previously verified tests. In contrast, Analytic Genie’s Gap Closer inspects the evaluation gaps and amends the existing suite in-place. The original suite is snapshotted before modification and automatically restored if the amended suite fails verification.',
-  },
-  {
-    q: 'How is data isolated and protected within the multi-agent execution environment?',
-    a: 'All input requirements are treated as untrusted data within an air-gapped /workspace boundary. Agent instructions embedded inside requirements are analyzed as text rather than executed commands. Shell access is completely blocked, and agents communicate solely through validated JSON contracts.',
-  },
-  {
-    q: 'Can generated test cases be exported to Jira, Xray, or TestRail?',
-    a: 'Yes. Every generated test case strictly adheres to standard Draft-07 JSON Schema, including preconditions, actionable step arrays, and observable expected results. This allows immediate one-click export or bi-directional synchronization with Jira, Xray, TestRail, and CI/CD automation runners.',
-  },
-];
-
-export default function AnalyticGenieLanding() {
+export default function AgentHubLanding() {
   const router = useRouter();
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
 
-  const [expandedFaq, setExpandedFaq] = useState<number | false>(0);
+  // The nav's use-case menu mirrors the registry rather than a hardcoded list.
+  const [useCases, setUseCases] = useState<UseCaseItem[]>([]);
+  useEffect(() => {
+    hubApi
+      .listWorkflows()
+      .then((workflows) => setUseCases(mapWorkflowsToUseCases(workflows)))
+      .catch(() => setUseCases([]));
+  }, []);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -122,306 +99,581 @@ export default function AnalyticGenieLanding() {
     }
   };
 
+  const navLinks = [
+    { id: 'use-cases', label: 'Use Cases', icon: <Layers size={15} />, onClick: () => scrollToSection('use-cases') },
+    { id: 'simulator', label: 'Playground', icon: <Sparkles size={15} />, onClick: () => scrollToSection('simulator') },
+    { id: 'pipeline', label: 'Architecture', icon: <GitBranch size={15} />, onClick: () => scrollToSection('pipeline') },
+    { id: 'team', label: 'Our Team', icon: <Users size={15} />, onClick: () => scrollToSection('team') },
+    { id: 'docs', label: 'Docs', icon: <BookOpen size={15} />, onClick: () => router.push('/docs') },
+    { id: 'faq', label: 'FAQs', icon: <HelpCircle size={15} />, onClick: () => scrollToSection('faq') },
+  ];
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
-      {/* Top Navigation Ribbon (Fixed, static, no shifting) */}
-      <Box
-        component="header"
-        sx={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 1100,
-          bgcolor: (t) => t.palette.mode === 'light' ? 'rgba(255,255,255,0.92)' : 'rgba(18,22,29,0.92)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Container maxWidth="xl" sx={{ height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 2, sm: 3, md: 4 } }}>
-          {/* Brand */}
-          <Box
-            onClick={() => router.push('/')}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
-          >
-            <UbsLogoFull
-              height={26}
-              keysColor={isLight ? theme.palette.text.primary : theme.palette.primary.main}
-              wordmarkColor={isLight ? theme.palette.primary.main : '#FFFFFF'}
-            />
-            <BrandPipe />
-            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.05rem' }}>
-              <AnimatedQualarisWord />
-            </Typography>
-          </Box>
+    <Box sx={{
+      minHeight: '100vh',
+      bgcolor: 'background.default',
+      color: 'text.primary',
+      overflowX: 'hidden',
+    }}>
+      {/* Top Navigation Ribbon with Use Cases Menu */}
+      <UnifiedNavBar
+        items={navLinks}
+        useCases={useCases}
+        alignLinks="right"
+        onLogoClick={() => router.push('/')}
+        actions={<ThemeToggle />}
+      />
 
-          {/* Right Action: Docs + Our Team + FAQs + Theme Toggle */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2.5 } }}>
-            <Button
-              variant="text"
-              color="inherit"
-              size="small"
-              onClick={() => router.push('/docs')}
-              startIcon={<BookOpen size={15} />}
-              sx={{
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                color: 'text.secondary',
-                textTransform: 'none',
-                '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
-              }}
-            >
-              Docs
-            </Button>
-
-            <Button
-              variant="text"
-              color="inherit"
-              size="small"
-              onClick={() => scrollToSection('team')}
-              startIcon={<Users size={15} />}
-              sx={{
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                color: 'text.secondary',
-                textTransform: 'none',
-                '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
-              }}
-            >
-              Our Team
-            </Button>
-
-            <Button
-              variant="text"
-              color="inherit"
-              size="small"
-              onClick={() => scrollToSection('faq')}
-              startIcon={<HelpCircle size={15} />}
-              sx={{
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                color: 'text.secondary',
-                textTransform: 'none',
-                '&:hover': { color: 'text.primary', bgcolor: 'action.hover' },
-              }}
-            >
-              FAQs
-            </Button>
-
-            <ThemeToggle />
-          </Box>
-        </Container>
-      </Box>
-
-      {/* Hero Section */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  HERO SECTION — Agent HUB Platform Overview                      */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
       <Box sx={{
-        pt: { xs: 6, md: 8 },
-        pb: { xs: 4, md: 6 },
-        bgcolor: (t) => t.palette.mode === 'light' ? '#F8FAFC' : 'background.default',
+        pt: { xs: 7, md: 10 },
+        pb: { xs: 6, md: 9 },
+        position: 'relative',
+        bgcolor: isLight ? '#FAFBFC' : 'background.default',
         borderBottom: '1px solid',
         borderColor: 'divider',
         textAlign: 'center',
+        overflow: 'hidden',
       }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <Box sx={{ maxWidth: 860, mx: 'auto' }}>
-            {/* Status pill */}
+        {/* Ambient Radial Glow */}
+        <Box sx={{
+          position: 'absolute',
+          top: '-20%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: { xs: 400, md: 800 },
+          height: { xs: 300, md: 500 },
+          background: isLight
+            ? 'radial-gradient(circle, rgba(208, 0, 0, 0.07) 0%, rgba(45, 108, 223, 0.03) 50%, transparent 80%)'
+            : 'radial-gradient(circle, rgba(208, 0, 0, 0.14) 0%, rgba(45, 108, 223, 0.07) 50%, transparent 80%)',
+          filter: 'blur(60px)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
+
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, position: 'relative', zIndex: 1 }}>
+          <Box sx={{ maxWidth: 960, mx: 'auto' }}>
+            {/* Status Pill */}
             <Box sx={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 1,
+              gap: 1.25,
               px: 2,
-              py: 0.6,
-              mb: 2.5,
+              py: 0.65,
+              mb: 3,
               borderRadius: 5,
               border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+              borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.12)',
+              bgcolor: isLight ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none',
             }}>
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: GREEN, animation: 'pulse 2s infinite' }} />
-              <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: '0.04em', fontSize: '0.72rem' }}>
-                ENTERPRISE MULTI-AGENT TEST CASE GENERATION &bull; GITHUB COPILOT POWERED
+              <Box sx={{
+                width: 8, height: 8, borderRadius: '50%', bgcolor: GREEN,
+                boxShadow: `0 0 10px ${GREEN}`, animation: 'pulse 2s infinite',
+              }} />
+              <Typography variant="caption" sx={{
+                fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em',
+                fontSize: { xs: '0.68rem', sm: '0.74rem' },
+              }}>
+                ENTERPRISE MULTI-AGENT PLATFORM &bull; AUTONOMOUS ORCHESTRATION
               </Typography>
             </Box>
 
             {/* Headline */}
             <Typography variant="h1" sx={{
-              mb: 2,
-              fontWeight: 700,
-              letterSpacing: '-0.03em',
+              mb: 2.5,
+              fontWeight: 800,
+              letterSpacing: '-0.035em',
               color: 'text.primary',
-              fontSize: { xs: '2.2rem', sm: '2.75rem', md: '3.25rem' },
-              lineHeight: 1.15,
+              fontSize: { xs: '2.4rem', sm: '3.2rem', md: '4rem' },
+              lineHeight: 1.1,
             }}>
-              <Box component="span" sx={{ color: 'primary.main' }}>Analytic Genie</Box>
-              {' '}turns requirements into validated test suites
+              <Box component="span" sx={{ color: 'primary.main', position: 'relative', display: 'inline-block' }}>
+                Agent HUB
+              </Box>
+              {' '}Platform
             </Typography>
 
-            {/* Get Started Action */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 4 }}>
+            {/* Subtitle */}
+            <Typography variant="body1" sx={{
+              color: 'text.secondary',
+              fontSize: { xs: '1.05rem', sm: '1.2rem' },
+              lineHeight: 1.65,
+              maxWidth: 820,
+              mx: 'auto',
+              mb: 4.5,
+            }}>
+              The unified enterprise control plane for onboarding, orchestrating, and running autonomous multi-agent workflows. Trigger agents and skills through a universal <strong>Agent Console</strong>, or launch specialized <strong>Custom UIs</strong> for mission-critical use cases like Test Design &amp; Evaluation.
+            </Typography>
+
+            {/* High-Impact CTA Actions */}
+            <Box sx={{
+              display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center',
+              gap: 2, mb: 5,
+            }}>
               <Button
                 variant="contained"
                 color="primary"
                 size="large"
-                onClick={() => router.push('/generate')}
+                onClick={() => router.push('/chat')}
+                startIcon={<Terminal size={20} />}
                 sx={{
-                  height: 50,
-                  px: 4,
-                  fontSize: '0.95rem',
-                  fontWeight: 700,
-                  borderRadius: 2,
-                  boxShadow: '0 4px 14px rgba(208,0,0,0.3)',
-                  '&:hover': { boxShadow: '0 6px 20px rgba(208,0,0,0.4)' },
+                  height: 52, px: 3.5, fontSize: '0.98rem', fontWeight: 800,
+                  borderRadius: 2.5,
+                  boxShadow: '0 6px 20px rgba(208,0,0,0.35)',
+                  '&:hover': { boxShadow: '0 8px 26px rgba(208,0,0,0.48)', transform: 'translateY(-1px)' },
+                  transition: 'all 0.2s ease',
                 }}
               >
-                Get Started
-                <ArrowRight size={18} style={{ marginLeft: 8 }} />
+                Open Agent Console
+                <ArrowRight size={19} style={{ marginLeft: 6 }} />
+              </Button>
+
+              <Button
+                variant="outlined"
+                color="inherit"
+                size="large"
+                onClick={() => router.push('/generate')}
+                startIcon={<FlaskConical size={18} color={RED} />}
+                sx={{
+                  height: 52, px: 3.5, fontSize: '0.95rem', fontWeight: 700,
+                  borderRadius: 2.5,
+                  borderColor: isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
+                  bgcolor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.03)',
+                  backdropFilter: 'blur(8px)',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    bgcolor: isLight ? 'rgba(208,0,0,0.04)' : 'rgba(208,0,0,0.08)',
+                    transform: 'translateY(-1px)',
+                  },
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                Test Design &amp; Evaluation UI
+              </Button>
+
+              <Button
+                variant="text"
+                color="inherit"
+                size="large"
+                onClick={() => scrollToSection('use-cases')}
+                startIcon={<Layers size={18} />}
+                sx={{
+                  height: 52, px: 2.5, fontSize: '0.92rem', fontWeight: 700,
+                  borderRadius: 2.5, color: 'text.secondary',
+                  '&:hover': { color: 'text.primary' },
+                }}
+              >
+                Explore Use Cases
               </Button>
             </Box>
+
+            {/* Architecture Metrics Strip */}
+            <Grid container spacing={2} sx={{ maxWidth: 900, mx: 'auto', mb: 3 }}>
+              {[
+                { title: 'Agent Console', subtitle: 'Universal Interface', tag: 'Streaming SSE' },
+                { title: 'Custom UI Option', subtitle: 'Test Design & Eval', tag: 'INVEST & 5-D Gate' },
+                { title: 'Agent Registry', subtitle: 'Declarative Files', tag: 'Zero-DB Migrations' },
+                { title: 'Model Freedom', subtitle: 'Claude · GPT · o1', tag: 'Model-Agnostic' },
+              ].map((metric) => (
+                <Grid key={metric.subtitle} size={{ xs: 6, sm: 3 }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 1.75, borderRadius: 2.5, border: '1px solid', borderColor: 'divider',
+                      bgcolor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.03)',
+                      backdropFilter: 'blur(8px)', textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.05rem', lineHeight: 1.1 }}>
+                      {metric.title}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mt: 0.25, fontSize: '0.74rem' }}>
+                      {metric.subtitle}
+                    </Typography>
+                    <Chip
+                      label={metric.tag}
+                      size="small"
+                      sx={{
+                        mt: 0.75, height: 16, fontSize: '0.62rem', fontWeight: 800,
+                        bgcolor: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
+                        color: 'text.secondary',
+                      }}
+                    />
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
           </Box>
 
-          {/* Real-time Flow Diagram (Centerpiece Graphic) */}
+          {/* Centerpiece Interactive Flow Graphic */}
           <RealtimeFlowDiagram />
         </Container>
       </Box>
 
-      {/* Inside a run — Where the chain stops itself */}
-      <Container maxWidth="xl" sx={{ py: { xs: 6, md: 8 }, px: { xs: 2, sm: 3, md: 4 } }}>
-        <Box sx={{ mb: 4, maxWidth: 720 }}>
-          <Typography variant="overline" sx={{ letterSpacing: '0.1em', color: 'primary.main', fontWeight: 800, fontSize: '0.8rem' }}>
-            CONTROL FLOW
-          </Typography>
-          <Typography variant="h3" sx={{ fontWeight: 700, mt: 0.5, mb: 1, fontSize: { xs: '1.6rem', md: '2rem' } }}>
-            Where the chain stops itself
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Deterministic circuit breakers that prevent wasted tokens, hallucinated coverage, and broken test suites.
-          </Typography>
-        </Box>
-
-        <Grid container spacing={3}>
-          {[
-            {
-              icon: <UserCheck size={22} />,
-              accent: AMBER,
-              title: 'Requirement hold (human gate)',
-              body: 'If INVEST analysis flags ambiguity or missing scope, execution pauses in AWAITING_APPROVAL. A human reviews the quality report and can reject the run with zero downstream tokens wasted.',
-            },
-            {
-              icon: <RefreshCw size={22} />,
-              accent: RED,
-              title: 'Bounded reviewer loop (max 2 retries)',
-              body: 'When the reviewer detects JSON schema drift or weak assertions, it feeds structured issues back to the generator. Retries are strictly bounded to prevent infinite token loops.',
-            },
-            {
-              icon: <RotateCcw size={22} />,
-              accent: BLUE,
-              title: 'Reprocess amends, never regenerates',
-              body: 'A reprocess runs the gap closer alone against the existing suite and evaluation gaps, so verified passing tests survive. The previous suite is snapshotted first and restored automatically if verification fails.',
-            },
-          ].map((item) => (
-            <Grid key={item.title} size={{ xs: 12, md: 4 }}>
-              <Paper elevation={0} sx={{
-                p: 3,
-                height: '100%',
-                borderRadius: 3,
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
-                transition: 'all 0.2s ease',
-                '&:hover': { borderColor: item.accent, transform: 'translateY(-2px)' },
-              }}>
-                <Box sx={{
-                  width: 44, height: 44, borderRadius: 2, mb: 2,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: item.accent, bgcolor: alpha(item.accent, isLight ? 0.1 : 0.18),
-                }}>
-                  {item.icon}
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, fontSize: '1.02rem' }}>{item.title}</Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, fontSize: '0.86rem' }}>{item.body}</Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-
-      {/* Quality Gates: Coverage & Schema Enforcement */}
-      <Box sx={{
-        py: { xs: 6, md: 8 },
-        bgcolor: (t) => t.palette.mode === 'light' ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
-        borderTop: '1px solid',
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  FEATURED USE CASES & CONTROL PLANES SECTION                     */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box id="use-cases" sx={{
+        py: { xs: 8, md: 11 },
+        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
         borderBottom: '1px solid',
-        borderColor: 'divider'
+        borderColor: 'divider',
+        scrollMarginTop: '70px',
       }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <Grid container spacing={4}>
+          <Box sx={{ textAlign: 'center', maxWidth: 840, mx: 'auto', mb: 6 }}>
+            <Box sx={{
+              display: 'inline-flex', alignItems: 'center', gap: 1,
+              px: 1.75, py: 0.5, mb: 1.5, borderRadius: 3,
+              bgcolor: isLight ? 'rgba(208,0,0,0.06)' : 'rgba(208,0,0,0.12)',
+              color: 'primary.main',
+            }}>
+              <Layers size={14} />
+              <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
+                ENTERPRISE USE CASES &amp; CONTROL PLANES
+              </Typography>
+            </Box>
+            <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}>
+              One Platform. Flexible Interaction Modes.
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
+              Onboard any multi-agent workflow. Trigger flows directly through the interactive Agent Console, or launch dedicated Custom UIs built specifically for complex use cases.
+            </Typography>
+          </Box>
+
+          <Grid container spacing={3}>
+            {/* Card 1: Test Design & Evaluation (Flagship Custom UI) */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <Paper elevation={0} sx={{ p: 3.5, borderRadius: 3, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', height: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
-                  <Box sx={{ p: 1.2, borderRadius: 2, bgcolor: (t) => t.palette.mode === 'light' ? '#FFE5E5' : 'rgba(208,0,0,0.15)', color: 'primary.main' }}>
-                    <Layers size={22} />
-                  </Box>
-                  <Typography variant="h6" fontWeight={700}>5 Coverage Categories</Typography>
-                </Box>
-                <Stack spacing={2}>
-                  {[
-                    ['Functional', 'Documented happy paths and core user interactions.'],
-                    ['Negative', 'Unauthorized access, invalid inputs, error handling, and recovery.'],
-                    ['Boundary', 'Limits, min/max thresholds, zero states, overflow, and expiration.'],
-                    ['Validation', 'Field-level formatting, regex validation, type safety, and constraints.'],
-                    ['Data', 'Behavior variations across roles, locales, volumes, and states.'],
-                  ].map(([name, desc]) => (
-                    <Box key={name}>
-                      <Typography variant="subtitle2" fontWeight={700} fontSize="0.88rem">{name}</Typography>
-                      <Typography variant="body2" color="text.secondary" fontSize="0.82rem">{desc}</Typography>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%', display: 'flex', flexDirection: 'column',
+                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3.5 },
+                  position: 'relative', overflow: 'hidden',
+                  transition: 'all 0.25s ease',
+                  border: '2px solid', borderColor: isLight ? 'rgba(208,0,0,0.2)' : 'rgba(208,0,0,0.3)',
+                  boxShadow: isLight ? '0 12px 32px -10px rgba(208,0,0,0.1)' : '0 12px 32px -10px rgba(208,0,0,0.25)',
+                  '&:hover': {
+                    borderColor: 'primary.main', transform: 'translateY(-4px)',
+                    boxShadow: isLight ? '0 20px 40px -12px rgba(208,0,0,0.2)' : '0 20px 40px -12px rgba(208,0,0,0.4)',
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                      p: 1.25, borderRadius: 2,
+                      bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main',
+                    }}>
+                      <FlaskConical size={24} />
                     </Box>
-                  ))}
-                </Stack>
-              </Paper>
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '1.25rem' }}>
+                        Test Design &amp; Evaluation
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                        Dedicated Custom UI Use Case
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Chip label="Custom UI" size="small" color="primary" sx={{ fontWeight: 800, fontSize: '0.72rem', height: 24 }} />
+                </Box>
+
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.6, mb: 2.5, flex: 1 }}>
+                  Transform unstructured business requirements into fully verified, requirement-traced test suites. Features an 8-dimension INVEST quality gate, human approval checkpoint, 5-D test suite evaluation (85% standard), in-place delta healing, and one-click Excel (.csv) export.
+                </Typography>
+
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Multi-Agent Pipeline:
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                    {['Requirement Analyst', 'Test Designer', 'Test Generator', 'Test Reviewer', 'Test Evaluator'].map((ag, idx) => (
+                      <Chip key={idx} label={`${idx + 1}. ${ag}`} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 600, height: 22 }} />
+                    ))}
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Button
+                    variant="contained" color="primary"
+                    startIcon={<ExternalLink size={16} />}
+                    onClick={() => router.push('/generate')}
+                    sx={{ borderRadius: 2, fontWeight: 800, textTransform: 'none', px: 2.5, py: 1 }}
+                  >
+                    Launch Custom UI
+                  </Button>
+                  <Button
+                    variant="outlined" color="inherit"
+                    startIcon={<Terminal size={14} />}
+                    onClick={() => router.push('/chat?workflow=test-case-generation')}
+                    sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none', px: 2 }}
+                  >
+                    Run via Agent Console
+                  </Button>
+                </Box>
+              </Card>
             </Grid>
 
+            {/* Card 2: Universal Agent Console */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <Paper elevation={0} sx={{ p: 3.5, borderRadius: 3, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', height: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5 }}>
-                  <Box sx={{ p: 1.2, borderRadius: 2, bgcolor: (t) => t.palette.mode === 'light' ? '#FFE5E5' : 'rgba(208,0,0,0.15)', color: 'primary.main' }}>
-                    <ShieldCheck size={22} />
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%', display: 'flex', flexDirection: 'column',
+                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3.5 },
+                  position: 'relative', overflow: 'hidden',
+                  transition: 'all 0.25s ease',
+                  border: '1px solid', borderColor: 'divider',
+                  boxShadow: isLight ? '0 10px 28px -10px rgba(0,0,0,0.06)' : '0 10px 28px -10px rgba(0,0,0,0.4)',
+                  '&:hover': {
+                    borderColor: '#3b82f6', transform: 'translateY(-4px)',
+                    boxShadow: '0 20px 40px -12px rgba(59, 130, 246, 0.2)',
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{
+                      p: 1.25, borderRadius: 2,
+                      bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6',
+                    }}>
+                      <Terminal size={24} />
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '1.25rem' }}>
+                        Universal Agent Console
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                        Interactive Execution Plane
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Typography variant="h6" fontWeight={700}>3-Tier Validation Gates</Typography>
+                  <Chip label="Core Platform" size="small" sx={{ fontWeight: 800, fontSize: '0.72rem', height: 24, bgcolor: 'rgba(59,130,246,0.12)', color: '#3b82f6' }} />
                 </Box>
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={700} fontSize="0.88rem">Layer 1 — Strict JSON Sanitization</Typography>
-                    <Typography variant="body2" color="text.secondary" fontSize="0.82rem">Validates structural JSON, strips markdown fences, and repairs escaped backslashes.</Typography>
+
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.6, mb: 2.5, flex: 1 }}>
+                  An interactive conversational interface. Choose any onboarded agent, workflow, domain skill, prompt template, and model (Claude 3.5 Sonnet, GPT-4o, o1, etc.) on the fly. Streams responses in real time with session persistence and rich code blocks.
+                </Typography>
+
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    Capabilities:
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                    {['Agent Switcher', 'Model Choice', 'SSE Stream', 'Prompt Hydration', 'Session History'].map((cap, idx) => (
+                      <Chip key={idx} label={cap} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 600, height: 22 }} />
+                    ))}
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Button
+                    variant="contained"
+                    sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, borderRadius: 2, fontWeight: 800, textTransform: 'none', px: 2.5, py: 1 }}
+                    startIcon={<Terminal size={16} />}
+                    onClick={() => router.push('/chat')}
+                  >
+                    Open Agent Console
+                  </Button>
+                  <Button
+                    variant="outlined" color="inherit"
+                    onClick={() => router.push('/registry')}
+                    sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none', px: 2 }}
+                  >
+                    Browse Registry
+                  </Button>
+                </Box>
+              </Card>
+            </Grid>
+
+            {/* Card 3: Document OCR & Vision Extraction */}
+            <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%', display: 'flex', flexDirection: 'column',
+                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3 },
+                  border: '1px solid', borderColor: 'divider', transition: 'all 0.25s ease',
+                  '&:hover': {
+                    borderColor: '#10b981', transform: 'translateY(-3px)',
+                    boxShadow: '0 16px 36px -10px rgba(16, 185, 129, 0.2)',
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                    <FileSearch size={22} />
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2" fontWeight={700} fontSize="0.88rem">Layer 2 — Schema Conformance</Typography>
-                    <Typography variant="body2" color="text.secondary" fontSize="0.82rem">Validates against schemas/test-case.schema.json. Unknown fields cause rejection.</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                      Document OCR &amp; Vision
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Visual Requirements Analysis
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.86rem', lineHeight: 1.55, mb: 2, flex: 1 }}>
+                  Visually extract and normalize structured business requirements from document images, UI mockups, flowchart branches, and scanned specs using multimodal vision agents.
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Button
+                    size="small" variant="outlined" color="inherit"
+                    startIcon={<Terminal size={13} />}
+                    onClick={() => router.push('/chat?agent=ocr-extractor')}
+                    sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', fontSize: '0.8rem' }}
+                  >
+                    Run in Agent Console
+                  </Button>
+                </Box>
+              </Card>
+            </Grid>
+
+            {/* Card 4: Agent & Workflow Registry */}
+            <Grid size={{ xs: 12, sm: 6, md: 6 }}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%', display: 'flex', flexDirection: 'column',
+                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3 },
+                  border: '1px solid', borderColor: 'divider', transition: 'all 0.25s ease',
+                  '&:hover': {
+                    borderColor: '#f59e0b', transform: 'translateY(-3px)',
+                    boxShadow: '0 16px 36px -10px rgba(245, 158, 11, 0.2)',
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                    <Layers size={22} />
                   </Box>
                   <Box>
-                    <Typography variant="subtitle2" fontWeight={700} fontSize="0.88rem">Layer 3 — Semantic Business Rules</Typography>
-                    <Typography variant="body2" color="text.secondary" fontSize="0.82rem">Enforces ≥ 5 test cases, ≥ 3 categories, &lt; 10% duplicate rate, and bidirectional traceability.</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                      Agent Hub Registry &amp; Onboarding
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Declarative File-Based Catalog
+                    </Typography>
                   </Box>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={700} fontSize="0.88rem">Sandboxed Execution</Typography>
-                    <Typography variant="body2" color="text.secondary" fontSize="0.82rem">Requirements are treated as untrusted data. Shell access is blocked and workspace is strictly isolated.</Typography>
-                  </Box>
-                </Stack>
-              </Paper>
+                </Box>
+
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.86rem', lineHeight: 1.55, mb: 2, flex: 1 }}>
+                  Onboard new custom `.agent.md` profiles, `.workflow.yaml` multi-agent chains, `SKILL.md` bundles, and `.prompt.md` templates with zero database migrations or backend redeployments.
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Button
+                    size="small" variant="outlined" color="inherit"
+                    startIcon={<Layers size={13} />}
+                    onClick={() => router.push('/registry')}
+                    sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', fontSize: '0.8rem' }}
+                  >
+                    Open Registry
+                  </Button>
+                </Box>
+              </Card>
             </Grid>
           </Grid>
         </Container>
       </Box>
 
-      {/* OUR TEAM SECTION */}
-      <Box id="team" sx={{ py: { xs: 8, md: 10 }, scrollMarginTop: '70px' }}>
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  WHY NOT JUST PROMPT AN LLM DIRECTLY (Comparison Section)        */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box sx={{ py: { xs: 8, md: 11 } }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+          <ComparisonSection />
+        </Container>
+      </Box>
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  SIX PILLARS OF DETERMINISTIC QUALITY (Feature Bento Grid)       */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box sx={{
+        py: { xs: 8, md: 11 },
+        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
+        borderTop: '1px solid',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+          <FeatureBentoGrid />
+        </Container>
+      </Box>
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  INTERACTIVE PIPELINE EXPLORER                                   */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box id="pipeline" sx={{ py: { xs: 8, md: 11 }, scrollMarginTop: '70px' }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+          <PipelineExplorer />
+        </Container>
+      </Box>
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  DOMAIN SKILLS REPOSITORY                                        */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box sx={{
+        py: { xs: 8, md: 11 },
+        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
+        borderTop: '1px solid',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+          <DomainSkillsSection />
+        </Container>
+      </Box>
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  LIVE INTERACTIVE PLAYGROUND (Simulator)                         */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box id="simulator" sx={{ py: { xs: 8, md: 11 }, scrollMarginTop: '70px' }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+          <InteractiveSimulator />
+        </Container>
+      </Box>
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  OUR ENGINEERING & ARCHITECTURE TEAM                             */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box id="team" sx={{
+        py: { xs: 8, md: 11 },
+        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
+        borderTop: '1px solid',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        scrollMarginTop: '70px',
+      }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
           <Box sx={{ textAlign: 'center', maxWidth: 780, mx: 'auto', mb: 6 }}>
-            <Typography variant="overline" sx={{ letterSpacing: '0.1em', color: 'primary.main', fontWeight: 800, fontSize: '0.8rem' }}>
-              LEADERSHIP &amp; ARCHITECTURE
+            <Box sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.75,
+              py: 0.5,
+              mb: 1.5,
+              borderRadius: 3,
+              bgcolor: isLight ? 'rgba(208,0,0,0.06)' : 'rgba(208,0,0,0.12)',
+              color: 'primary.main',
+            }}>
+              <Users size={14} />
+              <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
+                ARCHITECTURE &amp; ENGINEERING
+              </Typography>
+            </Box>
+            <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
+              Meet the Engineering &amp; Architecture Team
             </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700, mt: 0.5, mb: 1.5, fontSize: { xs: '1.8rem', md: '2.4rem' } }}>
-              Meet the Engineering &amp; QA Team
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
               The multi-disciplinary team uniting autonomous AI systems engineering, financial regulatory compliance, and enterprise test automation.
             </Typography>
           </Box>
@@ -432,7 +684,7 @@ export default function AnalyticGenieLanding() {
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: 3.5,
                     height: '100%',
                     borderRadius: 3.5,
                     border: '1px solid',
@@ -443,12 +695,15 @@ export default function AnalyticGenieLanding() {
                     alignItems: 'center',
                     textAlign: 'center',
                     transition: 'all 0.25s ease',
+                    boxShadow: isLight
+                      ? '0 10px 28px -10px rgba(0,0,0,0.06)'
+                      : '0 10px 28px -10px rgba(0,0,0,0.5)',
                     '&:hover': {
                       borderColor: 'primary.main',
-                      transform: 'translateY(-4px)',
+                      transform: 'translateY(-5px)',
                       boxShadow: isLight
-                        ? '0 12px 28px -10px rgba(0,0,0,0.1)'
-                        : '0 12px 28px -10px rgba(0,0,0,0.5)',
+                        ? '0 16px 36px -10px rgba(208,0,0,0.15)'
+                        : '0 16px 36px -10px rgba(208,0,0,0.3)',
                     },
                   }}
                 >
@@ -457,17 +712,17 @@ export default function AnalyticGenieLanding() {
                     src={member.image}
                     alt={member.name}
                     sx={{
-                      width: 120,
-                      height: 120,
+                      width: 110,
+                      height: 110,
                       borderRadius: '50%',
                       objectFit: 'cover',
                       mb: 2.5,
                       border: '3px solid',
-                      borderColor: (t) => t.palette.mode === 'light' ? '#F1F5F9' : '#1E293B',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+                      borderColor: isLight ? '#F1F5F9' : '#1E293B',
+                      boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
                     }}
                   />
-                  <Typography variant="h6" fontWeight={700} sx={{ fontSize: '1.05rem', mb: 0.5 }}>
+                  <Typography variant="h6" fontWeight={800} sx={{ fontSize: '1.08rem', mb: 0.5 }}>
                     {member.name}
                   </Typography>
                   <Chip
@@ -475,12 +730,12 @@ export default function AnalyticGenieLanding() {
                     size="small"
                     color="primary"
                     variant="outlined"
-                    sx={{ fontWeight: 700, fontSize: '0.72rem', mb: 1 }}
+                    sx={{ fontWeight: 800, fontSize: '0.72rem', mb: 1.25 }}
                   />
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1.5 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1.75, fontSize: '0.76rem' }}>
                     {member.department}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.83rem', lineHeight: 1.5, mt: 'auto' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.84rem', lineHeight: 1.55, mt: 'auto' }}>
                     {member.bio}
                   </Typography>
                 </Paper>
@@ -490,122 +745,86 @@ export default function AnalyticGenieLanding() {
         </Container>
       </Box>
 
-      {/* FAQS SECTION */}
-      <Box
-        id="faq"
-        sx={{
-          py: { xs: 8, md: 10 },
-          bgcolor: (t) => t.palette.mode === 'light' ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
-          borderTop: '1px solid',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          scrollMarginTop: '70px',
-        }}
-      >
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  TECHNICAL FAQ SECTION                                           */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box id="faq" sx={{ py: { xs: 8, md: 11 }, scrollMarginTop: '70px' }}>
         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <Box sx={{ textAlign: 'center', maxWidth: 780, mx: 'auto', mb: 6 }}>
-            <Typography variant="overline" sx={{ letterSpacing: '0.1em', color: 'primary.main', fontWeight: 800, fontSize: '0.8rem' }}>
-              FREQUENTLY ASKED QUESTIONS
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 700, mt: 0.5, mb: 1.5, fontSize: { xs: '1.8rem', md: '2.4rem' } }}>
-              Technical Architecture &amp; Execution FAQs
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
-              Everything you need to know about deterministic multi-agent state machines, security isolation, and enterprise test synthesis.
-            </Typography>
-          </Box>
+          <TechnicalFAQ />
+        </Container>
+      </Box>
 
-          <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-            <Stack spacing={2}>
-              {FAQS.map((faq, index) => {
-                const isExpanded = expandedFaq === index;
-                return (
-                  <Accordion
-                    key={faq.q}
-                    expanded={isExpanded}
-                    onChange={() => setExpandedFaq(isExpanded ? false : index)}
-                    elevation={0}
-                    sx={{
-                      borderRadius: '12px !important',
-                      border: '1px solid',
-                      borderColor: isExpanded ? 'primary.main' : 'divider',
-                      bgcolor: 'background.paper',
-                      overflow: 'hidden',
-                      transition: 'border-color 0.2s ease',
-                      '&:before': { display: 'none' },
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ChevronDown size={18} />}
-                      sx={{
-                        p: { xs: 2, sm: 2.5 },
-                        '& .MuiAccordionSummary-content': { my: 0 },
-                      }}
-                    >
-                      <Typography variant="subtitle1" fontWeight={700} sx={{ fontSize: '0.98rem', color: isExpanded ? 'primary.main' : 'text.primary' }}>
-                        {faq.q}
-                      </Typography>
-                    </AccordionSummary>
-                    <AccordionDetails sx={{ px: { xs: 2, sm: 2.5 }, pt: 0, pb: 2.5 }}>
-                      <Divider sx={{ mb: 2 }} />
-                      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, fontSize: '0.9rem' }}>
-                        {faq.a}
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
-                );
-              })}
-            </Stack>
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  STICKY BOTTOM CALL TO ACTION STRIP                              */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box sx={{
+        py: 6,
+        bgcolor: isLight ? '#12161D' : '#0B0D11',
+        color: '#FFFFFF',
+        borderTop: '1px solid',
+        borderColor: isLight ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
+        textAlign: 'center',
+      }}>
+        <Container maxWidth="md">
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>
+            Ready to Orchestrate Multi-Agent Workflows?
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 3.5, fontSize: '1.05rem' }}>
+            Launch the universal Agent Console or run specialized workflows on the Agent HUB Platform.
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              size="large"
+              onClick={() => router.push('/chat')}
+              startIcon={<Terminal size={18} />}
+              sx={{
+                height: 48,
+                px: 3.5,
+                fontWeight: 800,
+                borderRadius: 2,
+                boxShadow: '0 4px 16px rgba(208,0,0,0.4)',
+              }}
+            >
+              Open Agent Console
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              size="large"
+              onClick={() => router.push('/generate')}
+              startIcon={<FlaskConical size={18} />}
+              sx={{
+                height: 48,
+                px: 3.5,
+                fontWeight: 700,
+                borderRadius: 2,
+                borderColor: 'rgba(255,255,255,0.3)',
+                '&:hover': { borderColor: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.05)' },
+              }}
+            >
+              Test Design &amp; Evaluation UI
+            </Button>
           </Box>
         </Container>
       </Box>
 
-      {/* Clean Minimal Footer */}
-      <Box sx={{ py: 4, bgcolor: (t) => t.palette.mode === 'light' ? '#FFFFFF' : 'background.paper' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <UbsLogoFull
-                height={26}
-                keysColor={isLight ? theme.palette.text.primary : theme.palette.primary.main}
-                wordmarkColor={isLight ? theme.palette.primary.main : '#FFFFFF'}
-              />
-              <BrandPipe />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                <AnimatedQualarisWord />
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              <Button
-                variant="text"
-                color="inherit"
-                size="small"
-                onClick={() => router.push('/docs')}
-                sx={{ fontSize: '0.8rem', color: 'text.secondary' }}
-              >
-                Documentation
-              </Button>
-              <Button
-                variant="text"
-                color="inherit"
-                size="small"
-                onClick={() => scrollToSection('team')}
-                sx={{ fontSize: '0.8rem', color: 'text.secondary' }}
-              >
-                Team
-              </Button>
-              <Button
-                variant="text"
-                color="inherit"
-                size="small"
-                onClick={() => scrollToSection('faq')}
-                sx={{ fontSize: '0.8rem', color: 'text.secondary' }}
-              >
-                FAQ
-              </Button>
-            </Box>
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/*  FOOTER                                                          */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Box sx={{
+        py: 4,
+        borderTop: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+        textAlign: 'center',
+      }}>
+        <Container maxWidth="xl">
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+            <UnifiedBrand />
             <Typography variant="caption" color="text.secondary">
-              &copy; 2026 UBS. Analytic Genie &bull; Enterprise Test Case Generation.
+              &copy; 2026 Agent HUB Platform. Enterprise Multi-Agent Orchestration.
             </Typography>
           </Box>
         </Container>

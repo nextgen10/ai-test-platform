@@ -1,0 +1,48 @@
+id: document-extraction
+name: Document OCR & Visual Extraction
+description: >
+  Extract structured business requirements from document images, UI wireframes,
+  and diagrams using GHCP Multimodal Vision, then produce a clean Markdown
+  specification for downstream analysis.
+version: "1.0"
+skill: document-ocr
+
+runner: generic
+approval_gate: false
+
+# GitHub Models — the vision endpoint this workflow was built against — was
+# retired on 2026-07-30. Until GITHUB_MODELS_ENDPOINT points at a live provider,
+# extraction returns a placeholder rather than a real transcription, so the
+# workflow refuses to run instead of returning stand-in text as a result.
+# Flip this back to true in the same change that repoints the endpoint.
+available: false
+unavailable_reason: >-
+  The GitHub Models vision endpoint was retired on 2026-07-30. Point
+  GITHUB_MODELS_ENDPOINT at a live provider and set available: true.
+
+has_custom_ui: false
+custom_ui_route: null
+
+agents:
+  - id: ocr-extractor
+    stage: extraction
+    optional: false
+    description: Visually analyze and reconstruct requirement text from document images
+
+input:
+  type: image
+  label: Document Image
+  accepted_formats:
+    - image/png
+    - image/jpeg
+    - image/webp
+  max_size_mb: 15
+
+output:
+  type: markdown
+  primary_artifact: input/requirement.md
+
+tags:
+  - document-intelligence
+  - ocr
+  - vision

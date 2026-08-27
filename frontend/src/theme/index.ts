@@ -1,5 +1,5 @@
 /**
- * UBS-Inspired Design System – Qualaris Unified Theme
+ * UBS-Inspired Design System – Agent HUB Platform Theme
  * Centralized theme tokens for a clean, professional financial dashboard aesthetic.
  * Design philosophy: clean layout, spacing, hierarchy, neutrality.
  */

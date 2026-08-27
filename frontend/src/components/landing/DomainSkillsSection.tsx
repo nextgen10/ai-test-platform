@@ -16,8 +16,8 @@ import {
   TrendingUp,
   KeyRound,
   FileText,
-  ShieldCheck,
   ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -31,6 +31,7 @@ const DOMAINS = [
     icon: <Landmark size={24} />,
     title: 'Payments & Settlement',
     accent: GREEN,
+    rulesCount: '40+ Protocol Rules',
     standards: ['ISO 20022', 'SWIFT MT103/202', 'FedNow', 'SEPA Instant', 'RTGS'],
     description: 'Generates specialized test suites for multi-currency routing, ledger immutability, sanctions screening, and modulus-97 IBAN checksum validations.',
   },
@@ -38,6 +39,7 @@ const DOMAINS = [
     icon: <TrendingUp size={24} />,
     title: 'Trading & Markets',
     accent: BLUE,
+    rulesCount: '60+ FIX Validation Checks',
     standards: ['FIX 4.4 / 5.0', 'MiFID II RTS 25', 'Order Books', 'Tick Sizes', 'Position Limits'],
     description: 'Enforces sub-millisecond execution rules, TimeInForce (IOC/FOK/DAY) constraints, pre-trade credit checks, and algorithmic trade reconciliation.',
   },
@@ -45,6 +47,7 @@ const DOMAINS = [
     icon: <KeyRound size={24} />,
     title: 'Security & Identity',
     accent: RED,
+    rulesCount: '35+ Zero-Trust Rules',
     standards: ['OAuth 2.0 PKCE', 'FIDO2 WebAuthn', 'SAML 2.0', 'Rotating Refresh Tokens', 'Zero Trust'],
     description: 'Tests cryptographic challenge-response handshakes, adaptive step-up authorization, session replay prevention, and brute-force lockout thresholds.',
   },
@@ -52,6 +55,7 @@ const DOMAINS = [
     icon: <FileText size={24} />,
     title: 'Regulatory & Risk',
     accent: AMBER,
+    rulesCount: '50+ Compliance Controls',
     standards: ['BCBS 239', 'Basel III / IV', 'OFAC / SDN', 'AML / KYC', 'SOX Compliance'],
     description: 'Validates automated risk aggregation, audit logging retention, dual-control approvals for high-value transactions, and compliance data lineage.',
   },
@@ -72,15 +76,28 @@ export default function DomainSkillsSection() {
         gap: 2,
         mb: 5
       }}>
-        <Box sx={{ maxWidth: 640 }}>
-          <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.08em' }}>
-            ENTERPRISE DOMAIN INTELLIGENCE
-          </Typography>
-          <Typography variant="h3" sx={{ fontWeight: 700, mt: 0.5, mb: 1, fontSize: { xs: '1.85rem', md: '2.35rem' } }}>
+        <Box sx={{ maxWidth: 660 }}>
+          <Box sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.75,
+            py: 0.5,
+            mb: 1.25,
+            borderRadius: 4,
+            bgcolor: alpha(RED, isLight ? 0.08 : 0.15),
+            border: `1px solid ${alpha(RED, 0.25)}`,
+          }}>
+            <Sparkles size={14} color={RED} />
+            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.08em', fontSize: '0.72rem' }}>
+              ENTERPRISE DOMAIN INTELLIGENCE
+            </Typography>
+          </Box>
+          <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
             Pre-Trained Domain Skills
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
-            The Qualaris agent chain integrates deep financial and regulatory protocols to synthesize tests with real-world institutional knowledge.
+            The Agent HUB Platform agent chain integrates deep financial and regulatory protocols to synthesize tests with real-world institutional knowledge.
           </Typography>
         </Box>
 
@@ -88,7 +105,7 @@ export default function DomainSkillsSection() {
           variant="outlined"
           onClick={() => router.push('/skills')}
           endIcon={<ArrowRight size={16} />}
-          sx={{ fontWeight: 600, borderRadius: 2 }}
+          sx={{ fontWeight: 700, borderRadius: 2, px: 2.5, py: 1 }}
         >
           Explore All Domain Skills
         </Button>
@@ -101,7 +118,7 @@ export default function DomainSkillsSection() {
               elevation={0}
               sx={{
                 p: 3,
-                borderRadius: 3,
+                borderRadius: 3.5,
                 border: '1px solid',
                 borderColor: 'divider',
                 bgcolor: 'background.paper',
@@ -110,33 +127,48 @@ export default function DomainSkillsSection() {
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 transition: 'all 0.25s ease',
+                boxShadow: isLight
+                  ? '0 10px 28px -10px rgba(0,0,0,0.05)'
+                  : '0 10px 28px -10px rgba(0,0,0,0.4)',
                 '&:hover': {
                   borderColor: domain.accent,
-                  transform: 'translateY(-3px)',
-                  boxShadow: `0 8px 24px ${alpha(domain.accent, 0.12)}`
+                  transform: 'translateY(-4px)',
+                  boxShadow: `0 12px 32px ${alpha(domain.accent, 0.16)}`
                 }
               }}
             >
               <Box>
-                <Box sx={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: domain.accent,
-                  bgcolor: alpha(domain.accent, isLight ? 0.12 : 0.2),
-                  mb: 2.5
-                }}>
-                  {domain.icon}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: domain.accent,
+                    bgcolor: alpha(domain.accent, isLight ? 0.12 : 0.2),
+                  }}>
+                    {domain.icon}
+                  </Box>
+                  <Chip
+                    label={domain.rulesCount}
+                    size="small"
+                    sx={{
+                      fontSize: '0.66rem',
+                      fontWeight: 800,
+                      bgcolor: alpha(domain.accent, 0.12),
+                      color: domain.accent,
+                      border: `1px solid ${alpha(domain.accent, 0.25)}`,
+                    }}
+                  />
                 </Box>
 
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.25, fontSize: '1.1rem' }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, fontSize: '1.1rem' }}>
                   {domain.title}
                 </Typography>
 
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.6, fontSize: '0.84rem' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.6, fontSize: '0.85rem' }}>
                   {domain.description}
                 </Typography>
               </Box>

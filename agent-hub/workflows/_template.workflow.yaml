@@ -1,0 +1,101 @@
+# Agent Hub — Workflow Template
+#
+# Copy this file to: <your-workflow-id>.workflow.yaml
+# The filename stem must equal the `id` below — the registry enforces it.
+#
+# Everything a workflow needs to run lives in this file. Dropping it into
+# agent-hub/workflows/ registers the workflow: it appears in the Registry UI,
+# in the Agent Console's workflow picker, and as a valid `workflow` on a job.
+# No code change is involved.
+
+id: my-workflow                      # Unique kebab-case identifier
+name: My Workflow                    # Human-readable display name
+description: >
+  Describe what this workflow does in 1-2 sentences.
+version: "1.0"
+skill: null                          # Skill ID to load, or null
+
+# --- execution ---------------------------------------------------------------
+# runner:  generic  the declarative engine walks `agents` below, in order.
+#                   This is what you want for anything onboarded as data.
+#          bespoke  a hand-written pipeline in runner/ drives this workflow.
+#                   Only test-case-generation uses this today.
+runner: generic
+
+# approval_gate: true pauses the job after its first stage and waits for a human
+# to approve or reject before continuing. Leave false unless a person genuinely
+# needs to see the intermediate result.
+approval_gate: false
+
+# Set false to keep a workflow visible in the catalog but refuse to run it —
+# useful when a dependency is down. Pair it with unavailable_reason so the API
+# can tell the caller why.
+available: true
+# unavailable_reason: Explain what is broken and what would fix it.
+
+# --- ui ----------------------------------------------------------------------
+# has_custom_ui: true means a dedicated page exists at custom_ui_route. The
+# navigation reads this from the registry, so no separate registration is needed.
+has_custom_ui: false
+custom_ui_route: null                # e.g. /use-cases/my-workflow
+
+# --- pipeline ----------------------------------------------------------------
+# Each entry must name an agent that exists in agent-hub/agents/. The registry
+# rejects a workflow that references an unknown agent, so a typo here is a 400
+# on the request that created it rather than a job that dies mid-run.
+#
+# Stages run in list order unless they declare `depends_on`. Once any stage
+# does, the runner works out which stages are independent and runs those
+# together — so three analysts reading the same input take one stage's time
+# rather than three.
+#
+#   depends_on:  stage names (not agent ids) that must finish first
+#   when:        all_succeeded  every dependency completed cleanly (default)
+#                any_succeeded  at least one did — for a merge over optional
+#                               branches
+#                always         run regardless, e.g. a cleanup or notification
+#
+# A stage that is skipped because its condition was not met says so in the run
+# record, so there are no unexplained holes.
+#
+# Example of a fan-out and merge:
+#
+#   agents:
+#     - id: extractor
+#       stage: extract
+#     - id: security-auditor
+#       stage: security
+#       depends_on: [extract]
+#     - id: perf-analyst
+#       stage: performance
+#       depends_on: [extract]        # runs alongside security
+#     - id: report-merger
+#       stage: merge
+#       depends_on: [security, performance]
+#       when: any_succeeded          # a partial report beats none
+#
+agents:
+  - id: agent-name                   # Must match an .agent.md file
+    stage: stage-name                # Unique: this is what depends_on refers to
+    optional: false                  # Whether a failure here is survivable
+    description: What this agent does in this workflow
+    # depends_on: []                 # Stage names that must finish first
+    # when: all_succeeded            # all_succeeded | any_succeeded | always
+
+input:
+  type: text                         # text | image | json | file
+  label: Input Label
+  placeholder: Describe the input...
+  min_length: 10
+  max_length: 50000
+
+output:
+  type: json                         # json | markdown | text
+  schema: null                       # Path to JSON Schema (optional)
+  # Written relative to the job workspace. The orchestrator summarises this file
+  # on the job record when the workflow completes.
+  primary_artifact: output/result.json
+
+category: general
+icon: bot
+tags: []

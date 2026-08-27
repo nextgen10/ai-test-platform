@@ -9,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.config import settings
 from app.models.jobs import JobStatus
 
+# Legacy constant for backward compatibility; the real set is now dynamic via
+# hub_registry.get_registered_workflow_ids().
 WORKFLOWS = {"test-case-generation"}
 
 #: Models known to work with the Copilot CLI as of v0.0.365+.
@@ -24,7 +26,11 @@ AVAILABLE_MODELS = [
 
 
 class JobCreateRequest(BaseModel):
-    workflow: Literal["test-case-generation"] = "test-case-generation"
+    workflow: str = Field(
+        default="test-case-generation",
+        max_length=128,
+        description="Workflow ID from the agent-hub registry.",
+    )
     requirement: str = Field(..., min_length=20)
     output_format: Literal["json"] = "json"
     created_by: str = Field(default="anonymous", max_length=128)
@@ -37,6 +43,26 @@ class JobCreateRequest(BaseModel):
         default=None,
         max_length=256,
         description="Per-user GitHub PAT for Copilot. Never stored — used for this job only.",
+    )
+    engine: Literal["mock", "copilot"] | None = Field(
+        default=None,
+        description="Override the execution engine (mock or copilot). None = platform default.",
+    )
+    webhook_url: str | None = Field(
+        default=None,
+        max_length=2048,
+        description=(
+            "POSTed a JSON summary when this job reaches a terminal state. "
+            "Delivery is retried and recorded, so a failing endpoint is visible."
+        ),
+    )
+    used_ocr: bool = Field(
+        default=False,
+        description=(
+            "True when the requirement text was produced by the client-side "
+            "document-ocr extraction step rather than typed/pasted directly. "
+            "Recorded so job progress/provenance can reflect it."
+        ),
     )
 
     @field_validator("requirement")
@@ -89,6 +115,10 @@ class JobOut(BaseModel):
     reprocess_count: int = 0
     copilot_model: str | None = None
     copilot_token_set: bool = False
+    #: Queue state, so an operator can see whether a job is owed or in progress.
+    lease_owner: str | None = None
+    attempt: int = 0
+    schedule_id: str | None = None
 
 
 class JobDetailOut(JobOut):
@@ -112,3 +142,27 @@ class ResultResponse(BaseModel):
     result: dict[str, Any]
     validation: dict[str, Any] | None = None
     summary: dict[str, Any] | None = None
+
+
+class OcrExtractRequest(BaseModel):
+    image_base64: str = Field(
+        ...,
+        # ~20M base64 chars =~ 15MB of raw image bytes — generous for a
+        # scanned document/photo while bounding memory use per request; every
+        # other field on this model is already length-limited.
+        max_length=20_000_000,
+        description="Base64 encoded image or document page",
+    )
+    mime_type: str = Field(default="image/png", max_length=64)
+    filename: str | None = Field(default=None, max_length=256)
+    copilot_model: str | None = Field(default="gpt-4o", max_length=64)
+    github_token: str | None = Field(default=None, max_length=256)
+    instructions: str | None = Field(default=None, max_length=1000)
+
+
+class OcrExtractResponse(BaseModel):
+    markdown: str
+    filename: str | None = None
+    char_count: int
+    engine: str = "ghcp-vision"
+

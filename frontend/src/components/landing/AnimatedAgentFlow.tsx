@@ -12,21 +12,12 @@ import {
   Grid,
   Stack,
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Play,
   Pause,
-  RotateCcw,
+  Play,
   CheckCircle2,
-  ShieldCheck,
   UserCheck,
-  FileText,
-  FileJson,
-  Layers,
-  Sparkles,
-  Bot,
-  AlertTriangle,
-  ArrowDown,
 } from 'lucide-react';
 
 const AMBER = '#D9822B';
@@ -154,7 +145,6 @@ export default function AnimatedAgentFlow() {
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  const activeNode = FLOW_NODES[activeStepIndex];
   const inspectedNode = FLOW_NODES.find((n) => n.id === selectedNodeId) || FLOW_NODES[1];
 
   return (

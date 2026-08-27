@@ -45,6 +45,14 @@ class Settings:
         os.getenv("ARTIFACT_ROOT", str(PROJECT_ROOT / "artifacts"))
     )
 
+    # --- per-job runtime control files (engine override, model, credential).
+    # Deliberately NOT under artifact_root: everything in a job workspace is
+    # downloadable through the artifacts endpoint, and a GitHub PAT must never
+    # be. Cleaned up when the job reaches a terminal state.
+    runtime_root: Path = Path(
+        os.getenv("JOB_RUNTIME_ROOT", str(PROJECT_ROOT / ".job-runtime"))
+    )
+
     # --- execution
     #   local      run the runner as a subprocess (no container required)
     #   docker     run the runner image via `docker run`
@@ -83,12 +91,32 @@ class Settings:
         if origin.strip()
     ]
 
+    # --- auth. `token` requires API_TOKENS and is the default, so an
+    # unconfigured deployment fails at startup instead of serving an open API.
+    # `disabled` is an explicit opt-out for a loopback development run.
+    auth_mode: str = os.getenv("AUTH_MODE", "token")
+    #: "<token>:<name>:<role>[,<token>:<name>:<role>...]" — mounted from a secret.
+    api_tokens: str = os.getenv("API_TOKENS", "")
+
+    # --- agent hub
+    agent_hub_dir: Path = Path(
+        os.getenv("AGENT_HUB_DIR", str(PROJECT_ROOT / "agent-hub"))
+    )
+
+    # --- chat
+    chat_max_message_chars: int = int(os.getenv("CHAT_MAX_MESSAGE_CHARS", "50000"))
+    chat_stream_timeout: int = int(os.getenv("CHAT_STREAM_TIMEOUT", "300"))
+
     # --- versioning, recorded on every job for reproducibility (blueprint §49)
     runner_version: str = os.getenv("RUNNER_VERSION", "0.1.0")
     skill_version: str = os.getenv("SKILL_VERSION", "test-case-generation:v1")
 
     def workspace_for(self, job_id: str) -> Path:
         return self.artifact_root / job_id
+
+    def runtime_for(self, job_id: str) -> Path:
+        """Where this job's control files and credential live, off the workspace."""
+        return self.runtime_root / job_id
 
 
 @lru_cache(maxsize=1)

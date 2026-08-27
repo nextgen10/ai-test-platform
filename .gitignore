@@ -7,6 +7,9 @@
 artifacts/
 logs/
 
+# Per-job control files and credentials. Never commit these.
+.job-runtime/
+
 # Local job database
 *.db
 
@@ -16,6 +19,7 @@ logs/
 # Frontend
 frontend/node_modules/
 frontend/.next/
+frontend/.next-verify/
 frontend/next-env.d.ts
 frontend/tsconfig.tsbuildinfo
 

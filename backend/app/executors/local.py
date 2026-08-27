@@ -14,6 +14,20 @@ from app.config import settings
 from app.executors.base import ExecutionResult
 
 
+def _runtime_value(job_id: str, name: str) -> str | None:
+    """Read one per-job control file from the runtime directory.
+
+    These live outside the workspace on purpose: everything inside a workspace
+    is downloadable through the artifacts endpoint, and one of these is a
+    credential.
+    """
+    path = settings.runtime_for(job_id) / name
+    if not path.is_file():
+        return None
+    value = path.read_text(encoding="utf-8").strip()
+    return value or None
+
+
 class LocalExecutor:
     name = "local"
 
@@ -23,18 +37,25 @@ class LocalExecutor:
 
     def run(
         self, job_id: str, workspace: Path, stage: str = "generate",
-        reprocess: bool = False, attempt: int = 0
+        reprocess: bool = False, attempt: int = 0,
+        workflow: str = "test-case-generation", runner: str = "bespoke",
     ) -> ExecutionResult:
         log_path = workspace / "output" / "execution.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        job_engine = settings.engine
+        override_engine = _runtime_value(job_id, "engine")
+        if override_engine in {"mock", "copilot"}:
+            job_engine = override_engine
 
         env = os.environ.copy()
         env.update(
             {
                 "JOB_ID": job_id,
-                "ENGINE": settings.engine,
+                "ENGINE": job_engine,
                 "WORKSPACE": str(workspace),
                 "APP_DIR": str(settings.runner_dir),
+                "AGENT_HUB_DIR": str(settings.agent_hub_dir),
                 "RUNNER_VERSION": settings.runner_version,
                 "SKILL_VERSION": settings.skill_version,
                 "PYTHONUNBUFFERED": "1",
@@ -43,35 +64,44 @@ class LocalExecutor:
             }
         )
 
-        model_file = workspace / "input" / ".copilot_model"
-        if model_file.exists():
-            env["COPILOT_MODEL"] = model_file.read_text(encoding="utf-8").strip()
+        model = _runtime_value(job_id, "copilot_model")
+        if model:
+            env["COPILOT_MODEL"] = model
 
-        token_file = workspace / "input" / ".copilot_token"
-        if token_file.exists():
-            token_val = token_file.read_text(encoding="utf-8").strip()
-            env["COPILOT_GITHUB_TOKEN"] = token_val
-            env["GH_TOKEN"] = token_val
-            env["GITHUB_TOKEN"] = token_val
-        elif (existing_tok := env.get("COPILOT_GITHUB_TOKEN") or env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")):
-            env["COPILOT_GITHUB_TOKEN"] = existing_tok
-            env["GH_TOKEN"] = existing_tok
-            env["GITHUB_TOKEN"] = existing_tok
+        token = _runtime_value(job_id, "copilot_token") or (
+            env.get("COPILOT_GITHUB_TOKEN") or env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")
+        )
+        if token:
+            env["COPILOT_GITHUB_TOKEN"] = token
+            env["GH_TOKEN"] = token
+            env["GITHUB_TOKEN"] = token
 
-        command = [
-            sys.executable,
-            str(settings.runner_dir / "agent_chain.py"),
-            "--workspace",
-            str(workspace),
-            "--app-dir",
-            str(settings.runner_dir),
-            "--engine",
-            settings.engine,
-            "--stage",
-            stage,
-        ]
-        if reprocess:
-            command.append("--reprocess")
+        if runner == "generic":
+            command = [
+                sys.executable,
+                str(settings.runner_dir / "generic_runner.py"),
+                "--workflow",
+                workflow,
+                "--workspace",
+                str(workspace),
+                "--hub-dir",
+                str(settings.agent_hub_dir),
+            ]
+        else:
+            command = [
+                sys.executable,
+                str(settings.runner_dir / "agent_chain.py"),
+                "--workspace",
+                str(workspace),
+                "--app-dir",
+                str(settings.runner_dir),
+                "--engine",
+                job_engine,
+                "--stage",
+                stage,
+            ]
+            if reprocess:
+                command.append("--reprocess")
 
         with log_path.open("w", encoding="utf-8") as log_file:
             try:

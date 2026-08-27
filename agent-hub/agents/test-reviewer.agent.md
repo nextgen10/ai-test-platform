@@ -2,6 +2,11 @@
 name: test-reviewer
 description: Reviews draft test cases for duplication, coverage gaps, unsupported assumptions and weak expected results, then emits a corrected final suite.
 tools: ["read", "write"]
+role: "Independent Critic & Gate Enforcer"
+stage: review
+input_artifact: intermediate/draft_test_cases.json
+output_artifact: output/test_cases.json
+output_schema: schemas/test-case.schema.json
 ---
 
 # Test Reviewer

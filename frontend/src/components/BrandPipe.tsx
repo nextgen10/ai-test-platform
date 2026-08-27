@@ -14,6 +14,8 @@ export const BrandPipe = () => (
             height: 20,
             bgcolor: '#8C96A5',
             flexShrink: 0,
+            display: 'inline-block',
+            alignSelf: 'center',
         }}
     />
 );

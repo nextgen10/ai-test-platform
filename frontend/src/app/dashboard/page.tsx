@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, RefreshCw, AlertTriangle, UserCheck } from 'lucide-react';
 
 import PageHeader from '@/components/PageHeader';
+import AgentInsightsPanel from '@/components/AgentInsightsPanel';
 import {
     api, ACTIVE_STATUSES, formatDuration, formatTimestamp, STATUS_COLOR,
     type Job, type PlatformStats,
@@ -73,7 +74,7 @@ export default function DashboardPage() {
     return (
         <Box>
             <PageHeader
-                title="Analytic Genie — Dashboard"
+                title="Agent HUB Platform — Dashboard"
                 subtitle="Real-time execution metrics, active agent runs, and quality benchmarks."
                 actions={
                     <>
@@ -226,6 +227,11 @@ export default function DashboardPage() {
                     </Table>
                 )}
             </Paper>
+
+            {/* Where the time and money actually go, per agent. */}
+            <Box sx={{ mt: 3 }}>
+                <AgentInsightsPanel />
+            </Box>
         </Box>
     );
 }

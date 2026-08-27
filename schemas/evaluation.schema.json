@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://qualaris.local/schemas/evaluation.schema.json",
+  "$id": "https://agenthub.local/schemas/evaluation.schema.json",
   "title": "Test Suite Evaluation",
   "description": "Independent assessment of a generated test suite against its source requirement.",
   "type": "object",

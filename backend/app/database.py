@@ -1,82 +1,88 @@
 """Database engine and session management."""
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 class Base(DeclarativeBase):
     pass
 
 
-_connect_args = (
-    {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-)
+_engine_args = {
+    "pool_pre_ping": True,
+    "future": True,
+}
 
-engine = create_engine(
-    settings.database_url,
-    connect_args=_connect_args,
-    pool_pre_ping=True,
-    future=True,
-)
+if settings.database_url.startswith("sqlite"):
+    _engine_args["connect_args"] = {"check_same_thread": False}
+else:
+    # Production-grade connection pooling for PostgreSQL/MySQL
+    _engine_args["pool_size"] = 10
+    _engine_args["max_overflow"] = 20
+    _engine_args["pool_recycle"] = 1800
+
+engine = create_engine(settings.database_url, **_engine_args)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
 def init_db() -> None:
-    from app.models import jobs  # noqa: F401  (register mappings before create_all)
+    """Bring the database up to the current schema.
+
+    Migrations are Alembic's job. This used to be `create_all` plus a hand-rolled
+    column adder that could only ever ADD nullable columns — which is why
+    `backfill_missing_evaluations` had to exist: that mechanism could create a
+    column but never populate it.
+    """
+    from app.models import jobs  # noqa: F401  (register mappings)
+    from app.models import chat  # noqa: F401  (register chat session/message tables)
+    from app.models import automation  # noqa: F401  (schedules, webhook deliveries)
 
     settings.artifact_root.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
-    _add_missing_columns()
+    _run_migrations()
 
 
-def _add_missing_columns() -> None:
-    """Add columns introduced after a table was first created.
+#: The first Alembic revision. A database created before migrations existed is
+#: stamped with this rather than re-created.
+_BASELINE_REVISION = "4bfa179c3a31"
 
-    `create_all` only creates missing *tables*, so a schema change would
-    otherwise fail at query time against an existing database. This is a
-    deliberately minimal stand-in for a migration tool: it only ever ADDs
-    nullable columns, never drops or retypes anything. Reach for Alembic before
-    the first change that needs more than this.
-    """
-    from sqlalchemy import inspect, text
 
+def _alembic_config():
+    from alembic.config import Config
+
+    migrations_dir = Path(__file__).resolve().parents[1] / "migrations"
+    config = Config()
+    config.set_main_option("script_location", str(migrations_dir))
+    config.set_main_option("sqlalchemy.url", settings.database_url)
+    return config
+
+
+def _run_migrations() -> None:
+    from alembic import command
+    from sqlalchemy import inspect
+
+    config = _alembic_config()
     inspector = inspect(engine)
-    if "jobs" not in inspector.get_table_names():
-        return
+    tables = set(inspector.get_table_names())
 
-    existing = {column["name"] for column in inspector.get_columns("jobs")}
-    is_pg = engine.dialect.name == "postgresql"
-    additions = {
-        "quality_report": "JSON",
-        "evaluation": "JSON",
-        "approved_at": "TIMESTAMP" if is_pg else "DATETIME",
-        "approved_by": "VARCHAR(128)",
-        "reprocess_count": "INTEGER DEFAULT 0",
-        "copilot_model": "VARCHAR(64)",
-        "copilot_token_set": "BOOLEAN DEFAULT FALSE" if is_pg else "BOOLEAN DEFAULT 0",
-    }
+    if tables and "alembic_version" not in tables:
+        # A database from before migrations were introduced. Its schema already
+        # matches the baseline, so record that rather than trying to re-create
+        # tables that exist.
+        logger.info("Stamping pre-migration database at the baseline revision")
+        command.stamp(config, _BASELINE_REVISION)
 
-    with engine.begin() as connection:
-        for name, ddl_type in additions.items():
-            if name in existing:
-                continue
-            connection.execute(text(f"ALTER TABLE jobs ADD COLUMN {name} {ddl_type}"))
-
-        # The status column was created as varchar(16), which predates the longer
-        # state names ("AWAITING_APPROVAL" is 17). create_all never alters an
-        # existing column, so widen it explicitly. SQLite ignores varchar lengths,
-        # so this is only needed — and only supported — on PostgreSQL.
-        if engine.dialect.name == "postgresql":
-            connection.execute(
-                text("ALTER TABLE jobs ALTER COLUMN status TYPE VARCHAR(24)")
-            )
+    command.upgrade(config, "head")
 
 
 def get_db() -> Iterator[Session]:

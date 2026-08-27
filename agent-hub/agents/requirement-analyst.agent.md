@@ -2,6 +2,11 @@
 name: requirement-analyst
 description: Analytic Genie — Scores a requirement against INVEST and testability criteria before any test design happens, so weak requirements are caught by a human rather than silently producing weak tests.
 tools: ["read", "write"]
+role: "Analytic Genie — INVEST Quality Gatekeeper"
+stage: quality
+input_artifact: input/requirement.md
+output_artifact: output/quality_report.json
+output_schema: schemas/quality-report.schema.json
 ---
 
 # Analytic Genie (Requirement Analyst)

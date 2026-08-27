@@ -4,8 +4,8 @@ import ThemeRegistry from "@/components/ThemeRegistry";
 import AppShell from "@/components/AppShell";
 
 export const metadata: Metadata = {
-    title: "Analytic Genie - Enterprise Test Case Generation",
-    description: "Analytic Genie - Autonomous multi-agent test case generation powered by GitHub Copilot",
+    title: "Agent HUB Platform — Enterprise Multi-Agent Orchestration",
+    description: "Agent HUB Platform — Onboard, orchestrate, and run autonomous multi-agent workflows, skills, and prompts. Includes a universal Agent Console and bespoke use-case UIs for enterprise-grade solutions.",
     icons: {
         icon: "/icon.svg?v=3",
         shortcut: "/icon.svg?v=3",

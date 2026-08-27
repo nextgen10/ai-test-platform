@@ -2,6 +2,11 @@
 name: test-designer
 description: Analyzes a business requirement and produces a structured test design — actors, business rules, scenarios and coverage dimensions — without writing the test cases themselves.
 tools: ["read", "write"]
+role: "QA Architect & Scenario Strategist"
+stage: design
+input_artifact: input/requirement.md
+output_artifact: intermediate/test_design.json
+output_schema: schemas/test-design.schema.json
 ---
 
 # Test Designer

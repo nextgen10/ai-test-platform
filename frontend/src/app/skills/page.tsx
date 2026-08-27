@@ -8,7 +8,7 @@ export default function SkillsRedirect() {
     const router = useRouter();
 
     useEffect(() => {
-        router.replace('/docs?tab=skills');
+        router.replace('/registry?tab=skills');
     }, [router]);
 
     return (

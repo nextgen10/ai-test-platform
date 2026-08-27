@@ -7,39 +7,53 @@ generation itself — that is the runner's job.
 from __future__ import annotations
 
 import logging
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.routes import router
+from app.api.hub_routes import router as hub_router
+from app.api.chat_routes import router as chat_router
+from app.api.automation_routes import router as automation_router
+from app.api.lab_routes import router as lab_router
 from app.config import settings
 from app.database import init_db
+from app.logging_config import configure_logging, request_id_var
+from app.security import configure_auth
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
-)
+configure_logging()
 logger = logging.getLogger("ai-test-platform")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Auth first: a misconfigured deployment must fail before it touches the
+    # database or accepts a single request.
+    configure_auth()
+
     init_db()
 
-    # Anything still marked active belongs to a process that no longer exists.
-    from app.services.job_service import (
-        backfill_missing_evaluations,
-        reconcile_orphaned_jobs,
-    )
+    from app.services import queue, scheduler
+    from app.services.job_service import backfill_missing_evaluations
 
-    reconcile_orphaned_jobs()
+    # Jobs abandoned by a worker that stopped renewing its lease go back in the
+    # pool. This is no longer "fail everything in flight": with leases, another
+    # replica's work is not mistaken for wreckage.
+    queue.reclaim_expired()
     backfill_missing_evaluations()
 
+    worker = queue.start_worker()
+    scheduler.start()
+
     logger.info(
-        "Orchestrator ready | executor=%s engine=%s artifacts=%s",
+        "Orchestrator ready | executor=%s engine=%s auth=%s worker=%s artifacts=%s",
         settings.executor,
         settings.engine,
+        settings.auth_mode,
+        "on" if worker else "off",
         settings.artifact_root,
     )
     if settings.engine == "mock":
@@ -48,16 +62,22 @@ async def lifespan(app: FastAPI):
             "Copilot generation. Set ENGINE=copilot with a Copilot-enabled token "
             "for real runs."
         )
-    yield
+    try:
+        yield
+    finally:
+        scheduler.stop()
+        queue.stop_worker()
+        if worker:
+            logger.info("worker stopped")
 
 
 app = FastAPI(
-    title=settings.app_name,
-    version="0.1.0",
+    title="Agent Hub",
+    version="0.3.0",
     description=(
-        "Agentic test-case generation. The UI is a control plane; Kubernetes (or "
-        "Docker, or a local subprocess) is the execution layer; Copilot CLI with "
-        "SKILL.md and custom agents is the generation layer."
+        "Agent Hub — GHCP-driven multi-agent platform. Browse, manage, and "
+        "trigger agents, workflows, skills, and prompts through a unified "
+        "chatbot interface or dedicated custom UIs."
     ),
     lifespan=lifespan,
 )
@@ -70,7 +90,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def correlate_requests(request: Request, call_next):
+    """Give every request an ID and thread it through the logs and the response.
+
+    Without this, diagnosing a failed run in production means reading a
+    workspace on disk and guessing which log lines belong to it.
+    """
+    incoming = request.headers.get("x-request-id", "").strip()
+    request_id = incoming[:64] if incoming else uuid.uuid4().hex[:12]
+    token = request_id_var.set(request_id)
+    try:
+        response = await call_next(request)
+    finally:
+        request_id_var.reset(token)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
 app.include_router(router)
+app.include_router(hub_router)
+app.include_router(chat_router)
+app.include_router(automation_router)
+app.include_router(lab_router)
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception during request")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error. Please contact support if the issue persists."},
+    )
 
 
 @app.get("/", tags=["meta"])

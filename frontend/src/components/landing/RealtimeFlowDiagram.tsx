@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Paper, alpha, useTheme } from '@mui/material';
+import { Box, Typography, Paper, alpha, useTheme, Chip, Stack } from '@mui/material';
+import { ShieldCheck, RefreshCw, Cpu } from 'lucide-react';
 
 const AMBER = '#D9822B';
 const GREEN = '#1F8A70';
@@ -13,54 +14,99 @@ export default function RealtimeFlowDiagram() {
   const isLight = theme.palette.mode === 'light';
 
   // Colors
-  const bgColor = isLight ? '#FFFFFF' : '#12161D';
+  const bgColor = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(18,22,29,0.85)';
   const cardBg = isLight ? '#FAFBFC' : '#1A202C';
   const cardBorder = isLight ? '#E2E8F0' : '#2D3748';
   const textColor = isLight ? '#1A202C' : '#F7FAFC';
   const mutedColor = isLight ? '#718096' : '#A0AEC0';
 
   return (
-    <Box sx={{ width: '100%', my: 3 }}>
+    <Box sx={{ width: '100%', my: { xs: 3, md: 4 } }}>
       {/* Full-width container with sleek border and subtle shadow */}
       <Paper
         elevation={0}
         sx={{
           width: '100%',
-          p: { xs: 2, sm: 3, md: 4 },
+          p: { xs: 2.5, sm: 3.5, md: 4.5 },
           borderRadius: 4,
           bgcolor: bgColor,
+          backdropFilter: 'blur(16px)',
           border: '1px solid',
-          borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
+          borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)',
           boxShadow: isLight
-            ? '0 12px 36px -12px rgba(0,0,0,0.07)'
-            : '0 12px 36px -12px rgba(0,0,0,0.6)',
+            ? '0 20px 40px -15px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)'
+            : '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)',
           overflow: 'hidden',
           position: 'relative',
         }}
       >
+        {/* Ambient Top Glow Line */}
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          left: '10%',
+          right: '10%',
+          height: '2px',
+          background: `linear-gradient(90deg, transparent, ${RED}, ${BLUE}, ${GREEN}, transparent)`,
+          opacity: 0.8,
+        }} />
+
         {/* Header tag */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+          mb: 3,
+          pb: 2.5,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box
               sx={{
-                width: 8,
-                height: 8,
+                width: 10,
+                height: 10,
                 borderRadius: '50%',
                 bgcolor: RED,
-                boxShadow: `0 0 10px ${RED}`,
+                boxShadow: `0 0 12px ${RED}`,
                 animation: 'pulse 1.5s infinite',
               }}
             />
-            <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.08em', color: 'text.secondary' }}>
-              REAL-TIME TRANSACTION &amp; AGENT EXECUTION FLOW
-            </Typography>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, letterSpacing: '0.06em', color: 'text.primary', fontSize: '0.82rem' }}>
+                DETERMINISTIC MULTI-AGENT STATE MACHINE PIPELINE
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: '0.74rem' }}>
+                End-to-end execution lifecycle with strict schema validation, independent review, and in-place healing
+              </Typography>
+            </Box>
           </Box>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.75rem' }}>
-            Deterministic Multi-Agent State Machine
-          </Typography>
+
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+            <Chip
+              icon={<Cpu size={13} color={AMBER} />}
+              label="5 Specialized Agents"
+              size="small"
+              sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: alpha(AMBER, isLight ? 0.1 : 0.18), color: AMBER, border: `1px solid ${alpha(AMBER, 0.25)}` }}
+            />
+            <Chip
+              icon={<ShieldCheck size={13} color={GREEN} />}
+              label="1 Pre-Flight Gate"
+              size="small"
+              sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: alpha(GREEN, isLight ? 0.1 : 0.18), color: GREEN, border: `1px solid ${alpha(GREEN, 0.25)}` }}
+            />
+            <Chip
+              icon={<RefreshCw size={13} color={BLUE} />}
+              label="In-Place Healing"
+              size="small"
+              sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: alpha(BLUE, isLight ? 0.1 : 0.18), color: BLUE, border: `1px solid ${alpha(BLUE, 0.25)}` }}
+            />
+          </Stack>
         </Box>
 
-        {/* The Animated SVG Flow Diagram - Wide 1440 x 550 Canvas with 110px+ horizontal gaps */}
+        {/* The Animated SVG Flow Diagram - Wide 1440 x 550 Canvas */}
         <Box
           component="svg"
           viewBox="0 0 1440 550"

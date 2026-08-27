@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import type { Theme } from '@mui/material/styles';
 import {
-    Box, Paper, Typography, Chip, Button, LinearProgress, Alert, Tooltip,
+    Box, Paper, Typography, Chip, Button, LinearProgress, Alert,
     CircularProgress, alpha, useTheme, Table, TableBody, TableCell, TableHead,
     TableRow, Stack,
 } from '@mui/material';
-import { RefreshCw, AlertTriangle, Lightbulb, CheckCircle2, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Lightbulb, RotateCcw } from 'lucide-react';
 
 import {
     RATING_COLOR, RATING_LABEL, type Evaluation, type Job, type Rating, type EvaluationScore,

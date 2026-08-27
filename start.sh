@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
-# Start the AI Test Platform locally (orchestrator + UI).
-# Ports 8100/3100 are deliberately clear of the main Qualaris app (8000/3000),
-# so both stacks can run side by side.
+# Start the Agent HUB Platform locally (orchestrator + UI).
+# Ports 8100/3100 run the backend orchestrator and Next.js frontend.
 #
 set -Eeuo pipefail
 
@@ -39,7 +38,29 @@ fi
 : "${ENGINE:=mock}"
 : "${BACKEND_PORT:=8100}"
 : "${FRONTEND_PORT:=3100}"
-export EXECUTOR ENGINE
+: "${AUTH_MODE:=token}"
+export EXECUTOR ENGINE AUTH_MODE
+
+# The orchestrator refuses to start in token mode with no credentials, so that
+# an unconfigured deployment can never serve an open API. For a local run we
+# mint one here and hand it to both processes: the browser talks to Next, Next
+# attaches the token, and nothing sensitive reaches the client.
+if [[ "$AUTH_MODE" == "token" && -z "${API_TOKENS:-}" ]]; then
+    DEV_TOKEN="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(32))')"
+    export API_TOKENS="${DEV_TOKEN}:local-dev:admin"
+    export API_TOKEN="$DEV_TOKEN"
+    echo "  auth     token mode, dev credential generated for this run"
+elif [[ "$AUTH_MODE" == "disabled" ]]; then
+    echo "  auth     DISABLED — every endpoint is open. Loopback only."
+else
+    : "${API_TOKEN:=}"
+    echo "  auth     token mode, using API_TOKENS from the environment"
+    if [[ -z "$API_TOKEN" ]]; then
+        echo "           warning: API_TOKEN is unset, so the UI cannot authenticate." >&2
+        echo "           Set it to one of the tokens listed in API_TOKENS." >&2
+    fi
+fi
+export API_TOKEN
 
 PYTHON="${PYTHON:-python3}"
 
@@ -59,6 +80,9 @@ if [[ "$ENGINE" == "mock" ]]; then
     echo "             (deterministic stand-in — set ENGINE=copilot for real generation)"
 fi
 echo ""
+
+echo "Cleaning up any processes on port $BACKEND_PORT..."
+lsof -t -i:"$BACKEND_PORT" | xargs kill -9 2>/dev/null || true
 
 echo "Starting orchestrator on :$BACKEND_PORT"
 (
@@ -81,6 +105,9 @@ if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
     exit 1
 fi
 
+echo "Cleaning up any processes on port $FRONTEND_PORT..."
+lsof -t -i:"$FRONTEND_PORT" | xargs kill -9 2>/dev/null || true
+
 echo "Starting UI on :$FRONTEND_PORT"
 if [[ ! -d "$ROOT/frontend/node_modules" ]]; then
     echo "  installing frontend dependencies (first run)…"
@@ -89,7 +116,7 @@ fi
 
 (
     cd "$ROOT/frontend"
-    API_TARGET="http://127.0.0.1:$BACKEND_PORT" exec npm run dev
+    PORT="$FRONTEND_PORT" API_TARGET="http://127.0.0.1:$BACKEND_PORT" API_TOKEN="$API_TOKEN" exec npm run dev
 ) > "$LOG_DIR/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 

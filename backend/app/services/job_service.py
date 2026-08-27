@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import threading
 from collections import Counter
 from datetime import datetime, timezone
@@ -21,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import session_scope
 from app.executors import get_executor
+from app.logging_config import job_id_var
 from app.models.jobs import (
     ALLOWED_TRANSITIONS,
     Job,
@@ -28,6 +30,7 @@ from app.models.jobs import (
     JobStatus,
     utcnow,
 )
+from app.services import hub_registry
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +67,138 @@ class JobError(Exception):
     def __init__(self, message: str, status_code: int = 400) -> None:
         super().__init__(message)
         self.status_code = status_code
+
+
+# ----------------------------------------------------------------- workflows
+
+#: What the bespoke test-generation pipeline looks like to the dispatcher, used
+#: when its YAML is missing so an existing deployment keeps working.
+_BESPOKE_FALLBACK: dict[str, Any] = {
+    "id": "test-case-generation",
+    "runner": "bespoke",
+    "approval_gate": True,
+    "available": True,
+    "output": {"primary_artifact": "output/test_cases.json"},
+}
+
+
+def resolve_workflow(workflow_id: str) -> dict[str, Any]:
+    """Look up a workflow, rejecting anything not registered or not available.
+
+    Validating here means an unknown workflow is a 400 on the submit request,
+    rather than a job row that quietly runs some other pipeline.
+    """
+    try:
+        definition = hub_registry.get_workflow(workflow_id)
+    except hub_registry.InvalidEntityId as exc:
+        raise JobError(str(exc), status_code=400) from exc
+
+    if definition is None:
+        if workflow_id == _BESPOKE_FALLBACK["id"]:
+            return _BESPOKE_FALLBACK
+        known = sorted(hub_registry.get_registered_workflow_ids())
+        raise JobError(
+            f"Unknown workflow {workflow_id!r}. Registered workflows: "
+            f"{', '.join(known) if known else '(none)'}.",
+            status_code=400,
+        )
+
+    if not definition.get("available", True):
+        reason = definition.get("unavailable_reason", "It is marked unavailable.")
+        raise JobError(
+            f"Workflow {workflow_id!r} cannot be run right now. {reason}",
+            status_code=409,
+        )
+
+    return definition
+
+
+def _workflow_or_default(workflow_id: str) -> dict[str, Any]:
+    """Like :func:`resolve_workflow`, but never raises.
+
+    Used on paths that run *after* submission, where the workflow was already
+    validated and a row must not be stranded because a definition was edited
+    mid-flight.
+    """
+    try:
+        return resolve_workflow(workflow_id)
+    except JobError:
+        return _BESPOKE_FALLBACK
+
+
+# ------------------------------------------------------------------ helpers
+
+
+def copilot_bin() -> str:
+    """Name of the Copilot CLI binary, for readiness checks and executors."""
+    return os.getenv("COPILOT_BIN", "copilot")
+
+
+def platform_token_configured() -> bool:
+    """Whether the server holds a Copilot credential of its own.
+
+    The UI uses this to stop asking every user for a personal access token when
+    the deployment already has one.
+    """
+    return bool(
+        (
+            os.getenv("COPILOT_GITHUB_TOKEN")
+            or os.getenv("GH_TOKEN")
+            or os.getenv("GITHUB_TOKEN")
+            or ""
+        ).strip()
+    )
+
+
+def is_public_artifact(relative_path: Path | str) -> bool:
+    """Whether a workspace file may be listed and downloaded.
+
+    Dotfiles in a workspace are orchestrator control files, never user-facing
+    output. Job credentials now live outside the workspace entirely, but this
+    stays as the second lock on that door: anything hidden is not an artifact.
+    """
+    return not any(part.startswith(".") for part in Path(relative_path).parts)
+
+
+def _write_runtime_files(
+    job_id: str,
+    *,
+    engine: str | None,
+    copilot_model: str | None,
+    github_token: str | None,
+) -> None:
+    """Stage per-job control files outside the downloadable workspace."""
+    runtime = settings.runtime_for(job_id)
+    runtime.mkdir(parents=True, exist_ok=True)
+    try:
+        runtime.chmod(0o700)
+    except OSError:
+        pass
+
+    if engine and engine.strip():
+        (runtime / "engine").write_text(engine.strip(), encoding="utf-8")
+
+    if copilot_model and copilot_model.strip():
+        (runtime / "copilot_model").write_text(copilot_model.strip(), encoding="utf-8")
+
+    if github_token and github_token.strip():
+        token_path = runtime / "copilot_token"
+        token_path.write_text(github_token.strip(), encoding="utf-8")
+        try:
+            token_path.chmod(0o600)
+        except OSError:
+            pass
+
+
+def _purge_runtime_files(job_id: str) -> None:
+    """Delete a finished job's credential. Called on every terminal transition."""
+    runtime = settings.runtime_for(job_id)
+    if not runtime.exists():
+        return
+    try:
+        shutil.rmtree(runtime)
+    except OSError:
+        logger.warning("could not purge runtime dir for job %s", job_id, exc_info=True)
 
 
 # ----------------------------------------------------------------- transitions
@@ -119,6 +254,19 @@ def transition(
     record_event(db, job, f"status.{target.value.lower()}", message, metadata)
     db.commit()
 
+    # A finished job has no further use for its credential. Purging here rather
+    # than at each call site means every terminal path is covered, including the
+    # ones that fail.
+    if target.is_terminal:
+        _purge_runtime_files(job.id)
+        # Same reasoning for the webhook: one place, every terminal path.
+        try:
+            from app.services.scheduler import notify_job_finished
+
+            notify_job_finished(job)
+        except Exception:  # noqa: BLE001 - a webhook must never fail a job
+            logger.exception("could not queue the webhook for job %s", job.id)
+
 
 # --------------------------------------------------------------------- create
 
@@ -156,8 +304,18 @@ def create_job(
     created_by: str,
     copilot_model: str | None = None,
     github_token: str | None = None,
+    engine: str | None = None,
+    used_ocr: bool = False,
+    webhook_url: str | None = None,
+    schedule_id: str | None = None,
 ) -> Job:
-    """Persist the job and stage its input. Execution is kicked off separately."""
+    """Persist the job and stage its input.
+
+    Execution is not started here: a worker claims the row from the queue. That
+    is what lets more than one replica run, and what lets a submitted job
+    survive the process that accepted it.
+    """
+    definition = resolve_workflow(workflow)
     enforce_rate_limits(db, created_by)
 
     job = Job(
@@ -166,6 +324,8 @@ def create_job(
         status=JobStatus.QUEUED,
         copilot_model=copilot_model,
         copilot_token_set=bool(github_token and github_token.strip()),
+        webhook_url=(webhook_url or None),
+        schedule_id=schedule_id,
     )
     db.add(job)
     db.flush()  # assign the id before we build paths from it
@@ -180,24 +340,24 @@ def create_job(
     requirement_path = workspace / "input" / "requirement.md"
     requirement_path.write_text(requirement, encoding="utf-8")
 
-    if copilot_model and copilot_model.strip():
-        (workspace / "input" / ".copilot_model").write_text(copilot_model.strip(), encoding="utf-8")
-
-    if github_token and github_token.strip():
-        token_path = workspace / "input" / ".copilot_token"
-        token_path.write_text(github_token.strip(), encoding="utf-8")
-        try:
-            token_path.chmod(0o600)
-        except OSError:
-            pass
+    # Engine, model and credential are staged *outside* the workspace: every
+    # file inside it is reachable through the artifacts endpoint.
+    _write_runtime_files(
+        job.id,
+        engine=engine,
+        copilot_model=copilot_model,
+        github_token=github_token,
+    )
 
     job.input_location = str(requirement_path)
     job.output_location = str(workspace / "output")
 
+    effective_engine = engine or settings.engine
     event_metadata = {
         "executor": settings.executor,
-        "engine": settings.engine,
+        "engine": effective_engine,
         "requirement_chars": len(requirement),
+        "runner": definition.get("runner", "generic"),
     }
     if copilot_model:
         event_metadata["copilot_model"] = copilot_model
@@ -211,6 +371,19 @@ def create_job(
         f"Job accepted for workflow {workflow}",
         event_metadata,
     )
+    if used_ocr:
+        # The frontend already extracted this requirement from an uploaded
+        # image via the standalone /ocr/extract call before the job existed,
+        # so the runner never sees an image and never emits its own
+        # "ocr-extractor" phase event. Record one here so the job-detail page
+        # (derivePhases()) can show OCR as used instead of always "skipped".
+        record_event(
+            db,
+            job,
+            "phase.completed",
+            "ocr-extractor — document image transcribed client-side",
+            {"phase": "ocr-extractor", "detail": "document image transcribed client-side"},
+        )
     db.commit()
     db.refresh(job)
     return job
@@ -220,8 +393,9 @@ def create_job(
 
 #: Lines the runner emits that mark a phase boundary. The runner is the single
 #: source of truth for progress; the orchestrator only transcribes it.
-_PHASE_START = re.compile(r"(?:Phase\s+(\d+)/(\d+)|Evaluation)\s+([a-zA-Z0-9_-]+)")
+_PHASE_START = re.compile(r"(?:Phase\s+(\d+)(?:/(\d+))?|Evaluation)\s+([a-zA-Z0-9_-]+)")
 _PHASE_DONE = {
+    "ocr-extractor": re.compile(r"ocr extraction complete\s*(.+)"),
     "requirement-analyst": re.compile(r"quality:\s*(.+)"),
     "test-designer": re.compile(r"design ready:\s*(.+)"),
     "test-generator": re.compile(r"draft ready:\s*(.+)"),
@@ -367,8 +541,14 @@ def _guarded(job_id: str, work) -> None:
 
 def _run_stage(job_id: str, stage: str, reprocess: bool = False, attempt: int = 0):
     """Dispatch one runner stage and stream its progress into job_events."""
+    job_id_var.set(job_id)
     workspace = settings.workspace_for(job_id)
     executor = get_executor()
+
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        workflow = job.workflow if job else _BESPOKE_FALLBACK["id"]
+    runner = _workflow_or_default(workflow).get("runner", "generic")
 
     external = None
     getter = getattr(executor, "external_name", None)
@@ -392,7 +572,10 @@ def _run_stage(job_id: str, stage: str, reprocess: bool = False, attempt: int = 
     watcher = ProgressWatcher(job_id, log_path)
     watcher.start()
     try:
-        return executor.run(job_id, workspace, stage, reprocess, attempt)
+        return executor.run(
+            job_id, workspace, stage, reprocess, attempt,
+            workflow=workflow, runner=runner,
+        )
     finally:
         watcher.stop()
         watcher.join(timeout=PROGRESS_POLL_SECONDS * 2)
@@ -410,9 +593,159 @@ def _fail(job_id: str, message: str, status: JobStatus = JobStatus.FAILED) -> No
 # ------------------------------------------------------------ stage 1: quality
 
 
+def execute_claimed(job_id: str) -> None:
+    """Run whatever a freshly claimed job needs next.
+
+    A worker claims a row without knowing where in its life it is, so the
+    decision is made from the row itself:
+
+      QUEUED   nothing has run yet — start the workflow.
+      RUNNING  a person approved it, or asked for a reprocess, and the stage
+               after the gate is owed. A RUNNING row with no live lease is
+               either that, or work abandoned by a dead worker; both want the
+               same thing, which is why they need no separate state.
+    """
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        if job is None:
+            return
+        status = job.status
+        approved = job.approved_at is not None
+        reprocessing = job.reprocess_count > 0 and job.evaluation is not None
+
+    if status is JobStatus.QUEUED:
+        run_job(job_id)
+        return
+
+    if status is JobStatus.RUNNING and approved:
+        run_generation(job_id, reprocess=reprocessing)
+        return
+
+    logger.info(
+        "claimed job %s is %s with nothing owed — releasing it", job_id, status.value
+    )
+
+
 def run_job(job_id: str) -> None:
-    """Entry point after submission: score the requirement, then stop for a human."""
-    _guarded(job_id, _analyze_requirement)
+    """Entry point after submission. Which pipeline runs is the workflow's call.
+
+    A workflow declaring ``approval_gate: true`` scores its input and stops for
+    a human; anything else runs straight through. The bespoke test-generation
+    workflow is the former, and every workflow onboarded as data is the latter
+    until it says otherwise.
+    """
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        workflow = job.workflow if job else ""
+    definition = _workflow_or_default(workflow)
+
+    if definition.get("approval_gate"):
+        _guarded(job_id, _analyze_requirement)
+    else:
+        _guarded(job_id, _run_declarative_workflow)
+
+
+def _run_declarative_workflow(job_id: str) -> None:
+    """Run every stage of a declarative workflow in one runner invocation.
+
+    The generic runner walks the workflow's ``agents[]`` itself and writes
+    ``run_metadata.json``; the orchestrator's job is to move the row through the
+    state machine and record what came back.
+    """
+    workspace = settings.workspace_for(job_id)
+
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        if job is None or job.status is not JobStatus.QUEUED:
+            logger.warning("skipping run for %s", job_id)
+            return
+        workflow = job.workflow
+        transition(
+            db, job, JobStatus.STARTING, f"Dispatching to {settings.executor} executor"
+        )
+
+    with session_scope() as db:
+        transition(
+            db, db.get(Job, job_id), JobStatus.RUNNING, f"Running workflow {workflow}"
+        )
+
+    result = _run_stage(job_id, "workflow")
+
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        if job is None or job.status.is_terminal:
+            return
+        if result.exit_code == 124:
+            job.error_message = result.detail
+            transition(db, job, JobStatus.TIMEOUT, result.detail)
+            return
+        transition(db, job, JobStatus.VALIDATING, "Runner finished, collecting output")
+
+    metadata = _read_json(workspace / "run_metadata.json") or _read_json(
+        workspace / "output" / "run_metadata.json"
+    )
+
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        if job is None or job.status.is_terminal:
+            return
+
+        if metadata:
+            job.provenance = {
+                key: metadata.get(key)
+                for key in (
+                    "workflow_id", "engine", "stages", "total_duration_ms",
+                    "runner_version", "skill_version",
+                )
+                if key in metadata
+            }
+
+        if not result.succeeded:
+            detail = result.detail or "Workflow runner reported failure"
+            if metadata:
+                failed = [
+                    s for s in metadata.get("stages", []) if s.get("status") == "failed"
+                ]
+                if failed:
+                    detail = f"{detail}: stage '{failed[0].get('stage')}' failed"
+            job.error_message = detail
+            transition(db, job, JobStatus.FAILED, detail)
+            return
+
+        produced = _collect_primary_output(workspace, workflow)
+        if produced is not None:
+            job.summary = produced
+        record_event(
+            db, job, "workflow.completed",
+            f"Workflow {workflow} completed "
+            f"({len(metadata.get('stages', [])) if metadata else 0} stage(s))",
+            metadata,
+        )
+        transition(db, job, JobStatus.COMPLETED, "Workflow completed successfully")
+
+
+def _collect_primary_output(workspace: Path, workflow: str) -> dict[str, Any] | None:
+    """Summarise the workflow's declared primary artifact, if it produced one."""
+    definition = _workflow_or_default(workflow)
+    primary = (definition.get("output") or {}).get("primary_artifact")
+    if not primary:
+        return None
+
+    target = workspace / primary
+    if not target.is_file():
+        return None
+
+    if target.suffix == ".json":
+        document = _read_json(target)
+        if isinstance(document, dict) and "test_cases" in document:
+            return _summarize(document)
+        return {"artifact": primary, "size_bytes": target.stat().st_size}
+
+    return {
+        "artifact": primary,
+        "size_bytes": target.stat().st_size,
+        "chars": len(target.read_text(encoding="utf-8", errors="replace")),
+    }
 
 
 def _analyze_requirement(job_id: str) -> None:
@@ -622,17 +955,23 @@ def start_reprocess(db: Session, job: Job) -> Job:
 
 
 def reconcile_orphaned_jobs() -> int:
-    """Fail jobs left mid-flight by a previous process, at startup.
+    """Deprecated: superseded by :func:`app.services.queue.reclaim_expired`.
 
-    Execution is driven by an in-process background task, so a restart abandons
-    whatever was running: the runner may well finish, but nothing is left to
-    record the result and the row would sit in RUNNING forever.
+    This failed everything in flight at startup, which was only ever correct
+    because there was exactly one replica. Jobs now carry a lease, so a row
+    another replica is actively working on is distinguishable from wreckage and
+    is returned to the queue rather than failed.
 
-    This assumes a single orchestrator replica — with more than one, this would
-    wrongly fail jobs another replica is actively running. The deployment pins
-    replicas to 1 for exactly this reason; a real work queue is the fix before
-    scaling out.
+    Kept as a thin delegation so an operator with it in a runbook is not left
+    with a missing function.
     """
+    from app.services.queue import reclaim_expired
+
+    return reclaim_expired()
+
+
+def _legacy_reconcile_orphaned_jobs() -> int:
+    """The original startup behaviour, retained only for reference."""
     orphaned = 0
     with session_scope() as db:
         for job in db.scalars(select(Job).where(Job.status.in_(IN_FLIGHT_STATES))):
@@ -722,13 +1061,16 @@ def list_artifacts(job: Job) -> list[dict[str, Any]]:
         return []
     artifacts: list[dict[str, Any]] = []
     for path in sorted(workspace.rglob("*")):
-        if path.is_file():
-            artifacts.append(
-                {
-                    "path": str(path.relative_to(workspace)),
-                    "size_bytes": path.stat().st_size,
-                }
-            )
+        if not path.is_file():
+            continue
+        relative = path.relative_to(workspace)
+        # rglob("*") includes dotfiles, so this filter is what keeps the
+        # orchestrator's own control files out of a user-facing listing.
+        if not is_public_artifact(relative):
+            continue
+        artifacts.append(
+            {"path": str(relative), "size_bytes": path.stat().st_size}
+        )
     return artifacts
 
 

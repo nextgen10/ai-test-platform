@@ -8,7 +8,7 @@ export default function AgentsRedirect() {
     const router = useRouter();
 
     useEffect(() => {
-        router.replace('/docs?tab=agents');
+        router.replace('/registry?tab=agents');
     }, [router]);
 
     return (

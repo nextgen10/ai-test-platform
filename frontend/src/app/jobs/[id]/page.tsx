@@ -4,29 +4,45 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     Box, Paper, Typography, Button, Chip, CircularProgress, Table, TableBody,
     TableCell, TableHead, TableRow, Tabs, Tab, Alert, Collapse, IconButton,
-    Divider, alpha, useTheme, Tooltip, LinearProgress, Stack,
+    Divider, alpha, useTheme, LinearProgress, Stack,
 } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import {
     ChevronLeft, ChevronDown, ChevronRight, Download, RefreshCw, XCircle,
-    CheckCircle2, Loader2, Circle, Activity, Cpu, ShieldCheck, Clock,
-    Layers, Terminal, FileCode, Check, Eye, ExternalLink, FileSpreadsheet,
+    CheckCircle2, Loader2, Circle, Activity, ShieldCheck, 
+    FileSpreadsheet,
+    SkipForward,
 } from 'lucide-react';
 
-import PageHeader from '@/components/PageHeader';
 import WorkflowStepper from '@/components/WorkflowStepper';
 import QualityReportPanel from '@/components/QualityReportPanel';
 import EvaluationPanel from '@/components/EvaluationPanel';
+import RunCostPanel from '@/components/RunCostPanel';
 import {
-    api, ACTIVE_STATUSES, CATEGORY_LABEL, formatDuration, formatTimestamp,
-    STATUS_COLOR, type Job, type TestSuite, type ValidationReport,
+    api, platformApi, ACTIVE_STATUSES, CATEGORY_LABEL, formatDuration,
+    formatTimestamp, STATUS_COLOR,
+    type Job, type JobBreakdown, type TestSuite, type ValidationReport, type Workflow,
 } from '@/lib/api';
 
-const PHASES = [
+/**
+ * Phases for the bespoke test-generation chain.
+ *
+ * Only a fallback: any workflow onboarded as data describes its own stages, and
+ * `derivePhases` reads them from the workflow definition. This page used to
+ * render these four regardless of what actually ran.
+ */
+const BESPOKE_PHASES = [
+    { key: 'ocr-extractor', label: 'Document OCR & visual extraction' },
     { key: 'test-designer', label: 'Requirement analysis & scenario design' },
     { key: 'test-generator', label: 'Test case generation' },
     { key: 'test-reviewer', label: 'Review & validation' },
 ];
+
+/** Turn a stage or agent id into something readable, e.g. `gap-closer` → `Gap closer`. */
+function humanise(value: string): string {
+    const spaced = value.replace(/[-_]/g, ' ').trim();
+    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
 
 const PRIORITY_COLOR: Record<string, 'error' | 'warning' | 'info' | 'default'> = {
     critical: 'error',
@@ -35,11 +51,62 @@ const PRIORITY_COLOR: Record<string, 'error' | 'warning' | 'info' | 'default'> =
     low: 'default',
 };
 
-type PhaseState = 'pending' | 'running' | 'completed' | 'failed';
+type PhaseState = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
 
-function derivePhases(job: Job): Record<string, { state: PhaseState; detail: string }> {
+interface DerivedPhaseInfo {
+    phases: { key: string; label: string }[];
+    states: Record<string, { state: PhaseState; detail: string }>;
+}
+
+/**
+ * The stages this job actually ran, and how each one turned out.
+ *
+ * Which stages exist comes from the workflow when one is supplied, and from the
+ * run's own provenance otherwise — so a workflow onboarded yesterday shows its
+ * own pipeline rather than the test-generation one.
+ */
+function derivePhases(job: Job, workflow?: Workflow | null): DerivedPhaseInfo {
+    const bespoke = !workflow || workflow.runner === 'bespoke';
+
+    // Prefer what the run recorded; fall back to what the workflow declares;
+    // fall back again to the bespoke chain for older rows with neither.
+    const recorded = (job.provenance?.stages ?? []) as { agent_id?: string; stage?: string }[];
+
+    let phases: { key: string; label: string }[];
+    if (recorded.length > 0) {
+        phases = recorded.map((s) => ({
+            key: String(s.agent_id ?? s.stage ?? ''),
+            label: humanise(String(s.stage ?? s.agent_id ?? '')),
+        }));
+    } else if (workflow && workflow.agents?.length && !bespoke) {
+        phases = workflow.agents.map((a) => ({
+            key: a.id,
+            label: a.description || humanise(a.stage || a.id),
+        }));
+    } else {
+        phases = BESPOKE_PHASES;
+    }
+
     const result: Record<string, { state: PhaseState; detail: string }> = {};
-    for (const phase of PHASES) result[phase.key] = { state: 'pending', detail: '' };
+    for (const phase of phases) result[phase.key] = { state: 'pending', detail: '' };
+
+    // OCR only applies to the bespoke chain, and only when it was actually used.
+    if (bespoke && 'ocr-extractor' in result) {
+        const usedOcr =
+            (job.events ?? []).some((e) => (e.event_metadata?.phase as string) === 'ocr-extractor') ||
+            (job.provenance?.phases ?? []).some((p) => p.name === 'ocr-extractor');
+        if (!usedOcr) {
+            result['ocr-extractor'] = { state: 'skipped', detail: 'text input — skipped' };
+        }
+    }
+
+    const tidy = (detail: string): string => {
+        if (detail.includes('categories=')) {
+            const match = detail.match(/^(\d+\s+test\s+cases)/i);
+            return match ? match[1] : 'Passed';
+        }
+        return detail;
+    };
 
     for (const event of job.events ?? []) {
         const name = (event.event_metadata?.phase as string) ?? '';
@@ -47,52 +114,78 @@ function derivePhases(job: Job): Record<string, { state: PhaseState; detail: str
         if (event.event_type === 'phase.started') {
             result[name] = { state: 'running', detail: '' };
         } else if (event.event_type === 'phase.completed') {
-            let detail = (event.event_metadata?.detail as string) ?? '';
-            if (detail.includes('categories=')) {
-                const match = detail.match(/^(\d+\s+test\s+cases)/i);
-                detail = match ? match[1] : 'Passed';
-            }
             result[name] = {
                 state: 'completed',
-                detail,
+                detail: tidy((event.event_metadata?.detail as string) ?? ''),
             };
         }
     }
 
+    // The bespoke runner writes `phases`; the generic one writes `stages`.
     for (const record of job.provenance?.phases ?? []) {
         if (!(record.name in result)) continue;
-        let detail = record.detail || '';
-        if (detail.includes('categories=')) {
-            const match = detail.match(/^(\d+\s+test\s+cases)/i);
-            detail = match ? match[1] : 'Passed';
-        }
-        const durationStr = record.duration_ms ? formatDuration(record.duration_ms) : '';
+        const detail = tidy(record.detail || '');
+        const duration = record.duration_ms ? formatDuration(record.duration_ms) : '';
         result[record.name] = {
             state: record.status === 'failed' ? 'failed' : 'completed',
-            detail: durationStr ? (detail ? `${detail} · ${durationStr}` : durationStr) : detail,
+            detail: duration ? (detail ? `${detail} · ${duration}` : duration) : detail,
         };
     }
 
+    for (const record of recorded as {
+        agent_id?: string;
+        stage?: string;
+        status?: string;
+        duration_ms?: number;
+        detail?: string;
+        resumed?: boolean;
+        attempts?: number;
+    }[]) {
+        const key = String(record.agent_id ?? record.stage ?? '');
+        if (!(key in result)) continue;
+
+        const bits: string[] = [];
+        if (record.resumed) bits.push('resumed');
+        if (record.duration_ms) bits.push(formatDuration(record.duration_ms));
+        if ((record.attempts ?? 1) > 1) bits.push(`${record.attempts} attempts`);
+        if (record.status === 'skipped' && record.detail) bits.push(record.detail);
+
+        const state: PhaseState =
+            record.status === 'failed'
+                ? 'failed'
+                : record.status === 'skipped'
+                  ? 'skipped'
+                  : 'completed';
+
+        result[key] = { state, detail: bits.join(' · ') };
+    }
+
     if (!ACTIVE_STATUSES.includes(job.status) && job.status !== 'COMPLETED') {
-        for (const phase of PHASES) {
+        for (const phase of phases) {
             if (result[phase.key].state === 'running') result[phase.key].state = 'failed';
         }
     }
 
-    return result;
+    return { phases, states: result };
 }
 
 function LiveJobSidePanel({
     job,
     validation,
+    workflow,
 }: {
     job: Job;
     validation: ValidationReport | null;
+    workflow?: Workflow | null;
 }) {
     const theme = useTheme();
     const isLight = theme.palette.mode === 'light';
-    const states = derivePhases(job);
-    const completed = PHASES.filter((p) => states[p.key].state === 'completed').length;
+    const { phases: PHASES, states } = derivePhases(job, workflow);
+    const resolved = PHASES.filter((p) => states[p.key].state === 'completed' || states[p.key].state === 'skipped').length;
+    // 'skipped' phases (e.g. OCR extraction on a text-only job) are resolved
+    // before the job even starts, so they must not count as "real" progress —
+    // otherwise the indeterminate/starting spinner below never shows.
+    const completedCount = PHASES.filter((p) => states[p.key].state === 'completed').length;
     const running = ACTIVE_STATUSES.includes(job.status);
 
     return (
@@ -110,8 +203,8 @@ function LiveJobSidePanel({
                 </Box>
 
                 <LinearProgress
-                    variant={running && completed === 0 ? 'indeterminate' : 'determinate'}
-                    value={(completed / PHASES.length) * 100}
+                    variant={running && completedCount === 0 ? 'indeterminate' : 'determinate'}
+                    value={(resolved / PHASES.length) * 100}
                     sx={{ mb: 2, height: 6, borderRadius: 3 }}
                 />
 
@@ -119,9 +212,11 @@ function LiveJobSidePanel({
                     {PHASES.map((phase) => {
                         const { state, detail } = states[phase.key];
                         return (
-                            <Box key={phase.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+                            <Box key={phase.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, opacity: state === 'skipped' ? 0.5 : 1 }}>
                                 {state === 'completed' ? (
                                     <CheckCircle2 size={15} color={theme.palette.success.main} style={{ flexShrink: 0 }} />
+                                ) : state === 'skipped' ? (
+                                    <SkipForward size={15} color={theme.palette.text.disabled} style={{ flexShrink: 0 }} />
                                 ) : state === 'failed' ? (
                                     <XCircle size={15} color={theme.palette.error.main} style={{ flexShrink: 0 }} />
                                 ) : state === 'running' ? (
@@ -148,11 +243,12 @@ function LiveJobSidePanel({
                                         flexGrow: 1,
                                         minWidth: 0,
                                         fontWeight: state === 'running' ? 700 : 500,
-                                        color: state === 'pending' ? 'text.secondary' : 'text.primary',
+                                        color: state === 'skipped' ? 'text.disabled' : state === 'pending' ? 'text.secondary' : 'text.primary',
                                         fontSize: '0.78rem',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
                                         whiteSpace: 'nowrap',
+                                        fontStyle: state === 'skipped' ? 'italic' : 'normal',
                                     }}
                                 >
                                     {phase.label}
@@ -168,6 +264,7 @@ function LiveJobSidePanel({
                                         textOverflow: 'ellipsis',
                                         whiteSpace: 'nowrap',
                                         textAlign: 'right',
+                                        fontStyle: state === 'skipped' ? 'italic' : 'normal',
                                     }}
                                     title={detail}
                                 >
@@ -607,6 +704,10 @@ export default function JobDetailPage() {
     const jobId = String(params.id);
 
     const [job, setJob] = useState<Job | null>(null);
+    // The workflow definition, so the phase list reflects what actually ran
+    // rather than the test-generation chain.
+    const [workflow, setWorkflow] = useState<Workflow | null>(null);
+    const [breakdown, setBreakdown] = useState<JobBreakdown | null>(null);
     const [suite, setSuite] = useState<TestSuite | null>(null);
     const [validation, setValidation] = useState<ValidationReport | null>(null);
     const [logs, setLogs] = useState('');
@@ -645,6 +746,23 @@ export default function JobDetailPage() {
     }, [jobId]);
 
     useEffect(() => { load(); }, [load]);
+
+    // The workflow changes only if the job does, and the cost breakdown is
+    // worth refreshing as stages land.
+    const jobWorkflow = job?.workflow;
+    useEffect(() => {
+        if (!jobWorkflow) return;
+        api.workflows()
+            .then((all) => setWorkflow(all.find((w) => w.id === jobWorkflow) ?? null))
+            .catch(() => setWorkflow(null));
+    }, [jobWorkflow]);
+
+    const jobIdStr = job?.id;
+    const jobStatusStr = job?.status;
+    useEffect(() => {
+        if (!jobIdStr) return;
+        platformApi.jobBreakdown(jobIdStr).then(setBreakdown).catch(() => setBreakdown(null));
+    }, [jobIdStr, jobStatusStr]);
 
     useEffect(() => {
         if (!job || !ACTIVE_STATUSES.includes(job.status)) return;
@@ -897,7 +1015,11 @@ export default function JobDetailPage() {
                     <LiveJobSidePanel
                         job={job}
                         validation={validation}
+                        workflow={workflow}
                     />
+                    {breakdown && breakdown.stages.length > 0 && (
+                        <RunCostPanel breakdown={breakdown} />
+                    )}
                 </Box>
             </Box>
         </Box>

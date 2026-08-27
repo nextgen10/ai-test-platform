@@ -3,14 +3,14 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import {
     Box, Paper, Typography, Button, Chip, Divider,
-    CircularProgress, Alert, Stack, alpha, useTheme,
+    CircularProgress, Stack, alpha, useTheme,
     Tabs, Tab, Card, CardContent, Table, TableBody, TableCell, TableHead, TableRow,
 } from '@mui/material';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Bot, ArrowRight, ShieldCheck,
     Layers, CheckCircle2, Copy, Check,
-    RotateCcw, Lock, BookOpen,
+    RotateCcw, Lock, BookOpen, ScanText,
     Gauge, Award, ShieldAlert, Database,
 } from 'lucide-react';
 
@@ -29,6 +29,17 @@ const STAGE_CONFIG: Record<string, {
     rules: string[];
     brief: string;
 }> = {
+    'ocr-extractor': {
+        order: 0,
+        accent: GREEN,
+        rules: [
+            'Dynamically loads document-ocr SKILL.md — zero hardcoded prompts',
+            'Multimodal Vision via GHCP (gpt-4o / claude-3.7-sonnet)',
+            'Untrusted document boundary: image content is data, never instruction',
+            'Zero external binaries — pure stdlib + GitHub Models API',
+        ],
+        brief: 'Phase 0 pre-processor. Transforms uploaded document images, scanned specifications, UI wireframes, and flowcharts into structured Markdown requirement specifications before the analysis pipeline begins.',
+    },
     'requirement-analyst': {
         order: 1,
         accent: AMBER,
@@ -132,6 +143,7 @@ function DocsContent() {
 
     // Skills State
     const [skills, setSkills] = useState<SkillInfo[]>([]);
+    const [selectedSkillId, setSelectedSkillId] = useState<string>('test-case-generation');
     const [skillSubTab, setSkillSubTab] = useState<number>(0);
 
     // Evaluation State
@@ -168,7 +180,7 @@ function DocsContent() {
     const selectedAgent = agents.find((a) => a.id === selectedAgentId) || agents[0];
     const agentCfg = selectedAgent ? STAGE_CONFIG[selectedAgent.id] : undefined;
     const agentAccent = agentCfg?.accent || RED;
-    const currentSkill = skills[0];
+    const currentSkill = skills.find((s) => s.id === selectedSkillId) || skills[0];
 
     const handleCopy = (text?: string) => {
         if (!text) return;
@@ -185,7 +197,7 @@ function DocsContent() {
     return (
         <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 6 }}>
             <PageHeader
-                title="Analytic Genie — Technical Documentation"
+                title="Agent HUB Platform — Technical Documentation"
                 subtitle="Complete technical reference for Copilot multi-agent state machines, domain skills, and 5-D RQS mathematical scoring."
                 actions={
                     <Button
@@ -246,7 +258,7 @@ function DocsContent() {
                                         Multi-Agent Autonomous Execution Pipeline
                                     </Typography>
                                     <Chip
-                                        label="6 Specialized Agents &bull; 1 Human Approval Gate"
+                                        label="7 Specialized Agents &bull; 1 Human Approval Gate"
                                         size="small"
                                         sx={{ fontWeight: 700, bgcolor: alpha(RED, 0.1), color: RED }}
                                     />
@@ -314,7 +326,7 @@ function DocsContent() {
                                                             fontSize: '0.75rem',
                                                             flexShrink: 0,
                                                         }}>
-                                                            {ag.id === 'gap-closer' ? <RotateCcw size={13} /> : stageNum}
+                                                            {ag.id === 'ocr-extractor' ? <ScanText size={13} /> : ag.id === 'gap-closer' ? <RotateCcw size={13} /> : stageNum}
                                                         </Box>
                                                         <Typography variant="caption" sx={{
                                                             fontWeight: 700,
@@ -535,8 +547,37 @@ function DocsContent() {
                     )}
 
                     {/* ================= TAB 1: DOMAIN SKILLS ================= */}
-                    {mainTab === 1 && currentSkill && (
+                    {mainTab === 1 && skills.length > 0 && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {/* Skill Selector Chips */}
+                            {skills.length > 1 && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mr: 0.5, fontSize: '0.72rem' }}>
+                                        Active Skill:
+                                    </Typography>
+                                    {skills.map((sk) => (
+                                        <Chip
+                                            key={sk.id}
+                                            label={sk.name}
+                                            size="small"
+                                            clickable
+                                            onClick={() => { setSelectedSkillId(sk.id); setSkillSubTab(0); }}
+                                            sx={{
+                                                fontWeight: 700,
+                                                fontSize: '0.78rem',
+                                                height: 30,
+                                                borderRadius: 2,
+                                                border: '1.5px solid',
+                                                borderColor: sk.id === selectedSkillId ? RED : 'divider',
+                                                bgcolor: sk.id === selectedSkillId ? alpha(RED, 0.1) : 'background.paper',
+                                                color: sk.id === selectedSkillId ? RED : 'text.primary',
+                                                '&:hover': { borderColor: RED, color: RED },
+                                            }}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
+
                             {/* Skill Banner */}
                             <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
@@ -589,7 +630,7 @@ function DocsContent() {
                                                         <Typography variant="subtitle1" fontWeight={700}>
                                                             {cat.name}
                                                         </Typography>
-                                                        <Chip size="small" label={cat.key} color={cat.color as any} sx={{ fontWeight: 700, fontSize: '0.72rem' }} />
+                                                        <Chip size="small" label={cat.key} color={cat.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'} sx={{ fontWeight: 700, fontSize: '0.72rem' }} />
                                                     </Box>
                                                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
                                                         {cat.desc}

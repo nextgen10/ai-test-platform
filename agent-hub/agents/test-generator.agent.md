@@ -2,6 +2,11 @@
 name: test-generator
 description: Converts a structured test design into concrete, schema-valid test cases with preconditions, steps, expected results and requirement traceability.
 tools: ["read", "write"]
+role: "Concrete Test Author"
+stage: generate
+input_artifact: intermediate/test_design.json
+output_artifact: intermediate/draft_test_cases.json
+output_schema: schemas/test-case.schema.json
 ---
 
 # Test Generator

@@ -37,13 +37,19 @@ class Executor(Protocol):
 
     def run(
         self, job_id: str, workspace: Path, stage: str = "generate",
-        reprocess: bool = False, attempt: int = 0
+        reprocess: bool = False, attempt: int = 0,
+        workflow: str = "test-case-generation", runner: str = "bespoke",
     ) -> ExecutionResult:
         """Execute one runner stage for a job. Blocking.
 
+        `runner` selects the engine: "bespoke" drives the hand-written
+        test-generation chain, "generic" drives any declarative workflow from
+        its YAML. `workflow` names the definition the generic runner loads.
+
         `stage` is "quality" (score the requirement) or "generate" (design,
-        generate, review and evaluate). `reprocess` feeds the previous
-        evaluation's recommendations back into generation.
+        generate, review and evaluate) for the bespoke runner, and "workflow"
+        for the generic one. `reprocess` feeds the previous evaluation's
+        recommendations back into generation.
 
         `workspace/input/requirement.md` is already staged by the caller. The
         implementation must arrange for the runner's stdout/stderr to end up in

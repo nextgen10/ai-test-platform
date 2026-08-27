@@ -66,12 +66,23 @@ _FAILABLE = frozenset({JobStatus.FAILED, JobStatus.CANCELLED, JobStatus.TIMEOUT}
 #: callback can never silently corrupt job history.
 ALLOWED_TRANSITIONS: dict[JobStatus, frozenset[JobStatus]] = {
     JobStatus.QUEUED: frozenset({JobStatus.STARTING}) | _FAILABLE,
-    JobStatus.STARTING: frozenset({JobStatus.ANALYZING}) | _FAILABLE,
-    JobStatus.ANALYZING: frozenset({JobStatus.AWAITING_APPROVAL}) | _FAILABLE,
+    # ANALYZING is the bespoke test-generation path, which scores the
+    # requirement before anything else. A declarative workflow has no such stage
+    # and goes straight to RUNNING.
+    JobStatus.STARTING: frozenset({JobStatus.ANALYZING, JobStatus.RUNNING}) | _FAILABLE,
+    # A workflow may score its input without gating on a human, in which case it
+    # continues to RUNNING rather than stopping for approval.
+    JobStatus.ANALYZING: frozenset(
+        {JobStatus.AWAITING_APPROVAL, JobStatus.RUNNING}
+    ) | _FAILABLE,
     # The human gate: approve to generate, reject to stop here.
     JobStatus.AWAITING_APPROVAL: frozenset({JobStatus.RUNNING, JobStatus.REJECTED}) | _FAILABLE,
     JobStatus.RUNNING: frozenset({JobStatus.VALIDATING}) | _FAILABLE,
-    JobStatus.VALIDATING: frozenset({JobStatus.EVALUATING}) | _FAILABLE,
+    # EVALUATING is likewise bespoke; a declarative workflow completes from
+    # VALIDATING once its artifacts are collected.
+    JobStatus.VALIDATING: frozenset(
+        {JobStatus.EVALUATING, JobStatus.COMPLETED}
+    ) | _FAILABLE,
     JobStatus.EVALUATING: frozenset({JobStatus.COMPLETED}) | _FAILABLE,
     # Reprocess re-opens a completed job exactly once; the count is enforced by
     # the service layer, not by this table.
@@ -131,6 +142,34 @@ class Job(Base):
 
     #: Whether a user-supplied token was used. The token itself is NEVER stored.
     copilot_token_set: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # --- work queue lease (blueprint §41, revisited)
+    #
+    # Execution used to be a FastAPI BackgroundTask, which pinned the platform
+    # to one replica: a second one would see another's in-flight jobs as
+    # orphaned and fail them. A worker now *claims* a job by writing its id and
+    # an expiry here in a conditional UPDATE, so exactly one wins the row.
+    #
+    # Reconciliation keys off an expired lease rather than process start, which
+    # is what makes more than one replica safe.
+
+    #: Which worker holds this job. None means claimable.
+    lease_owner: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
+    #: When the claim lapses. A running worker renews this; a dead one does not,
+    #: and the job becomes claimable again.
+    lease_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+
+    #: How many times execution has been attempted, for bounded retry.
+    attempt: Mapped[int] = mapped_column(Integer, default=0)
+
+    #: Where to POST when this job reaches a terminal state.
+    webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    #: Set when this job was created by a schedule rather than a person.
+    schedule_id: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
 
     events: Mapped[list["JobEvent"]] = relationship(
         back_populates="job",

@@ -15,11 +15,25 @@ export const dynamic = 'force-dynamic';
 
 const API_TARGET = process.env.API_TARGET ?? 'http://127.0.0.1:8100';
 
+/**
+ * The orchestrator credential, held server-side only.
+ *
+ * The browser never sees it: it talks to this route, and this route attaches
+ * the token. That keeps a long-lived API credential out of localStorage and out
+ * of anything an XSS could read.
+ *
+ * All browser traffic therefore shares one role. Per-user identity needs an
+ * identity provider in front of this route, which is the seam to extend.
+ */
+const API_TOKEN = process.env.API_TOKEN ?? '';
+
 // Hop-by-hop headers must not be forwarded, and `host` must be recomputed by fetch.
+// `authorization` is stripped deliberately: the token is ours to set, and a
+// client-supplied one must never reach the orchestrator.
 const STRIPPED_REQUEST_HEADERS = new Set([
     'host', 'connection', 'keep-alive', 'transfer-encoding', 'upgrade',
     'proxy-authorization', 'proxy-authenticate', 'te', 'trailer',
-    'content-length', 'accept-encoding',
+    'content-length', 'accept-encoding', 'authorization',
 ]);
 
 const STRIPPED_RESPONSE_HEADERS = new Set([
@@ -34,6 +48,7 @@ async function proxy(request: NextRequest, segments: string[]): Promise<Response
     request.headers.forEach((value, key) => {
         if (!STRIPPED_REQUEST_HEADERS.has(key.toLowerCase())) headers.set(key, value);
     });
+    if (API_TOKEN) headers.set('authorization', `Bearer ${API_TOKEN}`);
 
     const hasBody = !['GET', 'HEAD'].includes(request.method);
     const body = hasBody ? await request.arrayBuffer() : undefined;
@@ -55,6 +70,19 @@ async function proxy(request: NextRequest, segments: string[]): Promise<Response
                 detail: `Cannot reach the orchestrator at ${API_TARGET}: ${
                     error instanceof Error ? error.message : 'unknown error'
                 }`,
+            },
+            { status: 502 },
+        );
+    }
+
+    // A 401 here means this server's own credential is wrong, which the user
+    // cannot fix by signing in — say so rather than passing on a bare 401.
+    if (upstream.status === 401) {
+        return NextResponse.json(
+            {
+                detail: API_TOKEN
+                    ? 'This server\'s orchestrator token was rejected. Check that API_TOKEN matches an entry in the orchestrator\'s API_TOKENS.'
+                    : 'This server has no orchestrator token configured. Set API_TOKEN to a value listed in the orchestrator\'s API_TOKENS.',
             },
             { status: 502 },
         );

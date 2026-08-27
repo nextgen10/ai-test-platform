@@ -13,6 +13,14 @@ from app.config import settings
 from app.executors.base import ExecutionResult
 
 
+def _runtime_value(job_id: str, name: str) -> str | None:
+    """Read one per-job control file from the runtime directory."""
+    path = settings.runtime_for(job_id) / name
+    if not path.is_file():
+        return None
+    return path.read_text(encoding="utf-8").strip() or None
+
+
 class DockerExecutor:
     name = "docker"
 
@@ -22,7 +30,8 @@ class DockerExecutor:
 
     def run(
         self, job_id: str, workspace: Path, stage: str = "generate",
-        reprocess: bool = False, attempt: int = 0
+        reprocess: bool = False, attempt: int = 0,
+        workflow: str = "test-case-generation", runner: str = "bespoke",
     ) -> ExecutionResult:
         log_path = workspace / "output" / "execution.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -59,23 +68,25 @@ class DockerExecutor:
             f"RUNNER_VERSION={settings.runner_version}",
             "-e",
             f"SKILL_VERSION={settings.skill_version}",
+            "-e",
+            f"WORKFLOW_ID={workflow}",
+            "-e",
+            f"RUNNER_KIND={runner}",
         ]
 
-        # Job-specific overrides win over global env
-        model_file = workspace / "input" / ".copilot_model"
-        if model_file.exists():
-            command += ["-e", f"COPILOT_MODEL={model_file.read_text(encoding='utf-8').strip()}"]
+        # Job-specific overrides win over global env. They are read from the
+        # runtime directory rather than the workspace: the workspace is served
+        # by the artifacts endpoint, and one of these values is a credential.
+        model = _runtime_value(job_id, "copilot_model")
+        if model:
+            command += ["-e", f"COPILOT_MODEL={model}"]
 
-        token_file = workspace / "input" / ".copilot_token"
-        if token_file.exists():
-            tok_val = token_file.read_text(encoding="utf-8").strip()
-            command += [
-                "-e", f"COPILOT_GITHUB_TOKEN={tok_val}",
-                "-e", f"GH_TOKEN={tok_val}",
-                "-e", f"GITHUB_TOKEN={tok_val}",
-            ]
-        elif any(os.getenv(k) for k in ("COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN")):
-            token = os.getenv("COPILOT_GITHUB_TOKEN") or os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN")
+        token = _runtime_value(job_id, "copilot_token") or (
+            os.getenv("COPILOT_GITHUB_TOKEN")
+            or os.getenv("GH_TOKEN")
+            or os.getenv("GITHUB_TOKEN")
+        )
+        if token:
             command += [
                 "-e", f"COPILOT_GITHUB_TOKEN={token}",
                 "-e", f"GH_TOKEN={token}",

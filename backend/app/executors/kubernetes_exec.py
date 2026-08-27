@@ -63,7 +63,9 @@ class KubernetesExecutor:
         return f"testgen-{job_id}{suffix}"
 
     def build_manifest(
-        self, job_id: str, k8s_job_name: str, stage: str = "generate", reprocess: bool = False
+        self, job_id: str, k8s_job_name: str, stage: str = "generate",
+        reprocess: bool = False, workflow: str = "test-case-generation",
+        runner: str = "bespoke",
     ) -> dict:
         """Build the Job manifest. Pure function — unit-testable without a cluster."""
         return {
@@ -74,7 +76,7 @@ class KubernetesExecutor:
                 "namespace": settings.k8s_namespace,
                 "labels": {
                     "app": "ai-test-runner",
-                    "workflow": "test-case-generation",
+                    "workflow": workflow,
                     "job-id": job_id,
                 },
             },
@@ -110,6 +112,8 @@ class KubernetesExecutor:
                                     {"name": "JOB_ID", "value": job_id},
                                     {"name": "ENGINE", "value": settings.engine},
                                     {"name": "STAGE", "value": stage},
+                                    {"name": "WORKFLOW_ID", "value": workflow},
+                                    {"name": "RUNNER_KIND", "value": runner},
                                     {"name": "REPROCESS", "value": "1" if reprocess else "0"},
                                     {"name": "WORKSPACE", "value": "/workspace"},
                                     {
@@ -163,7 +167,8 @@ class KubernetesExecutor:
 
     def run(
         self, job_id: str, workspace: Path, stage: str = "generate",
-        reprocess: bool = False, attempt: int = 0
+        reprocess: bool = False, attempt: int = 0,
+        workflow: str = "test-case-generation", runner: str = "bespoke",
     ) -> ExecutionResult:
         client = _load_client()
         batch = client.BatchV1Api()
@@ -171,7 +176,9 @@ class KubernetesExecutor:
 
         # One Job per stage, so a reprocess does not collide with the first run.
         k8s_job_name = self.external_name(job_id, stage, attempt)
-        manifest = self.build_manifest(job_id, k8s_job_name, stage, reprocess)
+        manifest = self.build_manifest(
+            job_id, k8s_job_name, stage, reprocess, workflow, runner
+        )
 
         try:
             batch.create_namespaced_job(namespace=settings.k8s_namespace, body=manifest)

@@ -337,10 +337,15 @@ ai-test-platform/
 │   ├── app/executors/         # Local, Docker, and Kubernetes job executors
 │   ├── app/models/            # SQLAlchemy database models (PostgreSQL & SQLite)
 │   └── app/services/          # Job state machine, validation & event streaming
-├── runner/                    # Disposable test generator agent runner
-│   ├── agent_chain.py         # Multi-agent orchestrator (Designer -> Generator -> Reviewer)
+├── runner/                    # Disposable agent runners
+│   ├── agent_chain.py         # Bespoke test-gen chain (Designer -> Generator -> Reviewer)
+│   ├── generic_runner.py      # Declarative engine for any *.workflow.yaml
 │   └── validate_output.py     # JSON schema validator & quality heuristics
-├── copilot/.github/           # GitHub Copilot agents & SKILL.md instructions
+├── agent-hub/                 # The registry: agents, skills, prompts, workflows
+│   ├── agents/*.agent.md      # Agent definitions (also the CLI's system prompts)
+│   ├── skills/<id>/SKILL.md   # Domain instruction bundles
+│   ├── prompts/*.prompt.md    # Reusable prompt templates
+│   └── workflows/*.yaml       # Declarative pipelines — drop one in to onboard it
 ├── schemas/                   # JSON schemas (test-case, quality-report, evaluation)
 ├── k8s/                       # Kubernetes deployment manifests & shell automation
 │   ├── deploy.sh              # Automatic cluster builder & manifest deployer

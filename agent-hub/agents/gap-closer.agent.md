@@ -2,6 +2,11 @@
 name: gap-closer
 description: Amends an existing test suite to close the specific gaps an evaluation named, preserving every case that was already sound rather than regenerating the suite from scratch.
 tools: ["read", "write"]
+role: "Suite Amendment & Gap Remediation"
+stage: reprocess
+input_artifact: output/evaluation.json
+output_artifact: output/test_cases.json
+output_schema: schemas/test-case.schema.json
 ---
 
 # Gap Closer

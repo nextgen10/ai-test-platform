@@ -12,20 +12,16 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   CheckCircle2,
   Copy,
   Check,
-  FileJson,
   ShieldCheck,
   RotateCcw,
   Sparkles,
   ArrowRight,
   UserCheck,
-  Layers,
-  Bot,
-  AlertTriangle,
 } from 'lucide-react';
 
 const AMBER = '#D9822B';
@@ -43,7 +39,7 @@ export interface StageInfo {
   inputArtifact: string;
   guardrails: string[];
   summary: string;
-  sampleJson: Record<string, any>;
+  sampleJson: Record<string, unknown>;
   isReprocessOnly?: boolean;
 }
 
@@ -59,7 +55,7 @@ export const STAGES_DATA: StageInfo[] = [
     guardrails: [
       'Strict INVEST scoring (1-4 scale)',
       'Blocks vague or test-unfriendly requirements',
-      'Automated deficiency detection',
+      'Automated deficiency & ambiguity detection',
     ],
     summary: 'Analyzes the raw business requirement before any test design starts. Evaluates Independent, Negotiable, Valuable, Estimable, Small, Testable, Acceptance Criteria, and Unambiguity criteria.',
     sampleJson: {
@@ -89,9 +85,9 @@ export const STAGES_DATA: StageInfo[] = [
     summary: 'Parks the job in AWAITING_APPROVAL. An operator or QA lead reviews the INVEST quality report. Rejection terminates the pipeline early, preventing generation of weak or inaccurate tests.',
     sampleJson: {
       decision: "APPROVED",
-      reviewer: "lead.qa@qualaris.ubs.com",
+      reviewer: "lead.qa@agenthub.ubs.com",
       timestamp: "2026-08-14T04:30:00Z",
-      notes: "INVEST report looks solid. Authorized for matrix design."
+      notes: "INVEST report looks solid. Authorized for 5-category matrix design."
     }
   },
   {
@@ -103,8 +99,8 @@ export const STAGES_DATA: StageInfo[] = [
     inputArtifact: 'quality_report.json + requirement.md',
     outputArtifact: 'test_design.json',
     guardrails: [
-      'Enforces all 5 test categories',
-      'Maps business risk to test priority',
+      'Enforces all 5 test categories (Functional to Data)',
+      'Maps business risk to test priority levels',
       'Constructs boundary equivalence partitions',
     ],
     summary: 'Maps business requirements into a formal test architecture ensuring coverage across Functional, Negative, Boundary, Validation, and Data test categories.',
@@ -248,13 +244,26 @@ export default function PipelineExplorer() {
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 2,
-        mb: 3
+        mb: 4,
       }}>
         <Box>
-          <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.08em' }}>
-            INTERACTIVE RUN ARCHITECTURE
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.5 }}>
+          <Box sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.75,
+            py: 0.5,
+            mb: 1,
+            borderRadius: 4,
+            bgcolor: alpha(RED, isLight ? 0.08 : 0.15),
+            border: `1px solid ${alpha(RED, 0.25)}`,
+          }}>
+            <Sparkles size={14} color={RED} />
+            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.08em', fontSize: '0.72rem' }}>
+              INTERACTIVE RUN ARCHITECTURE
+            </Typography>
+          </Box>
+          <Typography variant="h3" sx={{ fontWeight: 800, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
             The 6-Agent Autonomous Chain
           </Typography>
         </Box>
@@ -264,8 +273,11 @@ export default function PipelineExplorer() {
             size="small"
             variant={!reprocessMode ? "contained" : "outlined"}
             color="primary"
-            onClick={() => setReprocessMode(false)}
-            sx={{ fontWeight: 600, borderRadius: 2 }}
+            onClick={() => {
+              setReprocessMode(false);
+              if (selectedId === 'gapcloser') setSelectedId('analyst');
+            }}
+            sx={{ fontWeight: 700, borderRadius: 2, px: 2, py: 0.75 }}
           >
             Standard Run Flow
           </Button>
@@ -273,8 +285,10 @@ export default function PipelineExplorer() {
             size="small"
             variant={reprocessMode ? "contained" : "outlined"}
             sx={{
-              fontWeight: 600,
+              fontWeight: 700,
               borderRadius: 2,
+              px: 2,
+              py: 0.75,
               borderColor: alpha(BLUE, 0.5),
               color: reprocessMode ? '#fff' : BLUE,
               bgcolor: reprocessMode ? BLUE : 'transparent',
@@ -301,28 +315,31 @@ export default function PipelineExplorer() {
         {/* Left column: Pipeline visual node graph */}
         <Paper elevation={0} sx={{
           p: { xs: 2.5, md: 3 },
-          borderRadius: 3,
+          borderRadius: 3.5,
           border: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.paper',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          boxShadow: isLight
+            ? '0 12px 30px -10px rgba(0,0,0,0.06)'
+            : '0 12px 30px -10px rgba(0,0,0,0.5)',
         }}>
           <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, letterSpacing: '0.05em' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, letterSpacing: '0.05em', fontSize: '0.74rem' }}>
               CLICK ANY NODE TO INSPECT LIVE ARTIFACTS
             </Typography>
             <Chip
               size="small"
               label={reprocessMode ? "Reprocess Mode Active" : "Full Execution Chain"}
               color={reprocessMode ? "info" : "default"}
-              sx={{ fontWeight: 600, fontSize: '0.72rem' }}
+              sx={{ fontWeight: 700, fontSize: '0.72rem' }}
             />
           </Box>
 
           {/* Node items */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             {STAGES_DATA.map((stage, idx) => {
               const isSelected = selectedId === stage.id;
               const isReprocess = stage.isReprocessOnly;
@@ -332,26 +349,26 @@ export default function PipelineExplorer() {
                 <React.Fragment key={stage.id}>
                   <Box
                     component={motion.div}
-                    whileHover={{ scale: 1.01, x: 4 }}
+                    whileHover={{ scale: 1.01, x: 3 }}
                     whileTap={{ scale: 0.99 }}
                     onClick={() => setSelectedId(stage.id)}
                     sx={{
-                      p: 2,
+                      p: 1.75,
                       borderRadius: 2.5,
                       border: '1.5px solid',
                       borderColor: isSelected ? stage.accent : (isDimmed ? 'transparent' : 'divider'),
                       bgcolor: isSelected
-                        ? alpha(stage.accent, isLight ? 0.07 : 0.15)
+                        ? alpha(stage.accent, isLight ? 0.08 : 0.16)
                         : (isDimmed ? (isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)') : 'background.paper'),
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       position: 'relative',
-                      opacity: isDimmed ? 0.6 : 1,
-                      boxShadow: isSelected ? `0 4px 16px ${alpha(stage.accent, 0.2)}` : 'none',
+                      opacity: isDimmed ? 0.55 : 1,
+                      boxShadow: isSelected ? `0 4px 18px ${alpha(stage.accent, 0.22)}` : 'none',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         {/* Step icon / badge */}
                         <Box sx={{
                           width: 32,
@@ -362,8 +379,8 @@ export default function PipelineExplorer() {
                           justifyContent: 'center',
                           bgcolor: alpha(stage.accent, isSelected ? 1 : 0.15),
                           color: isSelected ? '#FFFFFF' : stage.accent,
-                          fontWeight: 700,
-                          fontSize: '0.85rem'
+                          fontWeight: 800,
+                          fontSize: '0.82rem'
                         }}>
                           {stage.id === 'approval' ? (
                             <UserCheck size={16} />
@@ -377,22 +394,23 @@ export default function PipelineExplorer() {
                         {/* Title & summary */}
                         <Box>
                           <Typography variant="subtitle2" sx={{
-                            fontWeight: isSelected ? 700 : 600,
+                            fontWeight: isSelected ? 800 : 700,
                             color: isSelected ? (isLight ? 'text.primary' : '#fff') : 'text.primary',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 1
+                            gap: 1,
+                            fontSize: '0.88rem'
                           }}>
                             {stage.name}
                             {stage.isReprocessOnly && (
                               <Chip
                                 label="Loop"
                                 size="small"
-                                sx={{ height: 18, fontSize: '0.65rem', bgcolor: alpha(BLUE, 0.15), color: BLUE, fontWeight: 700 }}
+                                sx={{ height: 18, fontSize: '0.65rem', bgcolor: alpha(BLUE, 0.15), color: BLUE, fontWeight: 800 }}
                               />
                             )}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.75rem' }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.74rem' }}>
                             {stage.role}
                           </Typography>
                         </Box>
@@ -406,10 +424,10 @@ export default function PipelineExplorer() {
                             fontFamily: 'ui-monospace, monospace',
                             fontSize: '0.72rem',
                             color: isSelected ? stage.accent : 'text.secondary',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             bgcolor: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
                             px: 1,
-                            py: 0.25,
+                            py: 0.35,
                             borderRadius: 1
                           }}
                         >
@@ -419,10 +437,10 @@ export default function PipelineExplorer() {
                     </Box>
                   </Box>
 
-                  {/* Connecting edge arrow */}
+                  {/* Connecting edge */}
                   {idx < STAGES_DATA.length - 1 && idx !== 5 && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 10 }}>
-                      <Box sx={{ width: 2, height: 10, bgcolor: alpha(theme.palette.text.primary, 0.15) }} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 8 }}>
+                      <Box sx={{ width: 2, height: 8, bgcolor: alpha(theme.palette.text.primary, 0.15) }} />
                     </Box>
                   )}
                   {idx === 5 && (
@@ -430,13 +448,13 @@ export default function PipelineExplorer() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      px: 3,
+                      px: 2,
                       py: 0.5
                     }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 700 }}>
                         ↓ Final Verified Suite
                       </Typography>
-                      <Typography variant="caption" sx={{ color: alpha(BLUE, 0.8), fontSize: '0.7rem', fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: alpha(BLUE, 0.9), fontSize: '0.7rem', fontWeight: 700 }}>
                         ↺ In-Place Reprocess Target
                       </Typography>
                     </Box>
@@ -450,15 +468,18 @@ export default function PipelineExplorer() {
         {/* Right column: Live Artifact Inspector & Guardrail Details */}
         <Paper elevation={0} sx={{
           p: { xs: 2.5, md: 3.5 },
-          borderRadius: 3,
-          border: '1px solid',
+          borderRadius: 3.5,
+          border: '1.5px solid',
           borderColor: selectedStage.accent,
           bgcolor: 'background.paper',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: isLight
+            ? `0 14px 36px ${alpha(selectedStage.accent, 0.12)}`
+            : `0 14px 36px ${alpha(selectedStage.accent, 0.25)}`,
         }}>
           {/* Top accent banner */}
           <Box sx={{
@@ -479,63 +500,82 @@ export default function PipelineExplorer() {
                     label={`Agent Step ${selectedStage.number} of 7`}
                     size="small"
                     sx={{
-                      fontWeight: 700,
+                      fontWeight: 800,
                       fontSize: '0.7rem',
                       bgcolor: alpha(selectedStage.accent, 0.15),
                       color: selectedStage.accent
                     }}
                   />
-                  <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', color: 'text.secondary' }}>
+                  <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', color: 'text.secondary', fontWeight: 600 }}>
                     {selectedStage.outputArtifact}
                   </Typography>
                 </Box>
-                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                <Typography variant="h5" sx={{ fontWeight: 800 }}>
                   {selectedStage.name}
                 </Typography>
               </Box>
 
               <Tooltip title={copied ? "Copied!" : "Copy JSON Payload"}>
-                <IconButton onClick={handleCopy} size="small" sx={{ border: '1px solid', borderColor: 'divider' }}>
+                <IconButton onClick={handleCopy} size="small" sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                   {copied ? <Check size={16} color={GREEN} /> : <Copy size={16} />}
                 </IconButton>
               </Tooltip>
             </Box>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.65 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.65, fontSize: '0.88rem' }}>
               {selectedStage.summary}
             </Typography>
 
             {/* Guardrails check */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ShieldCheck size={18} color={selectedStage.accent} />
-                Active Guardrails & Verification Criteria
+            <Box sx={{ mb: 2.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.85rem' }}>
+                <ShieldCheck size={17} color={selectedStage.accent} />
+                Active Guardrails &amp; Verification Rules
               </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {selectedStage.guardrails.map((rule) => (
                   <Box key={rule} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <CheckCircle2 size={15} color={GREEN} />
-                    <Typography variant="body2" sx={{ fontSize: '0.84rem' }}>{rule}</Typography>
+                    <CheckCircle2 size={15} color={GREEN} style={{ flexShrink: 0 }} />
+                    <Typography variant="body2" sx={{ fontSize: '0.84rem', color: 'text.primary' }}>{rule}</Typography>
                   </Box>
                 ))}
               </Box>
             </Box>
 
-            {/* Live Schema Output Preview */}
+            {/* Live Schema Output Preview with Terminal Bar */}
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <FileJson size={14} />
-                  OUTPUT ARTIFACT PAYLOAD PREVIEW
-                </Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
-                  Validated JSON Schema
-                </Typography>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 2,
+                py: 1,
+                bgcolor: (t) => t.palette.mode === 'light' ? '#2A303C' : '#0B0F15',
+                borderTopLeftRadius: 10,
+                borderTopRightRadius: 10,
+                border: '1px solid',
+                borderColor: (t) => t.palette.mode === 'light' ? '#3B4354' : '#1C2333',
+                borderBottom: 'none',
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#FF5F56' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#FFBD2E' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#27C93F' }} />
+                  <Typography variant="caption" sx={{ ml: 1, fontWeight: 700, color: '#A0AEC0', fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                    {selectedStage.outputArtifact}
+                  </Typography>
+                </Box>
+                <Chip
+                  label="SCHEMA DRAFT-07 VALID"
+                  size="small"
+                  sx={{ height: 18, fontSize: '0.62rem', fontWeight: 800, bgcolor: alpha(GREEN, 0.2), color: '#34D399' }}
+                />
               </Box>
 
               <Box sx={{
                 p: 2,
-                borderRadius: 2,
+                borderBottomLeftRadius: 10,
+                borderBottomRightRadius: 10,
                 bgcolor: (t) => t.palette.mode === 'light' ? '#1E2229' : '#0D1117',
                 color: '#E6EDF3',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
@@ -544,7 +584,7 @@ export default function PipelineExplorer() {
                 maxHeight: 220,
                 overflowY: 'auto',
                 border: '1px solid',
-                borderColor: (t) => t.palette.mode === 'light' ? '#30363D' : '#21262D',
+                borderColor: (t) => t.palette.mode === 'light' ? '#3B4354' : '#1C2333',
               }}>
                 <pre style={{ margin: 0 }}>
                   {JSON.stringify(selectedStage.sampleJson, null, 2)}
@@ -563,10 +603,10 @@ export default function PipelineExplorer() {
             alignItems: 'center',
             justifyContent: 'space-between'
           }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
               Input: <strong>{selectedStage.inputArtifact}</strong>
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: selectedStage.accent, fontWeight: 700, fontSize: '0.78rem' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: selectedStage.accent, fontWeight: 800, fontSize: '0.78rem' }}>
               <span>Deterministic Transition</span>
               <ArrowRight size={14} />
             </Box>

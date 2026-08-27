@@ -4,13 +4,13 @@ import React from 'react';
 import { Box } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 
-interface AnimatedQualarisWordProps {
+interface AnimatedBrandWordProps {
     word?: string;
     withDots?: boolean;
     sx?: SxProps<Theme>;
 }
 
-export default function AnimatedQualarisWord({ word = 'Analytic Genie', withDots = false, sx }: AnimatedQualarisWordProps) {
+export default function AnimatedBrandWord({ word = 'Agent HUB Platform', withDots = false, sx }: AnimatedBrandWordProps) {
     const letters = word.split('');
 
     return (
@@ -19,9 +19,10 @@ export default function AnimatedQualarisWord({ word = 'Analytic Genie', withDots
             sx={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                fontWeight: 700,
-                fontSize: '1.05rem',
+                fontWeight: 800,
+                fontSize: { xs: '0.95rem', md: '1.05rem' },
                 letterSpacing: '-0.01em',
+                lineHeight: 1,
                 whiteSpace: 'nowrap',
                 textTransform: 'none',
                 ...sx,
@@ -30,14 +31,14 @@ export default function AnimatedQualarisWord({ word = 'Analytic Genie', withDots
             {letters.map((char, idx) => {
                 if (char === ' ') {
                     return (
-                        <Box key={`space-${idx}`} component="span" sx={{ width: '0.4em' }}>
+                        <Box key={`space-${idx}`} component="span" sx={{ width: '0.35em' }}>
                             &nbsp;
                         </Box>
                     );
                 }
 
-                // First word: primary.main (Analytic), Second word: text.primary (Genie) or alternating
-                const isSecondWord = idx > word.indexOf(' ') && word.indexOf(' ') !== -1;
+                // 'Agent HUB' -> primary.main, 'Platform' -> text.primary
+                const isThirdWord = idx >= word.lastIndexOf(' ') && word.lastIndexOf(' ') !== -1;
 
                 return (
                     <React.Fragment key={`${char}-${idx}`}>
@@ -45,12 +46,12 @@ export default function AnimatedQualarisWord({ word = 'Analytic Genie', withDots
                             component="span"
                             sx={{
                                 display: 'inline-block',
-                                color: isSecondWord ? 'text.primary' : 'primary.main',
-                                '@keyframes qualarisWave': {
+                                color: isThirdWord ? 'text.primary' : 'primary.main',
+                                '@keyframes agentHubWave': {
                                     '0%, 100%': { transform: 'translateY(0px)', opacity: 0.95 },
                                     '50%': { transform: 'translateY(-1.5px)', opacity: 1 },
                                 },
-                                animation: 'qualarisWave 2s ease-in-out infinite',
+                                animation: 'agentHubWave 2s ease-in-out infinite',
                                 animationDelay: `${idx * 0.06}s`,
                             }}
                         >
