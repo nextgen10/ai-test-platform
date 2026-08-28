@@ -8,6 +8,7 @@ import {
   Button,
   Grid,
   Card,
+  CardActionArea,
   CardContent,
   Drawer,
   Alert,
@@ -26,13 +27,21 @@ import {
   Plus,
 } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
-import { hubApi, type HubCatalog } from '@/lib/hub-api';
 import { ConfigBar } from './ConfigBar';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { SessionSidebar } from './SessionSidebar';
 import { StreamingIndicator } from './StreamingIndicator';
 import { useRouter } from 'next/navigation';
+
+const srOnly = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+} as const;
 
 export const ChatPanel: React.FC = () => {
   const theme = useTheme();
@@ -42,22 +51,23 @@ export const ChatPanel: React.FC = () => {
 
   const {
     messages,
+    messageTotal,
+    loadingEarlier,
+    loadEarlierMessages,
     isStreaming,
     streamingContent,
     error,
-    notice,
     clearError,
-    clearNotice,
     loadSessions,
     updateConfig,
-    createSession,
+    newChat,
     config,
     sessionLoading,
+    catalog,
   } = useChatContext();
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [catalog, setCatalog] = useState<HubCatalog | null>(null);
   const [catalogQuery, setCatalogQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -66,10 +76,6 @@ export const ChatPanel: React.FC = () => {
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
-
-  useEffect(() => {
-    hubApi.catalog().then(setCatalog).catch(() => setCatalog(null));
-  }, []);
 
   const onScroll = () => {
     const el = scrollerRef.current;
@@ -80,8 +86,13 @@ export const ChatPanel: React.FC = () => {
 
   useEffect(() => {
     if (!stickToBottom.current) return;
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent]);
+    // Smooth animations queue against each other when a token arrives every few
+    // milliseconds, so the transcript ends up chasing itself. Jump while
+    // streaming and animate only when a turn settles.
+    messagesEndRef.current?.scrollIntoView({
+      behavior: isStreaming ? 'auto' : 'smooth',
+    });
+  }, [messages, streamingContent, isStreaming]);
 
   const q = catalogQuery.trim().toLowerCase();
   const workflows = useMemo(
@@ -101,9 +112,9 @@ export const ChatPanel: React.FC = () => {
 
   const selectedWorkflow = catalog?.workflows.find((w) => w.id === config.workflowId);
   const showEmpty = messages.length === 0 && !isStreaming && !sessionLoading;
+  const earlierCount = Math.max(0, messageTotal - messages.length);
 
   const quickCardSx = (accent: string) => ({
-    cursor: 'pointer',
     borderRadius: 2,
     height: '100%',
     transition: 'border-color 0.15s, transform 0.15s',
@@ -111,6 +122,7 @@ export const ChatPanel: React.FC = () => {
       borderColor: accent,
       transform: 'translateY(-1px)',
     },
+    '&:focus-within': { borderColor: accent },
   });
 
   return (
@@ -160,6 +172,7 @@ export const ChatPanel: React.FC = () => {
             <Tooltip title={sidebarOpen ? 'Hide sessions' : 'Show sessions'}>
               <IconButton
                 size="small"
+                aria-label={sidebarOpen ? 'Hide sessions' : 'Show sessions'}
                 onClick={() => {
                   if (isMobile) setMobileDrawerOpen(true);
                   else setSidebarOpen(!sidebarOpen);
@@ -184,7 +197,7 @@ export const ChatPanel: React.FC = () => {
               variant="text"
               color="inherit"
               startIcon={<Plus size={14} />}
-              onClick={() => createSession('New Chat')}
+              onClick={newChat}
               sx={{
                 borderRadius: 1.5,
                 fontSize: '0.78rem',
@@ -202,12 +215,6 @@ export const ChatPanel: React.FC = () => {
         {error && (
           <Alert severity="error" onClose={clearError} sx={{ m: 1.5, mb: 0, borderRadius: 1.5 }}>
             {error}
-          </Alert>
-        )}
-
-        {notice && (
-          <Alert severity="info" onClose={clearNotice} sx={{ m: 1.5, mb: 0, borderRadius: 1.5 }}>
-            {notice}
           </Alert>
         )}
 
@@ -277,6 +284,7 @@ export const ChatPanel: React.FC = () => {
 
               <TextField
                 size="small"
+                label="Filter agents and workflows"
                 placeholder="Filter agents and workflows…"
                 value={catalogQuery}
                 onChange={(e) => setCatalogQuery(e.target.value)}
@@ -287,56 +295,57 @@ export const ChatPanel: React.FC = () => {
               <Grid container spacing={2} sx={{ textAlign: 'left' }}>
                 {workflows.slice(0, 8).map((wf) => (
                   <Grid size={{ xs: 12, sm: 6 }} key={wf.id}>
-                    <Card
-                      variant="outlined"
-                      sx={quickCardSx('#3b82f6')}
-                      onClick={() =>
-                        wf.has_custom_ui && wf.custom_ui_route
-                          ? router.push(wf.custom_ui_route)
-                          : updateConfig({ workflowId: wf.id, agentId: null })
-                      }
-                    >
-                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                          <Workflow size={16} color="#3b82f6" />
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                            {wf.name}
+                    <Card variant="outlined" sx={quickCardSx('#3b82f6')}>
+                      <CardActionArea
+                        sx={{ height: '100%' }}
+                        // Always select it here. Every workflow in the registry
+                        // runs as a job from this console, whether or not it
+                        // also has a bespoke page of its own.
+                        onClick={() => updateConfig({ workflowId: wf.id, agentId: null })}
+                      >
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                            <Workflow size={16} color="#3b82f6" />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                              {wf.name}
+                            </Typography>
+                          </Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                            {wf.description}
                           </Typography>
-                        </Box>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-                          {wf.description}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#3b82f6', fontSize: '0.75rem', fontWeight: 600 }}>
-                          <span>{wf.has_custom_ui ? 'Open its UI' : 'Run as a job'}</span>
-                          <ChevronRight size={13} />
-                        </Box>
-                      </CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#3b82f6', fontSize: '0.75rem', fontWeight: 600 }}>
+                            <span>Run as a job</span>
+                            <ChevronRight size={13} />
+                          </Box>
+                        </CardContent>
+                      </CardActionArea>
                     </Card>
                   </Grid>
                 ))}
 
                 {agents.slice(0, 8).map((agent) => (
                   <Grid size={{ xs: 12, sm: 6 }} key={agent.id}>
-                    <Card
-                      variant="outlined"
-                      sx={quickCardSx(theme.palette.primary.main)}
-                      onClick={() => updateConfig({ agentId: agent.id, workflowId: null })}
-                    >
-                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                          <Bot size={16} color={theme.palette.primary.main} />
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                            {agent.name}
+                    <Card variant="outlined" sx={quickCardSx(theme.palette.primary.main)}>
+                      <CardActionArea
+                        sx={{ height: '100%' }}
+                        onClick={() => updateConfig({ agentId: agent.id, workflowId: null })}
+                      >
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                            <Bot size={16} color={theme.palette.primary.main} />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                              {agent.name}
+                            </Typography>
+                          </Box>
+                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                            {agent.description || 'Specialized Copilot agent.'}
                           </Typography>
-                        </Box>
-                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-                          {agent.description || 'Specialized Copilot agent.'}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontSize: '0.75rem', fontWeight: 600 }}>
-                          <span>Chat with this agent</span>
-                          <ChevronRight size={13} />
-                        </Box>
-                      </CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontSize: '0.75rem', fontWeight: 600 }}>
+                            <span>Chat with this agent</span>
+                            <ChevronRight size={13} />
+                          </Box>
+                        </CardContent>
+                      </CardActionArea>
                     </Card>
                   </Grid>
                 ))}
@@ -362,26 +371,65 @@ export const ChatPanel: React.FC = () => {
             </Box>
           ) : (
             <Box sx={{ py: 1 }}>
-              {messages.map((m) => (
-                <ChatMessage key={m.id || m.sequence} message={m} />
-              ))}
+              {earlierCount > 0 && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1.5,
+                    flexWrap: 'wrap',
+                    px: 2,
+                    py: 1.25,
+                    mb: 1,
+                    borderBottom: '1px dashed',
+                    borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Showing the last {messages.length} of {messageTotal} messages.
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="text"
+                    disabled={loadingEarlier}
+                    onClick={() => void loadEarlierMessages()}
+                    sx={{ fontSize: '0.75rem', textTransform: 'none' }}
+                  >
+                    {loadingEarlier ? 'Loading…' : `Load ${Math.min(earlierCount, 100)} earlier`}
+                  </Button>
+                </Box>
+              )}
+
+              {/* A log region announces each settled turn. The streaming bubble
+                  is hidden from it so assistive tech is not read every token. */}
+              <Box role="log" aria-live="polite" aria-busy={isStreaming}>
+                {messages.map((m) => (
+                  <ChatMessage key={m.id || m.sequence} message={m} />
+                ))}
+              </Box>
 
               {isStreaming && (
                 <>
-                  {streamingContent ? (
-                    <ChatMessage
-                      message={{
-                        role: 'assistant',
-                        content: streamingContent,
-                        agent_id: config.agentId,
-                      }}
-                      isStreaming={true}
-                    />
-                  ) : (
-                    <Box sx={{ px: 3, py: 2 }}>
-                      <StreamingIndicator />
-                    </Box>
-                  )}
+                  <Box component="span" role="status" sx={srOnly}>
+                    The agent is writing a response.
+                  </Box>
+                  <Box aria-hidden="true">
+                    {streamingContent ? (
+                      <ChatMessage
+                        message={{
+                          role: 'assistant',
+                          content: streamingContent,
+                          agent_id: config.agentId,
+                        }}
+                        isStreaming={true}
+                      />
+                    ) : (
+                      <Box sx={{ px: 3, py: 2 }}>
+                        <StreamingIndicator />
+                      </Box>
+                    )}
+                  </Box>
                 </>
               )}
               <div ref={messagesEndRef} />

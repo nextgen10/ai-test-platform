@@ -124,16 +124,23 @@ def client(operator: TestClient) -> TestClient:
     return operator
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def worker():
     """A running queue worker, for tests that expect jobs to actually execute.
 
     Execution no longer rides on the request that submitted it, so a test that
     wants a job to progress has to let something claim it.
+
+    Function-scoped deliberately. As a session fixture this outlived the test
+    that asked for it and kept polling for the rest of the run, so any later
+    test that made a row claimable — every lease primitive in test_queue.py —
+    raced it for the claim and failed intermittently.
     """
     from app.services import queue
 
     running = queue.Worker(concurrency=2)
     running.start()
-    yield running
-    running.stop()
+    try:
+        yield running
+    finally:
+        running.stop()

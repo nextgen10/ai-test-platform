@@ -2,14 +2,19 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.config import settings
+
+#: Read once at import so ``CHAT_MAX_MESSAGE_CHARS`` actually reaches validation
+#: instead of the limit being duplicated as a literal here.
+MAX_MESSAGE_CHARS = settings.chat_max_message_chars
 
 
 class ChatMessageIn(BaseModel):
     """User sends a message to a chat session."""
-    content: str = Field(..., min_length=1, max_length=50_000)
+    content: str = Field(..., min_length=1, max_length=MAX_MESSAGE_CHARS)
     agent_id: str | None = Field(default=None, max_length=128)
     workflow_id: str | None = Field(default=None, max_length=128)
     skill_id: str | None = Field(default=None, max_length=128)
@@ -56,7 +61,10 @@ class ChatSessionOut(BaseModel):
     workflow_id: str | None = None
     prompt_id: str | None = None
     model: str | None = None
+    #: A bounded window, newest last. Compare with ``message_total`` to tell
+    #: whether this is the whole conversation or only its tail.
     messages: list[ChatMessageOut] = []
+    message_total: int = 0
 
 
 class ChatSessionSummary(BaseModel):
@@ -72,8 +80,12 @@ class ChatSessionSummary(BaseModel):
 
 
 class OneShotRequest(BaseModel):
-    """Fire-and-forget single execution — no session."""
-    content: str = Field(..., min_length=1, max_length=50_000)
+    """Fire-and-forget single execution — no session.
+
+    Exposed for scripted callers; the Agent Console itself always works through
+    a session so the transcript survives a reload.
+    """
+    content: str = Field(..., min_length=1, max_length=MAX_MESSAGE_CHARS)
     agent_id: str | None = None
     skill_id: str | None = None
     prompt_id: str | None = None

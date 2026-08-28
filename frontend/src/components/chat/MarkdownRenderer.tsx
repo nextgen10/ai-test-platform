@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Typography,
   IconButton,
+  Link,
   Tooltip,
   Paper,
   Table,
@@ -16,59 +17,80 @@ import {
   useTheme,
 } from '@mui/material';
 import { Check, Copy } from 'lucide-react';
+import { copyToClipboard } from '@/lib/clipboard';
 
 interface MarkdownRendererProps {
   content: string;
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
-  const theme = useTheme();
-  const isLight = theme.palette.mode === 'light';
+/** Parse code blocks, tables, headers, lists, and paragraphs into elements. */
+function parseMarkdown(rawText: string, isLight: boolean): React.ReactNode[] {
+  const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyIdx = 0;
 
-  // Helper to parse blocks of markdown: code blocks, tables, headers, lists, and paragraphs
-  const renderFormatted = (rawText: string) => {
-    // Split by code blocks first
-    const codeBlockRegex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
-    const parts: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match;
-    let keyIdx = 0;
-
-    while ((match = codeBlockRegex.exec(rawText)) !== null) {
-      // Text before code block
-      if (match.index > lastIndex) {
-        const textBefore = rawText.substring(lastIndex, match.index);
-        parts.push(
-          <React.Fragment key={`text-${keyIdx++}`}>
-            {renderTextBlocks(textBefore, isLight)}
-          </React.Fragment>
-        );
-      }
-
-      // Code block
-      const lang = match[1] || 'text';
-      const code = match[2];
-      parts.push(
-        <CodeBlock key={`code-${keyIdx++}`} language={lang} code={code} isLight={isLight} />
-      );
-
-      lastIndex = match.index + match[0].length;
-    }
-
-    // Remaining text after last code block
-    if (lastIndex < rawText.length) {
-      parts.push(
-        <React.Fragment key={`text-${keyIdx++}`}>
-          {renderTextBlocks(rawText.substring(lastIndex), isLight)}
-        </React.Fragment>
-      );
-    }
-
-    return parts;
+  const pushText = (text: string) => {
+    if (!text) return;
+    parts.push(
+      <React.Fragment key={`text-${keyIdx++}`}>
+        {renderTextBlocks(text, isLight)}
+      </React.Fragment>
+    );
   };
 
-  return <Box sx={{ width: '100%', wordBreak: 'break-word' }}>{renderFormatted(content)}</Box>;
-};
+  while ((match = codeBlockRegex.exec(rawText)) !== null) {
+    pushText(rawText.substring(lastIndex, match.index));
+    parts.push(
+      <CodeBlock
+        key={`code-${keyIdx++}`}
+        language={match[1] || 'text'}
+        code={match[2]}
+        isLight={isLight}
+      />
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  const rest = rawText.substring(lastIndex);
+  if (rest) {
+    // A fence whose closing ``` has not streamed in yet. Rendering the
+    // remainder as loose text lets the table and list detectors chew on code
+    // and then snap the whole block into shape when the fence arrives, so
+    // treat an unterminated opener as a code block that is still growing.
+    const unterminated = /```([a-zA-Z0-9_-]*)[ \t]*\n?([\s\S]*)$/.exec(rest);
+    if (unterminated) {
+      pushText(rest.substring(0, unterminated.index));
+      parts.push(
+        <CodeBlock
+          key={`code-${keyIdx++}`}
+          language={unterminated[1] || 'text'}
+          code={unterminated[2]}
+          isLight={isLight}
+        />
+      );
+    } else {
+      pushText(rest);
+    }
+  }
+
+  return parts;
+}
+
+/**
+ * Memoised because a streaming reply re-renders its bubble on every token, and
+ * an unmemoised parse re-walks the whole message each time.
+ */
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(
+  function MarkdownRenderer({ content }) {
+    const theme = useTheme();
+    const isLight = theme.palette.mode === 'light';
+    const rendered = useMemo(() => parseMarkdown(content, isLight), [content, isLight]);
+
+    return <Box sx={{ width: '100%', wordBreak: 'break-word' }}>{rendered}</Box>;
+  }
+);
 
 const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> = ({
   language,
@@ -77,8 +99,8 @@ const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> 
 }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
+  const handleCopy = async () => {
+    if (!(await copyToClipboard(code))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -294,9 +316,28 @@ function renderTextBlocks(text: string, isLight: boolean) {
   return elements;
 }
 
+/**
+ * The href of a markdown link, or null if it is not one we will follow.
+ *
+ * Agent output is untrusted text, so `javascript:` and `data:` targets must not
+ * become clickable.
+ */
+function safeHref(raw: string): string | null {
+  const url = raw.trim();
+  if (url.startsWith('/') || url.startsWith('#')) return url;
+  try {
+    const protocol = new URL(url).protocol;
+    return ['http:', 'https:', 'mailto:'].includes(protocol) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 function renderInline(text: string): React.ReactNode {
-  // Bold, italic, code pills
-  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  // Links, bold, italic, code pills
+  const tokens = text.split(
+    /(`[^`]+`|\[[^\]]+\]\([^)\s]+\)|\*\*[^*]+\*\*|\*[^*]+\*)/g
+  );
 
   return tokens.map((token, idx) => {
     if (token.startsWith('`') && token.endsWith('`')) {
@@ -317,6 +358,22 @@ function renderInline(text: string): React.ReactNode {
         >
           {token.slice(1, -1)}
         </Box>
+      );
+    }
+    const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(token);
+    if (link) {
+      const href = safeHref(link[2]);
+      if (!href) return link[1];
+      return (
+        <Link
+          key={idx}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          sx={{ fontWeight: 500 }}
+        >
+          {link[1]}
+        </Link>
       );
     }
     if (token.startsWith('**') && token.endsWith('**')) {

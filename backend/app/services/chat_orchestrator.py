@@ -86,12 +86,18 @@ def _render_history(history: list[HistoryTurn]) -> str:
     dropped = 0
 
     # Walk backwards so the most recent turns are the ones that survive.
-    for turn in reversed(history):
+    newest_first = list(reversed(history))
+    for index, turn in enumerate(newest_first):
         label = "User" if turn.role == "user" else "Assistant"
         block = f"{label}: {turn.content.strip()}"
         if len(block) > budget:
-            dropped += 1
-            continue
+            # Stop at the first turn that will not fit rather than skipping it.
+            # Carrying on would keep older turns that happen to be smaller,
+            # leaving a hole mid-conversation — and a gap reads to the model as
+            # though those exchanges never happened, which is worse than a
+            # transcript that simply starts later.
+            dropped = len(newest_first) - index
+            break
         rendered.append(block)
         budget -= len(block) + 2
 
@@ -126,6 +132,14 @@ def _resolve_prompt_content(config: ChatConfig) -> str:
     return "\n\n".join(parts)
 
 
+def _agent_exists(agent_id: str) -> bool:
+    """Whether the registry has an agent by this name."""
+    try:
+        return hub_registry.get_agent(agent_id) is not None
+    except hub_registry.InvalidEntityId:
+        return False
+
+
 def _build_copilot_cmd(config: ChatConfig, prompt_text: str) -> list[str]:
     """Construct the ``copilot`` CLI command with the right flags."""
     cmd = [COPILOT_BIN, "-s", "--no-color"]
@@ -150,15 +164,15 @@ def _build_copilot_cmd(config: ChatConfig, prompt_text: str) -> list[str]:
     cmd.extend(["--add-dir", str(settings.agent_hub_dir)])
 
     if config.skill_id:
-        # Skills are loaded via --skill-path pointing at the skill directory
+        # Skills load via --skill-path pointing at the skill directory. Ask the
+        # registry for that path instead of rebuilding it from the hub root:
+        # re-deriving it here is what put a traversal check one refactor away.
         try:
-            skill = hub_registry.get_skill(config.skill_id)
+            directory = hub_registry.skill_dir(config.skill_id)
         except hub_registry.InvalidEntityId:
-            skill = None
-        if skill:
-            skill_dir = settings.agent_hub_dir / "skills" / config.skill_id
-            if skill_dir.is_dir():
-                cmd.extend(["--skill-path", str(skill_dir)])
+            directory = None
+        if directory is not None and (directory / "SKILL.md").is_file():
+            cmd.extend(["--skill-path", str(directory)])
 
     if config.model:
         model_clean = config.model.strip().lower()
@@ -234,6 +248,16 @@ async def execute_streaming(config: ChatConfig) -> AsyncIterator[str]:
         # Mock mode: return a canned response for development/testing
         async for chunk in _mock_streaming(config, prompt_text):
             yield chunk
+        return
+
+    # Passing an unknown name straight to `--agent` surfaces a raw CLI error
+    # that says nothing about the Registry being where agents come from.
+    if config.agent_id and not _agent_exists(config.agent_id):
+        yield (
+            f"No agent named `{config.agent_id}` is onboarded, so there is "
+            f"nothing to route this to. Pick one from the Agent list, or add it "
+            f"in the Registry."
+        )
         return
 
     cmd = _build_copilot_cmd(config, prompt_text)

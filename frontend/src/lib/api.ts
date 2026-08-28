@@ -7,6 +7,16 @@
 
 export const API_BASE = '/api/v1';
 
+/**
+ * Shortest requirement `POST /jobs` will accept.
+ *
+ * Mirrors `min_length` on the server's JobCreateRequest. Worth checking before
+ * submitting: a validation failure comes back as a 422 whose `detail` is a list
+ * rather than a string, so it degrades to "Request failed (422)" and tells the
+ * user nothing about what to do.
+ */
+export const MIN_JOB_BRIEF_CHARS = 20;
+
 export type JobStatus =
     | 'QUEUED'
     | 'STARTING'
@@ -305,6 +315,9 @@ export const api = {
     listJobs: (limit = 50) => request<Job[]>(`/jobs?limit=${limit}`),
     getJob: (id: string) => request<Job>(`/jobs/${id}`),
 
+    /**
+     * Submit a workflow run. `requirement` must satisfy MIN_JOB_BRIEF_CHARS.
+     */
     createJob: (payload: {
         requirement: string;
         workflow?: string;

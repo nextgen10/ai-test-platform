@@ -28,7 +28,10 @@ export interface ChatSession {
     workflow_id: string | null;
     prompt_id: string | null;
     model: string | null;
+    /** A bounded window, newest last — not necessarily the whole transcript. */
     messages: ChatMessage[];
+    /** How many messages the session actually has, however many were returned. */
+    message_total: number;
 }
 
 export interface ChatSessionSummary {
@@ -49,10 +52,13 @@ export interface ChatStreamEvent {
     message?: string;
 }
 
+/**
+ * Note the absence of `workflow_id`: a workflow is submitted as a job, never as
+ * a chat turn, so the console has nothing to send here.
+ */
 export interface SendMessagePayload {
     content: string;
     agent_id?: string | null;
-    workflow_id?: string | null;
     skill_id?: string | null;
     prompt_id?: string | null;
     model?: string | null;
@@ -87,6 +93,46 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     return response.json() as Promise<T>;
 }
 
+/**
+ * Parse an SSE body into typed events.
+ *
+ * The server sends one `data: <json>\n\n` frame per event, and `json.dumps`
+ * escapes newlines, so a frame is always exactly one line.
+ */
+async function* parseSseEvents(
+    response: Response,
+): AsyncGenerator<ChatStreamEvent> {
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response body');
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                try {
+                    yield JSON.parse(line.slice(6)) as ChatStreamEvent;
+                } catch {
+                    /* skip a malformed frame rather than ending the stream */
+                }
+            }
+        }
+    } finally {
+        // Reached when the consumer breaks out early, which would otherwise
+        // leave the body locked and the connection held open.
+        await reader.cancel().catch(() => undefined);
+    }
+}
+
 // ------------------------------------------------------------------- API
 
 export const chatApi = {
@@ -104,14 +150,33 @@ export const chatApi = {
             body: JSON.stringify(payload),
         }),
 
-    listSessions: (limit = 50) =>
-        request<ChatSessionSummary[]>(`/chat/sessions?limit=${limit}`),
+    listSessions: (limit = 50, offset = 0) =>
+        request<ChatSessionSummary[]>(
+            `/chat/sessions?limit=${limit}&offset=${offset}`,
+        ),
 
-    getSession: (id: string) =>
-        request<ChatSession>(`/chat/sessions/${id}`),
+    /**
+     * Open a session, returning the newest `messageLimit` messages.
+     *
+     * Pass `beforeSequence` to page backwards through an older window.
+     */
+    getSession: (
+        id: string,
+        opts: { messageLimit?: number; beforeSequence?: number } = {},
+    ) => {
+        const params = new URLSearchParams();
+        if (opts.messageLimit) params.set('message_limit', String(opts.messageLimit));
+        if (opts.beforeSequence) params.set('before_sequence', String(opts.beforeSequence));
+        const qs = params.toString();
+        return request<ChatSession>(
+            `/chat/sessions/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`,
+        );
+    },
 
     deleteSession: (id: string) =>
-        request<{ deleted: string }>(`/chat/sessions/${id}`, { method: 'DELETE' }),
+        request<{ deleted: string }>(`/chat/sessions/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+        }),
 
     /**
      * Send a message and stream the response via SSE.
@@ -125,7 +190,7 @@ export const chatApi = {
 
         const stream = async function* (): AsyncGenerator<ChatStreamEvent> {
             const response = await fetch(
-                `${API_BASE}/chat/sessions/${sessionId}/messages`,
+                `${API_BASE}/chat/sessions/${encodeURIComponent(sessionId)}/messages`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -142,88 +207,7 @@ export const chatApi = {
                 );
             }
 
-            const reader = response.body?.getReader();
-            if (!reader) throw new Error('No response body');
-
-            const decoder = new TextDecoder();
-            let buffer = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const event = JSON.parse(line.slice(6)) as ChatStreamEvent;
-                            yield event;
-                        } catch {
-                            // Skip malformed JSON
-                        }
-                    }
-                }
-            }
-        };
-
-        return { stream: stream(), abort: () => controller.abort() };
-    },
-
-    /**
-     * One-shot execution — no session, SSE stream.
-     */
-    executeOneShot: (payload: {
-        content: string;
-        agent_id?: string | null;
-        skill_id?: string | null;
-        prompt_id?: string | null;
-        model?: string | null;
-        engine?: 'mock' | 'copilot' | null;
-        github_token?: string | null;
-    }) => {
-        const controller = new AbortController();
-
-        const stream = async function* (): AsyncGenerator<ChatStreamEvent> {
-            const response = await fetch(`${API_BASE}/chat/execute`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify(payload),
-                signal: controller.signal,
-            });
-
-            if (!response.ok) {
-                throw await errorFromResponse(
-                    response,
-                    `Execution failed (${response.status})`,
-                );
-            }
-
-            const reader = response.body?.getReader();
-            if (!reader) throw new Error('No response body');
-
-            const decoder = new TextDecoder();
-            let buffer = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            yield JSON.parse(line.slice(6)) as ChatStreamEvent;
-                        } catch { /* skip */ }
-                    }
-                }
-            }
+            yield* parseSseEvents(response);
         };
 
         return { stream: stream(), abort: () => controller.abort() };

@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { Bot, User, Copy, Check, Clock, Sparkles } from 'lucide-react';
 import type { ChatMessage as ChatMessageType } from '@/lib/chat-api';
+import { copyToClipboard } from '@/lib/clipboard';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { StreamingCursor } from './StreamingIndicator';
 
@@ -30,14 +31,22 @@ function displayAgent(id?: string | null): string {
     .join(' ');
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false }) => {
+/**
+ * Memoised because a streaming reply re-renders the panel on every token, and
+ * each settled message would otherwise re-run its whole markdown parse. Message
+ * objects keep their identity once committed, so the shallow compare holds.
+ */
+export const ChatMessage: React.FC<ChatMessageProps> = React.memo(function ChatMessage({
+  message,
+  isStreaming = false,
+}) {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(message.content);
+  const handleCopy = async () => {
+    if (!(await copyToClipboard(message.content))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -159,4 +168,4 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming =
       </Box>
     </Box>
   );
-};
+});

@@ -282,13 +282,23 @@ def list_skills() -> list[dict[str, Any]]:
     return skills
 
 
+def skill_dir(skill_id: str) -> Path:
+    """The validated on-disk directory for a skill.
+
+    Anything that hands a skill path to a subprocess should come through here
+    rather than joining onto the hub root itself, so validation cannot be lost
+    by a caller reordering its own guards.
+    """
+    return _contained(_skills_dir(), _safe_id(skill_id))
+
+
 def get_skill(skill_id: str) -> dict[str, Any] | None:
-    skill_dir = _contained(_skills_dir(), _safe_id(skill_id))
-    if not skill_dir.is_dir():
+    directory = skill_dir(skill_id)
+    if not directory.is_dir():
         return None
-    if not (skill_dir / "SKILL.md").is_file():
+    if not (directory / "SKILL.md").is_file():
         return None
-    return _read_skill(skill_dir)
+    return _read_skill(directory)
 
 
 def create_skill(skill_id: str, content: str) -> dict[str, Any]:

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -13,55 +13,48 @@ import {
 } from '@mui/material';
 import { Send, Square } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
-import { hubApi } from '@/lib/hub-api';
-import { useRouter } from 'next/navigation';
+import { MIN_JOB_BRIEF_CHARS } from '@/lib/api';
 
 type QuickPrompt = {
   label: string;
   agent?: string;
   workflow?: string;
   prompt?: string;
-  customUiRoute?: string | null;
 };
 
 export const ChatInput: React.FC = () => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
-  const { isStreaming, sendMessage, stopStreaming, updateConfig, config, messages } = useChatContext();
-  const router = useRouter();
+  const { isStreaming, sendMessage, stopStreaming, updateConfig, config, messages, catalog } =
+    useChatContext();
   const [text, setText] = useState('');
-  const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    hubApi
-      .catalog()
-      .then((catalog) => {
-        const wf = catalog.workflows
-          .filter((w) => w.available !== false)
-          .slice(0, 2)
-          .map((w) => ({
-            label: w.has_custom_ui ? `Open ${w.name}` : `Run ${w.name}`,
-            workflow: w.id,
-            customUiRoute: w.has_custom_ui ? w.custom_ui_route : null,
-          }));
-        const agents = catalog.agents
-          .filter((a) => a.id !== 'ocr-extractor')
-          .slice(0, 3)
-          .map((a) => ({ label: `Ask ${a.name}`, agent: a.id }));
-        setQuickPrompts([...wf, ...agents]);
-      })
-      .catch(() => {
-        setQuickPrompts([
-          { label: 'Ask Test Designer', agent: 'test-designer' },
-          { label: 'Ask Requirement Analyst', agent: 'requirement-analyst' },
-        ]);
-      });
-  }, []);
+  // Derived from the catalog the provider already fetched. When it is
+  // unavailable there are no chips: offering hardcoded agent IDs that may not
+  // be onboarded produces a suggestion that fails when clicked.
+  const quickPrompts = useMemo<QuickPrompt[]>(() => {
+    if (!catalog) return [];
+    const workflows = catalog.workflows
+      .filter((w) => w.available !== false)
+      .slice(0, 2)
+      .map((w) => ({ label: `Run ${w.name}`, workflow: w.id }));
+    const agents = catalog.agents
+      .filter((a) => a.id !== 'ocr-extractor')
+      .slice(0, 3)
+      .map((a) => ({ label: `Ask ${a.name}`, agent: a.id }));
+    return [...workflows, ...agents];
+  }, [catalog]);
+
+  // A workflow brief has a server-side minimum length; a chat turn does not.
+  const runMode = Boolean(config.workflowId);
+  const trimmed = text.trim();
+  const briefTooShort = runMode && trimmed.length > 0 && trimmed.length < MIN_JOB_BRIEF_CHARS;
+  const canSend = trimmed.length > 0 && !(runMode && trimmed.length < MIN_JOB_BRIEF_CHARS);
 
   const handleSend = () => {
-    if (!text.trim() || isStreaming) return;
-    sendMessage(text.trim());
+    if (!canSend || isStreaming) return;
+    sendMessage(trimmed);
     setText('');
   };
 
@@ -78,10 +71,6 @@ export const ChatInput: React.FC = () => {
   };
 
   const handleChipClick = (item: QuickPrompt) => {
-    if (item.customUiRoute) {
-      router.push(item.customUiRoute);
-      return;
-    }
     if (item.workflow) {
       updateConfig({ workflowId: item.workflow, agentId: null });
       setText('');
@@ -97,8 +86,9 @@ export const ChatInput: React.FC = () => {
     inputRef.current?.focus();
   };
 
+  const selectedWorkflow = catalog?.workflows.find((w) => w.id === config.workflowId);
   const placeholder = config.workflowId
-    ? `Describe the input for ${config.workflowId}. Send starts a job and leaves this page.`
+    ? `Describe the input for ${selectedWorkflow?.name ?? config.workflowId}. Send starts a job and leaves this page.`
     : config.agentId
       ? `Message @${config.agentId}…`
       : 'Message an agent, or pick a workflow above to run a job…';
@@ -187,6 +177,11 @@ export const ChatInput: React.FC = () => {
           maxRows={8}
           fullWidth
           placeholder={placeholder}
+          slotProps={{
+            htmlInput: {
+              'aria-label': config.workflowId ? 'Job brief' : 'Message the agent',
+            },
+          }}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -212,9 +207,17 @@ export const ChatInput: React.FC = () => {
             bgcolor: isLight ? '#f8fafc' : '#11161d',
           }}
         >
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: '0.72rem',
+              color: briefTooShort ? 'warning.main' : 'text.secondary',
+            }}
+          >
             {isStreaming ? (
               <>Esc or Stop to halt</>
+            ) : briefTooShort ? (
+              <>{MIN_JOB_BRIEF_CHARS - trimmed.length} more characters needed for a job brief</>
             ) : (
               <>
                 Enter to send · Shift+Enter for a newline
@@ -246,7 +249,7 @@ export const ChatInput: React.FC = () => {
               color="primary"
               size="small"
               endIcon={<Send size={13} />}
-              disabled={!text.trim()}
+              disabled={!canSend}
               onClick={handleSend}
               sx={{
                 borderRadius: 1.5,

@@ -22,13 +22,14 @@ import {
   Cpu,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
   FileCode2,
   Workflow as WorkflowIcon,
   RotateCcw,
   ShieldCheck,
 } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
-import { hubApi, type HubCatalog } from '@/lib/hub-api';
+import { hubApi } from '@/lib/hub-api';
 import { api } from '@/lib/api';
 import { getSessionGithubToken, setSessionGithubToken } from '@/lib/settings';
 import { useRouter } from 'next/navigation';
@@ -42,16 +43,16 @@ export const ConfigBar: React.FC = () => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const router = useRouter();
-  const { config, updateConfig } = useChatContext();
+  // The catalog comes from the provider: three components need it, and three
+  // separate fetches of the same thing on every page load is three too many.
+  const { config, updateConfig, catalog } = useChatContext();
 
-  const [catalog, setCatalog] = useState<HubCatalog | null>(null);
   const [models, setModels] = useState<{ id: string; name: string; provider: string }[]>([]);
   const [platform, setPlatform] = useState<PlatformInfo | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [tokenInput, setTokenInput] = useState(getSessionGithubToken());
 
   useEffect(() => {
-    hubApi.catalog().then(setCatalog).catch(console.error);
     hubApi.listModels().then(setModels).catch(console.error);
     api.settings().then(setPlatform).catch(() => setPlatform(null));
   }, []);
@@ -144,19 +145,11 @@ export const ConfigBar: React.FC = () => {
             labelId="workflow-select-label"
             value={config.workflowId || ''}
             label="Workflow"
-            onChange={(e) => {
-              const id = e.target.value;
-              if (!id) {
-                updateConfig({ workflowId: null });
-                return;
-              }
-              const wf = catalog?.workflows.find((w) => w.id === id);
-              if (wf?.has_custom_ui && wf.custom_ui_route) {
-                router.push(wf.custom_ui_route);
-                return;
-              }
-              updateConfig({ workflowId: id });
-            }}
+            // Selecting a workflow selects it. A workflow that also ships a
+            // bespoke page used to hijack this and navigate there, which left
+            // the console unable to run half the registry — the one thing it
+            // exists to do. The bespoke page is offered as a link below instead.
+            onChange={(e) => updateConfig({ workflowId: e.target.value || null })}
             sx={selectSx}
           >
             <MenuItem value="">
@@ -267,7 +260,7 @@ export const ConfigBar: React.FC = () => {
 
       {/* A workflow runs as a job, which is worth saying before someone types. */}
       {selectedWorkflow && (
-        <Box sx={{ pt: 1 }}>
+        <Box sx={{ pt: 1, display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             <strong>{selectedWorkflow.name}</strong> runs as a job through{' '}
             {selectedWorkflow.agents.length} agent
@@ -275,6 +268,18 @@ export const ConfigBar: React.FC = () => {
             {selectedWorkflow.approval_gate ? ', pausing for your approval partway' : ''}.
             Your message is a job brief, not a chat turn. Send opens the job page.
           </Typography>
+
+          {selectedWorkflow.has_custom_ui && selectedWorkflow.custom_ui_route && (
+            <Button
+              size="small"
+              variant="text"
+              endIcon={<ExternalLink size={12} />}
+              onClick={() => router.push(selectedWorkflow.custom_ui_route!)}
+              sx={{ fontSize: '0.72rem', textTransform: 'none', px: 0.5, py: 0 }}
+            >
+              It also has a dedicated page
+            </Button>
+          )}
         </Box>
       )}
 

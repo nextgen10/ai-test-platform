@@ -36,16 +36,28 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
   const isLight = theme.palette.mode === 'light';
   const {
     sessions,
+    hasMoreSessions,
     activeSessionId,
-    createSession,
+    newChat,
+    loadMoreSessions,
     selectSession,
     deleteSession,
   } = useChatContext();
   const [query, setQuery] = useState('');
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const handleNewChat = async () => {
-    await createSession('New Chat');
+  const handleNewChat = () => {
+    newChat();
     onCloseMobile?.();
+  };
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    try {
+      await loadMoreSessions();
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   const handleSelect = (id: string) => {
@@ -122,6 +134,15 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
           Sessions
         </Typography>
 
+        {query && hasMoreSessions && (
+          <Typography
+            variant="caption"
+            sx={{ px: 1, pb: 0.5, display: 'block', color: 'text.secondary', fontSize: '0.68rem' }}
+          >
+            Searching the {sessions.length} loaded sessions. Clear the filter to load more.
+          </Typography>
+        )}
+
         {visible.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 4, px: 2 }}>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.78rem' }}>
@@ -184,13 +205,17 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                     <IconButton
                       size="small"
                       className="delete-btn"
+                      aria-label={`Delete ${s.title || 'this session'}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(s.id, s.title);
                       }}
                       sx={{
-                        opacity: 1,
+                        // Revealed on hover on a pointer device, but always
+                        // visible on touch, where there is no hover to reveal it.
+                        opacity: { xs: 1, md: 0 },
                         transition: 'opacity 0.2s',
+                        '&:focus-visible': { opacity: 1 },
                         p: 0.4,
                         color: 'text.secondary',
                         '&:hover': { color: 'error.main' },
@@ -203,6 +228,19 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
               );
             })}
           </List>
+        )}
+
+        {hasMoreSessions && !query && (
+          <Button
+            fullWidth
+            size="small"
+            variant="text"
+            disabled={loadingMore}
+            onClick={() => void handleLoadMore()}
+            sx={{ mt: 0.5, fontSize: '0.76rem', textTransform: 'none' }}
+          >
+            {loadingMore ? 'Loading…' : 'Show older sessions'}
+          </Button>
         )}
       </Box>
     </Box>

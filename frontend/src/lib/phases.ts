@@ -51,7 +51,7 @@ export function humanise(value: string): string {
  * this pipeline.
  */
 const LEGACY_BESPOKE_PHASES: Phase[] = [
-    { key: 'ocr-extractor', label: 'Document OCR' },
+    { key: 'ocr-extractor', label: 'OCR Extraction' },
     { key: 'requirement-analyst', label: 'Requirement analysis' },
     { key: 'test-designer', label: 'Test design' },
     { key: 'test-generator', label: 'Test generation' },
@@ -96,7 +96,7 @@ function buildPhases(job: Job, workflow: Workflow | null | undefined, recorded: 
         // agent runs. That step is a property of the run, not of the workflow,
         // so it is only shown for the runner that can perform it.
         if (workflow.runner === 'bespoke') {
-            push({ key: 'ocr-extractor', label: 'Document OCR' });
+            push({ key: 'ocr-extractor', label: 'OCR Extraction' });
         }
         for (const agent of workflow.agents) {
             push({

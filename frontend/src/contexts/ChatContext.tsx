@@ -4,8 +4,18 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { ChatSession, ChatSessionSummary, ChatMessage, SendMessagePayload } from '@/lib/chat-api';
 import { chatApi } from '@/lib/chat-api';
-import { api } from '@/lib/api';
+import { api, MIN_JOB_BRIEF_CHARS } from '@/lib/api';
+import { hubApi, type HubCatalog } from '@/lib/hub-api';
 import { getSessionGithubToken } from '@/lib/settings';
+
+/** Matches the server's marker exactly, so a reload does not reword the turn. */
+const STOPPED_MARKER = '\n\n_[stopped by the user]_';
+
+/** How many sessions the sidebar asks for at a time. */
+const SESSION_PAGE = 50;
+
+/** How many older messages one "load earlier" step pulls in. */
+const EARLIER_PAGE = 100;
 
 interface ChatConfig {
     agentId: string | null;
@@ -14,31 +24,36 @@ interface ChatConfig {
     promptId: string | null;
     model: string | null;
     engine: 'mock' | 'copilot' | null;
-    githubToken: string | null;
 }
 
 interface ChatState {
     sessions: ChatSessionSummary[];
+    hasMoreSessions: boolean;
     activeSessionId: string | null;
     messages: ChatMessage[];
+    /** Total messages in the open session; `messages` may hold only its tail. */
+    messageTotal: number;
+    loadingEarlier: boolean;
     isStreaming: boolean;
     streamingContent: string;
     config: ChatConfig;
     error: string | null;
-    notice: string | null;
     sessionLoading: boolean;
+    /** The hub catalog, fetched once here rather than by each child. */
+    catalog: HubCatalog | null;
 }
 
 interface ChatActions {
-    createSession: (title?: string) => Promise<ChatSession>;
+    newChat: () => void;
     loadSessions: () => Promise<void>;
+    loadMoreSessions: () => Promise<void>;
     selectSession: (id: string) => Promise<void>;
     deleteSession: (id: string) => Promise<void>;
+    loadEarlierMessages: () => Promise<void>;
     sendMessage: (content: string) => Promise<void>;
     stopStreaming: () => void;
     updateConfig: (update: Partial<ChatConfig>) => void;
     clearError: () => void;
-    clearNotice: () => void;
 }
 
 type ChatContextType = ChatState & ChatActions;
@@ -58,7 +73,6 @@ const EMPTY_CONFIG: ChatConfig = {
     promptId: null,
     model: null,
     engine: null,
-    githubToken: null,
 };
 
 function exclusiveConfig(prev: ChatConfig, update: Partial<ChatConfig>): ChatConfig {
@@ -69,19 +83,33 @@ function exclusiveConfig(prev: ChatConfig, update: Partial<ChatConfig>): ChatCon
     return next;
 }
 
+/**
+ * One past the last message's sequence.
+ *
+ * Deriving this from `messages.length` breaks as soon as a session is opened
+ * with only the tail of a long transcript, because the window starts partway in.
+ */
+function nextSequence(list: ChatMessage[]): number {
+    const last = list[list.length - 1];
+    return last ? last.sequence + 1 : 1;
+}
+
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+    const [hasMoreSessions, setHasMoreSessions] = useState(false);
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [messageTotal, setMessageTotal] = useState(0);
+    const [loadingEarlier, setLoadingEarlier] = useState(false);
     const [isStreaming, setIsStreaming] = useState(false);
     const [streamingContent, setStreamingContent] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [notice, setNotice] = useState<string | null>(null);
     const [config, setConfig] = useState<ChatConfig>(EMPTY_CONFIG);
     const [sessionLoading, setSessionLoading] = useState(Boolean(searchParams.get('session')));
+    const [catalog, setCatalog] = useState<HubCatalog | null>(null);
 
     const abortRef = useRef<(() => void) | null>(null);
     const streamedRef = useRef('');
@@ -90,8 +118,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => () => { abortRef.current?.(); }, []);
 
+    useEffect(() => {
+        hubApi.catalog().then(setCatalog).catch(() => setCatalog(null));
+    }, []);
+
     const syncSessionUrl = useCallback(
         (sessionId: string | null) => {
+            // From here the console owns the URL. Without this flag the restore
+            // effect below would treat a session we just created or opened as a
+            // cold load, refetch it, and wipe an in-flight stream.
+            if (sessionId) restoredSession.current = true;
+
             const params = new URLSearchParams();
             if (sessionId) params.set('session', sessionId);
             const qs = params.toString();
@@ -104,6 +141,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const applyOpenedSession = useCallback((session: ChatSession) => {
         setActiveSessionId(session.id);
         setMessages(session.messages);
+        setMessageTotal(session.message_total);
         setStreamingContent('');
         streamedRef.current = '';
         // A stored workflow_id is leftover config, not a job in progress.
@@ -166,11 +204,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const loadSessions = useCallback(async () => {
         try {
-            setSessions(await chatApi.listSessions());
+            const page = await chatApi.listSessions(SESSION_PAGE);
+            setSessions(page);
+            setHasMoreSessions(page.length === SESSION_PAGE);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Could not load your sessions');
         }
     }, []);
+
+    const loadMoreSessions = useCallback(async () => {
+        try {
+            const page = await chatApi.listSessions(SESSION_PAGE, sessions.length);
+            const known = new Set(sessions.map((s) => s.id));
+            setSessions((prev) => [...prev, ...page.filter((s) => !known.has(s.id))]);
+            setHasMoreSessions(page.length === SESSION_PAGE);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Could not load older sessions');
+        }
+    }, [sessions]);
 
     const summarize = (session: ChatSession): ChatSessionSummary => ({
         id: session.id,
@@ -198,33 +249,36 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         [syncSessionUrl],
     );
 
-    const createSession = useCallback(
-        async (title?: string): Promise<ChatSession> => {
-            abortRef.current?.();
-            const chatConfig = { ...config, workflowId: null };
-            setConfig(chatConfig);
-            try {
-                const session = await openSession(title, chatConfig);
-                setMessages([]);
-                setStreamingContent('');
-                return session;
-            } catch (e) {
-                setError(e instanceof Error ? e.message : 'Could not start a new session');
-                throw e;
-            }
-        },
-        [config, openSession],
-    );
+    /**
+     * Start a fresh chat locally.
+     *
+     * Nothing is created server-side until the first message: clicking "New
+     * chat" and walking away used to leave a permanent empty session behind.
+     */
+    const newChat = useCallback(() => {
+        abortRef.current?.();
+        setConfig((prev) => ({ ...prev, workflowId: null }));
+        setActiveSessionId(null);
+        setMessages([]);
+        setMessageTotal(0);
+        setStreamingContent('');
+        streamedRef.current = '';
+        setError(null);
+        syncSessionUrl(null);
+    }, [syncSessionUrl]);
 
     const selectSession = useCallback(
         async (id: string) => {
             abortRef.current?.();
+            setSessionLoading(true);
             try {
                 const session = await chatApi.getSession(id);
                 applyOpenedSession(session);
                 syncSessionUrl(session.id);
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Could not open that session');
+            } finally {
+                setSessionLoading(false);
             }
         },
         [applyOpenedSession, syncSessionUrl],
@@ -239,6 +293,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     abortRef.current?.();
                     setActiveSessionId(null);
                     setMessages([]);
+                    setMessageTotal(0);
                     setStreamingContent('');
                     syncSessionUrl(null);
                 }
@@ -249,6 +304,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         [activeSessionId, syncSessionUrl],
     );
 
+    /** Prepend the window of messages immediately before the ones on screen. */
+    const loadEarlierMessages = useCallback(async () => {
+        const oldest = messages[0]?.sequence;
+        if (!activeSessionId || !oldest || loadingEarlier) return;
+        setLoadingEarlier(true);
+        try {
+            const older = await chatApi.getSession(activeSessionId, {
+                messageLimit: EARLIER_PAGE,
+                beforeSequence: oldest,
+            });
+            setMessageTotal(older.message_total);
+            setMessages((prev) => [...older.messages, ...prev]);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Could not load earlier messages');
+        } finally {
+            setLoadingEarlier(false);
+        }
+    }, [activeSessionId, messages, loadingEarlier]);
+
     /**
      * Submit a multi-agent workflow as a job rather than a chat turn.
      *
@@ -258,6 +332,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
      */
     const runWorkflow = useCallback(
         async (workflowId: string, requirement: string) => {
+            if (requirement.trim().length < MIN_JOB_BRIEF_CHARS) {
+                throw new Error(
+                    `A job brief needs at least ${MIN_JOB_BRIEF_CHARS} characters. ` +
+                    `Describe what the workflow should work from.`,
+                );
+            }
+
             const { job_id } = await api.createJob({
                 workflow: workflowId,
                 requirement,
@@ -265,7 +346,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 copilot_model: config.model ?? undefined,
                 github_token: getSessionGithubToken() || undefined,
             });
-            setNotice(`Started workflow "${workflowId}". Opening the job…`);
+            // The job page is the confirmation; anything set here would unmount
+            // with this provider before it could be read.
             router.push(`/jobs/${job_id}`);
         },
         [config.engine, config.model, router],
@@ -295,18 +377,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
             }
 
-            const userMsg: ChatMessage = {
-                id: -Date.now(),
-                session_id: sessionId,
-                sequence: messages.length + 1,
-                role: 'user',
-                content,
-                created_at: new Date().toISOString(),
-                agent_id: config.agentId,
-                model: config.model,
-                duration_ms: null,
-            };
-            setMessages((prev) => [...prev, userMsg]);
+            setMessages((prev) => {
+                const userMsg: ChatMessage = {
+                    id: -Date.now(),
+                    session_id: sessionId!,
+                    sequence: nextSequence(prev),
+                    role: 'user',
+                    content,
+                    created_at: new Date().toISOString(),
+                    agent_id: config.agentId,
+                    model: config.model,
+                    duration_ms: null,
+                };
+                return [...prev, userMsg];
+            });
+            setMessageTotal((prev) => prev + 1);
             setIsStreaming(true);
             setStreamingContent('');
             streamedRef.current = '';
@@ -319,15 +404,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     {
                         id: -Date.now() - 1,
                         session_id: sessionId!,
-                        sequence: prev.length + 1,
+                        sequence: nextSequence(prev),
                         role: 'assistant',
-                        content: stopped ? `${text}\n\n_[stopped]_` : text,
+                        content: stopped ? `${text}${STOPPED_MARKER}` : text,
                         created_at: new Date().toISOString(),
                         agent_id: extra?.agent_id ?? config.agentId,
                         model: extra?.model ?? config.model,
                         duration_ms: extra?.duration_ms ?? null,
                     },
                 ]);
+                setMessageTotal((prev) => prev + 1);
                 streamedRef.current = '';
                 setStreamingContent('');
             };
@@ -375,7 +461,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 void loadSessions();
             }
         },
-        [activeSessionId, config, isStreaming, messages.length, openSession, runWorkflow, loadSessions],
+        [activeSessionId, config, isStreaming, openSession, runWorkflow, loadSessions],
     );
 
     const stopStreaming = useCallback(() => {
@@ -387,27 +473,30 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const clearError = useCallback(() => setError(null), []);
-    const clearNotice = useCallback(() => setNotice(null), []);
 
     const value: ChatContextType = {
         sessions,
+        hasMoreSessions,
         activeSessionId,
         messages,
+        messageTotal,
+        loadingEarlier,
         isStreaming,
         streamingContent,
         config,
         error,
-        notice,
         sessionLoading,
-        createSession,
+        catalog,
+        newChat,
         loadSessions,
+        loadMoreSessions,
         selectSession,
         deleteSession,
+        loadEarlierMessages,
         sendMessage,
         stopStreaming,
         updateConfig,
         clearError,
-        clearNotice,
     };
 
     return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
