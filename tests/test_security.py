@@ -315,3 +315,31 @@ def test_docs_are_closed_in_token_mode(anonymous):
     assert anonymous.get("/openapi.json").status_code == 404
     assert anonymous.get("/redoc").status_code == 404
 
+
+
+# ------------------------------------------------ auth configuration at boot
+
+def test_disabled_auth_boots_only_with_the_insecure_flag(monkeypatch):
+    """`AUTH_MODE=disabled` is a supported (loopback-only) mode, so it must boot.
+
+    It reads ALLOW_INSECURE_AUTH from the environment, and `os` was not imported
+    in this module — so the documented development path raised NameError on
+    startup instead of either refusing or running open.
+    """
+    from app import security
+    from app.config import settings as app_settings
+
+    # configure_auth() rewrites a module global; put the suite's credentials
+    # back afterwards so the rest of the tests still authenticate.
+    monkeypatch.setattr(security, "_TOKENS", dict(security._TOKENS))
+    monkeypatch.setattr(app_settings, "auth_mode", "disabled")
+    monkeypatch.delenv("ALLOW_INSECURE_AUTH", raising=False)
+
+    # Without the flag: a clear refusal, never a NameError.
+    with pytest.raises(security.AuthConfigError, match="ALLOW_INSECURE_AUTH"):
+        security.configure_auth()
+
+    # With it: boots, and every caller is the anonymous admin principal.
+    monkeypatch.setenv("ALLOW_INSECURE_AUTH", "1")
+    security.configure_auth()
+    assert security.ANONYMOUS.role is security.Role.ADMIN

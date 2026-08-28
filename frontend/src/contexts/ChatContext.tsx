@@ -26,6 +26,7 @@ interface ChatState {
     config: ChatConfig;
     error: string | null;
     notice: string | null;
+    sessionLoading: boolean;
 }
 
 interface ChatActions {
@@ -60,6 +61,14 @@ const EMPTY_CONFIG: ChatConfig = {
     githubToken: null,
 };
 
+function exclusiveConfig(prev: ChatConfig, update: Partial<ChatConfig>): ChatConfig {
+    const next = { ...prev, ...update };
+    // A workflow is a job. An agent is a chat. They cannot both be "the thing Send does".
+    if (update.workflowId) next.agentId = null;
+    if (update.agentId) next.workflowId = null;
+    return next;
+}
+
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -72,17 +81,63 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [config, setConfig] = useState<ChatConfig>(EMPTY_CONFIG);
+    const [sessionLoading, setSessionLoading] = useState(Boolean(searchParams.get('session')));
 
     const abortRef = useRef<(() => void) | null>(null);
-    /** Kept outside state so the abort handler can read the latest text. */
     const streamedRef = useRef('');
+    const landingConsumed = useRef(false);
+    const restoredSession = useRef(false);
 
     useEffect(() => () => { abortRef.current?.(); }, []);
 
-    // Seed the configuration from the URL. Every "Try in Chat" button in the
-    // Registry and the use-case links in the nav arrive this way, and used to
-    // land on an unconfigured console.
+    const syncSessionUrl = useCallback(
+        (sessionId: string | null) => {
+            const params = new URLSearchParams();
+            if (sessionId) params.set('session', sessionId);
+            const qs = params.toString();
+            const next = qs ? `/chat?${qs}` : '/chat';
+            router.replace(next, { scroll: false });
+        },
+        [router],
+    );
+
+    const applyOpenedSession = useCallback((session: ChatSession) => {
+        setActiveSessionId(session.id);
+        setMessages(session.messages);
+        setStreamingContent('');
+        streamedRef.current = '';
+        setConfig((prev) => ({
+            ...prev,
+            agentId: session.agent_id,
+            skillId: session.skill_id,
+            workflowId: session.workflow_id,
+            promptId: session.prompt_id,
+            model: session.model,
+        }));
+    }, []);
+
+    // Restore ?session= once. Landing ?agent= / ?workflow= apply once, then
+    // the URL is owned by the open session so ConfigBar changes stick.
     useEffect(() => {
+        const sessionId = searchParams.get('session');
+        if (sessionId && !restoredSession.current) {
+            restoredSession.current = true;
+            landingConsumed.current = true;
+            setSessionLoading(true);
+            chatApi
+                .getSession(sessionId)
+                .then(applyOpenedSession)
+                .catch((e) => {
+                    setError(e instanceof Error ? e.message : 'Could not open that session');
+                    syncSessionUrl(null);
+                })
+                .finally(() => setSessionLoading(false));
+            return;
+        }
+
+        if (landingConsumed.current || restoredSession.current) return;
+        landingConsumed.current = true;
+
         const fromUrl: Partial<ChatConfig> = {};
         const agent = searchParams.get('agent');
         const workflow = searchParams.get('workflow');
@@ -90,16 +145,19 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const prompt = searchParams.get('prompt');
         const model = searchParams.get('model');
 
-        if (agent) fromUrl.agentId = agent;
-        if (workflow) fromUrl.workflowId = workflow;
+        if (workflow) {
+            fromUrl.workflowId = workflow;
+        } else if (agent) {
+            fromUrl.agentId = agent;
+        }
         if (skill) fromUrl.skillId = skill;
         if (prompt) fromUrl.promptId = prompt;
         if (model) fromUrl.model = model;
 
         if (Object.keys(fromUrl).length > 0) {
-            setConfig((prev) => ({ ...prev, ...fromUrl }));
+            setConfig((prev) => exclusiveConfig(prev, fromUrl));
         }
-    }, [searchParams]);
+    }, [searchParams, applyOpenedSession, syncSessionUrl]);
 
     const loadSessions = useCallback(async () => {
         try {
@@ -118,7 +176,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         model: session.model,
     });
 
-    /** One place that builds the create payload, so no field can be dropped. */
     const openSession = useCallback(
         async (title: string | undefined, from: ChatConfig): Promise<ChatSession> => {
             const session = await chatApi.createSession({
@@ -130,17 +187,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 model: from.model,
             });
             setActiveSessionId(session.id);
-            setSessions((prev) => [summarize(session), ...prev]);
+            setSessions((prev) => [summarize(session), ...prev.filter((s) => s.id !== session.id)]);
+            syncSessionUrl(session.id);
             return session;
         },
-        [],
+        [syncSessionUrl],
     );
 
     const createSession = useCallback(
         async (title?: string): Promise<ChatSession> => {
+            abortRef.current?.();
             try {
                 const session = await openSession(title, config);
                 setMessages([]);
+                setStreamingContent('');
                 return session;
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Could not start a new session');
@@ -150,24 +210,19 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         [config, openSession],
     );
 
-    const selectSession = useCallback(async (id: string) => {
-        try {
-            const session = await chatApi.getSession(id);
-            setActiveSessionId(session.id);
-            setMessages(session.messages);
-            setStreamingContent('');
-            setConfig((prev) => ({
-                ...prev,
-                agentId: session.agent_id,
-                skillId: session.skill_id,
-                workflowId: session.workflow_id,
-                promptId: session.prompt_id,
-                model: session.model,
-            }));
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Could not open that session');
-        }
-    }, []);
+    const selectSession = useCallback(
+        async (id: string) => {
+            abortRef.current?.();
+            try {
+                const session = await chatApi.getSession(id);
+                applyOpenedSession(session);
+                syncSessionUrl(session.id);
+            } catch (e) {
+                setError(e instanceof Error ? e.message : 'Could not open that session');
+            }
+        },
+        [applyOpenedSession, syncSessionUrl],
+    );
 
     const deleteSession = useCallback(
         async (id: string) => {
@@ -175,15 +230,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 await chatApi.deleteSession(id);
                 setSessions((prev) => prev.filter((s) => s.id !== id));
                 if (activeSessionId === id) {
+                    abortRef.current?.();
                     setActiveSessionId(null);
                     setMessages([]);
                     setStreamingContent('');
+                    syncSessionUrl(null);
                 }
             } catch (e) {
                 setError(e instanceof Error ? e.message : 'Could not delete that session');
             }
         },
-        [activeSessionId],
+        [activeSessionId, syncSessionUrl],
     );
 
     /**
@@ -213,7 +270,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (isStreaming) return;
             setError(null);
 
-            // A workflow selection means "run this pipeline", not "chat".
             if (config.workflowId) {
                 try {
                     await runWorkflow(config.workflowId, content);
@@ -249,8 +305,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setStreamingContent('');
             streamedRef.current = '';
 
-            /** Promote whatever arrived into a real message. */
-            const commit = (stopped: boolean) => {
+            const commit = (stopped: boolean, extra?: { duration_ms?: number; agent_id?: string; model?: string }) => {
                 const text = streamedRef.current;
                 if (!text) return;
                 setMessages((prev) => [
@@ -262,9 +317,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         role: 'assistant',
                         content: stopped ? `${text}\n\n_[stopped]_` : text,
                         created_at: new Date().toISOString(),
-                        agent_id: config.agentId,
-                        model: config.model,
-                        duration_ms: null,
+                        agent_id: extra?.agent_id ?? config.agentId,
+                        model: extra?.model ?? config.model,
+                        duration_ms: extra?.duration_ms ?? null,
                     },
                 ]);
                 streamedRef.current = '';
@@ -275,7 +330,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const payload: SendMessagePayload = {
                     content,
                     agent_id: config.agentId,
-                    workflow_id: config.workflowId,
                     skill_id: config.skillId,
                     prompt_id: config.promptId,
                     model: config.model,
@@ -291,19 +345,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         streamedRef.current += event.content;
                         setStreamingContent(streamedRef.current);
                     } else if (event.type === 'done') {
-                        commit(false);
+                        commit(false, {
+                            duration_ms: event.duration_ms,
+                            agent_id: event.agent_id,
+                            model: event.model,
+                        });
                     } else if (event.type === 'error') {
                         setError(event.message || 'The agent reported an error');
                         commit(false);
                     }
                 }
 
-                // The stream can end without a `done` event if the connection
-                // drops. Keep the text either way.
                 commit(false);
             } catch (e) {
                 const aborted = e instanceof Error && e.name === 'AbortError';
-                // Stopping discards nothing: what streamed is what the user saw.
                 commit(aborted);
                 if (!aborted) {
                     setError(e instanceof Error ? e.message : 'The request failed');
@@ -311,9 +366,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } finally {
                 setIsStreaming(false);
                 abortRef.current = null;
+                void loadSessions();
             }
         },
-        [activeSessionId, config, isStreaming, messages.length, openSession, runWorkflow],
+        [activeSessionId, config, isStreaming, messages.length, openSession, runWorkflow, loadSessions],
     );
 
     const stopStreaming = useCallback(() => {
@@ -321,7 +377,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const updateConfig = useCallback((update: Partial<ChatConfig>) => {
-        setConfig((prev) => ({ ...prev, ...update }));
+        setConfig((prev) => exclusiveConfig(prev, update));
     }, []);
 
     const clearError = useCallback(() => setError(null), []);
@@ -336,6 +392,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         config,
         error,
         notice,
+        sessionLoading,
         createSession,
         loadSessions,
         selectSession,
