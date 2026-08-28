@@ -155,7 +155,7 @@ export default function DashboardPage() {
                         />
                         <StatTile label="Avg duration" value={formatDuration(stats.mean_duration_ms)} />
                         <StatTile
-                            label="Test cases"
+                            label="Items Generated"
                             value={String(stats.total_test_cases)}
                             hint={stats.mean_test_cases ? `${stats.mean_test_cases} avg/job` : undefined}
                         />
@@ -186,7 +186,7 @@ export default function DashboardPage() {
                 {jobs.length === 0 ? (
                     <Box sx={{ p: 5, textAlign: 'center' }}>
                         <Typography variant="body2" color="text.secondary">
-                            No jobs yet. Generate your first test suite to get started.
+                            No jobs yet. Run your first workflow to get started.
                         </Typography>
                     </Box>
                 ) : (

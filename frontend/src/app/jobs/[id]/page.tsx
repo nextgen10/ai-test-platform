@@ -801,17 +801,17 @@ export default function JobDetailPage() {
     const [autoSwitched, setAutoSwitched] = useState(false);
     useEffect(() => {
         if (autoSwitched || !job) return;
-        if (job.status === 'AWAITING_APPROVAL') {
+        if (job.status === 'AWAITING_APPROVAL' && availableTabs.some(t => t.key === 'quality')) {
             setTabKey('quality');
             setAutoSwitched(true);
-        } else if (suite) {
+        } else if (suite && availableTabs.some(t => t.key === 'results')) {
             setTabKey('results');
             setAutoSwitched(true);
-        } else if (!isBespoke && job.status === 'COMPLETED') {
+        } else if (!isBespoke && job.status === 'COMPLETED' && availableTabs.some(t => t.key === 'result_summary')) {
             setTabKey('result_summary');
             setAutoSwitched(true);
         }
-    }, [job, suite, autoSwitched, isBespoke]);
+    }, [job, suite, autoSwitched, isBespoke, availableTabs]);
 
     if (loading) {
         return (
@@ -900,7 +900,7 @@ export default function JobDetailPage() {
                 </Box>
             </Box>
 
-            <WorkflowStepper job={job} />
+            <WorkflowStepper job={job} workflow={workflow} />
 
             {job.error_message && (
                 <Alert severity={job.status === 'TIMEOUT' ? 'warning' : 'error'} sx={{ mb: 2.5, borderRadius: 2 }}>
