@@ -232,6 +232,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                                     flexDirection: 'column',
                                     alignItems: 'flex-start',
                                     gap: 0.5,
+                                    whiteSpace: 'normal',
                                     '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.06) },
                                 }}
                             >
