@@ -137,7 +137,7 @@ export const ConfigBar: React.FC = () => {
         </FormControl>
 
         {/* Workflow */}
-        <FormControl size="small" sx={{ minWidth: { xs: 130, sm: 180 } }}>
+        <FormControl size="small" sx={{ minWidth: { xs: 130, sm: 260 } }}>
           <InputLabel id="workflow-select-label" sx={{ fontSize: '0.82rem' }}>
             Workflow
           </InputLabel>

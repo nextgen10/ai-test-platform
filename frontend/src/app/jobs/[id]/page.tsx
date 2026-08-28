@@ -32,7 +32,7 @@ import {
  * render these four regardless of what actually ran.
  */
 const BESPOKE_PHASES = [
-    { key: 'ocr-extractor', label: 'OCR Extraction' },
+    { key: 'ocr-extractor', label: 'Document OCR & visual extraction' },
     { key: 'test-designer', label: 'Requirement analysis & scenario design' },
     { key: 'test-generator', label: 'Test case generation' },
     { key: 'test-reviewer', label: 'Review & validation' },
