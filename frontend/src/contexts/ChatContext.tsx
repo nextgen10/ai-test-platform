@@ -77,6 +77,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     /** Kept outside state so the abort handler can read the latest text. */
     const streamedRef = useRef('');
 
+    useEffect(() => () => { abortRef.current?.(); }, []);
+
     // Seed the configuration from the URL. Every "Try in Chat" button in the
     // Registry and the use-case links in the nav arrive this way, and used to
     // land on an unconfigured console.

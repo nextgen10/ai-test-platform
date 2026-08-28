@@ -12,15 +12,18 @@ from pathlib import Path
 def _project_root() -> Path:
     """This project's own directory, whatever it is named or wherever it sits.
 
-    Source checkout: <project>/backend/app/config.py -> parents[2] is <project>.
-    Container image: the layout is flattened to /srv/app/config.py, which has
-    fewer parents, so fall back to the topmost. That is fine because the image
-    always sets DATABASE_URL and ARTIFACT_ROOT explicitly.
+    Source checkout: <project>/backend/app/config.py — walk up until ``agent-hub/``
+    is a sibling. Container image: ``/srv/app/config.py`` with ``/srv/agent-hub``
+    copied next to ``app``, so the same walk lands on ``/srv``.
 
-    Anchoring on this directory rather than its parent is deliberate: it keeps
-    the project relocatable and rename-safe, with no hardcoded folder name.
+    Never use ``parents[2]`` blindly: in the image that is ``/``, and the hub
+    then looks like ``/agent-hub``, which does not exist.
     """
-    parents = Path(__file__).resolve().parents
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "agent-hub").is_dir():
+            return parent
+    parents = here.parents
     return parents[2] if len(parents) > 2 else parents[-1]
 
 
@@ -106,6 +109,20 @@ class Settings:
     # --- chat
     chat_max_message_chars: int = int(os.getenv("CHAT_MAX_MESSAGE_CHARS", "50000"))
     chat_stream_timeout: int = int(os.getenv("CHAT_STREAM_TIMEOUT", "300"))
+    chat_max_concurrent_per_user: int = int(os.getenv("CHAT_MAX_CONCURRENT_PER_USER", "2"))
+    chat_max_concurrent_total: int = int(os.getenv("CHAT_MAX_CONCURRENT_TOTAL", "8"))
+
+    # Serve /docs only when explicitly enabled. Token-mode production must not
+    # publish the OpenAPI map to anonymous callers.
+    enable_docs: bool = os.getenv("ENABLE_DOCS", "").lower() in {"1", "true", "yes"}
+
+    # Seed the (possibly empty) hub volume from the image on first boot.
+    agent_hub_seed: Path | None = (
+        Path(raw) if (raw := os.getenv("AGENT_HUB_SEED", "").strip()) else None
+    )
+
+    # Kubernetes hub volume so Registry writes reach runner Jobs.
+    k8s_hub_pvc: str = os.getenv("K8S_HUB_PVC", "ai-test-hub")
 
     # --- versioning, recorded on every job for reproducibility (blueprint §49)
     runner_version: str = os.getenv("RUNNER_VERSION", "0.1.0")

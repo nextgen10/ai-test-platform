@@ -89,6 +89,22 @@ step "Applying manifests"
 kubectl apply -f "$K8S/namespace.yaml"
 kubectl apply -f "$K8S/rbac.yaml"
 kubectl apply -f "$K8S/storage.yaml"
+
+step "Database credentials"
+if kubectl -n "$NS" get secret orchestrator-db >/dev/null 2>&1; then
+    echo "  reusing existing orchestrator-db secret"
+else
+    DB_PASS="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(24))')"
+    kubectl -n "$NS" create secret generic orchestrator-db \
+        --from-literal=POSTGRES_USER=aitest \
+        --from-literal=POSTGRES_PASSWORD="$DB_PASS" \
+        --from-literal=POSTGRES_DB=aitest \
+        --from-literal=DATABASE_URL="postgresql+psycopg://aitest:${DB_PASS}@postgres:5432/aitest" \
+        >/dev/null
+    unset DB_PASS
+    echo "  orchestrator-db secret created (password generated)"
+fi
+
 kubectl apply -f "$K8S/postgres.yaml"
 
 # NetworkPolicy is applied for parity with production, but note that minikube's
@@ -138,6 +154,23 @@ else
     echo "  secret copilot-auth created"
 fi
 unset TOKEN
+
+step "Orchestrator API tokens"
+if kubectl -n "$NS" get secret orchestrator-auth >/dev/null 2>&1; then
+    echo "  reusing existing orchestrator-auth secret"
+else
+    OP_TOKEN="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(32))')"
+    AU_TOKEN="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(32))')"
+    API_TOKENS="${OP_TOKEN}:operator:operator,${AU_TOKEN}:author:author"
+    kubectl -n "$NS" create secret generic orchestrator-auth \
+        --from-literal=API_TOKENS="$API_TOKENS" \
+        >/dev/null
+    echo "  orchestrator-auth created. Log in at the UI with one of these tokens:"
+    echo "    operator: ${OP_TOKEN}"
+    echo "    author:   ${AU_TOKEN}"
+    echo "  They are also in the orchestrator-auth secret; this script will not print them again."
+    unset OP_TOKEN AU_TOKEN API_TOKENS
+fi
 
 # ------------------------------------------------------------- workloads
 

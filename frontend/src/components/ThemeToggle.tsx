@@ -12,7 +12,11 @@ export default function ThemeToggle() {
 
     return (
         <Tooltip title={theme.palette.mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-            <IconButton onClick={colorMode.toggleColorMode} color="inherit">
+            <IconButton
+                onClick={colorMode.toggleColorMode}
+                color="inherit"
+                aria-label={theme.palette.mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
                 {theme.palette.mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
         </Tooltip>

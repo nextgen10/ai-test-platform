@@ -559,7 +559,7 @@ function DocsContent() {
                                                 <Box sx={{ p: 2, borderRadius: 2, bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.02)', border: '1px solid', borderColor: 'divider' }}>
                                                     <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <ShieldAlert size={16} color={AMBER} />
-                                                        Trust Boundary &amp; Sandboxing
+                                                        Trust Boundary & Sandboxing
                                                     </Typography>
                                                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.6 }}>
                                                         All input documents are treated as untrusted markdown. Agent instructions embedded inside requirements are treated as content to analyze, never executable commands. Blocked shell access and strict directory bounds prevent system escape.

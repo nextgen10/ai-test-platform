@@ -53,7 +53,8 @@ class JobCreateRequest(BaseModel):
         max_length=2048,
         description=(
             "POSTed a JSON summary when this job reaches a terminal state. "
-            "Delivery is retried and recorded, so a failing endpoint is visible."
+            "Must be https to a public host — private, link-local and metadata "
+            "addresses are rejected."
         ),
     )
     used_ocr: bool = Field(
@@ -76,6 +77,16 @@ class JobCreateRequest(BaseModel):
                 f"requirement exceeds {settings.max_requirement_chars} characters"
             )
         return text
+
+    @field_validator("webhook_url")
+    @classmethod
+    def _public_https_webhook(cls, value: str | None) -> str | None:
+        from app.services.url_guard import UnsafeURL, optional_https_webhook
+
+        try:
+            return optional_https_webhook(value)
+        except UnsafeURL as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class JobEventOut(BaseModel):
@@ -150,7 +161,7 @@ class OcrExtractRequest(BaseModel):
         # ~20M base64 chars =~ 15MB of raw image bytes — generous for a
         # scanned document/photo while bounding memory use per request; every
         # other field on this model is already length-limited.
-        max_length=20_000_000,
+        max_length=4_000_000,
         description="Base64 encoded image or document page",
     )
     mime_type: str = Field(default="image/png", max_length=64)

@@ -1,22 +1,8 @@
 # Job metadata store. The blueprint calls for PostgreSQL for job metadata, with
 # generated files kept in artifact storage rather than in the database.
 #
-# This is a single-replica Deployment with a PVC — adequate to mimic production
-# locally. A real production deployment would use a managed database or an
-# operator-managed cluster with backups and failover.
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: orchestrator-db
-  namespace: ai-testing
-type: Opaque
-stringData:
-  POSTGRES_USER: aitest
-  POSTGRES_PASSWORD: aitest-local-dev
-  POSTGRES_DB: aitest
-  # Consumed by the orchestrator. psycopg 3 driver.
-  DATABASE_URL: postgresql+psycopg://aitest:aitest-local-dev@postgres:5432/aitest
+# The database Secret is created by deploy.sh (generated password). This file
+# is the Deployment + PVC + Service only.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

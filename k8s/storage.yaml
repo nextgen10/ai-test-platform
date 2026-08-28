@@ -17,18 +17,17 @@ spec:
       storage: 20Gi
   # storageClassName: <your-rwx-class>
 ---
-# Copilot credentials. Create the real value out-of-band; never commit a token.
-#
-#   kubectl -n ai-testing create secret generic copilot-auth \
-#     --from-literal=COPILOT_GITHUB_TOKEN="$COPILOT_GITHUB_TOKEN"
-#
-# For production, source this from an external secret manager (Vault, External
-# Secrets Operator) rather than a literal (blueprint §15).
 apiVersion: v1
-kind: Secret
+kind: PersistentVolumeClaim
 metadata:
-  name: copilot-auth
+  name: ai-test-hub
   namespace: ai-testing
-type: Opaque
-stringData:
-  COPILOT_GITHUB_TOKEN: "REPLACE_ME"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+---
+# Copilot credentials are created by deploy.sh from .env — never commit a token.
+# Placeholder removed so a lone `kubectl apply -f k8s/` cannot ship REPLACE_ME.

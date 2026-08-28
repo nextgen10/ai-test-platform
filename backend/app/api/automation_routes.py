@@ -13,12 +13,15 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.access import http_deny_unless_owner, is_admin
 from app.config import settings
 from app.database import get_db
 from app.models.automation import Schedule, WebhookDelivery
+from app.models.jobs import Job
 from app.security import Principal, require_author, require_operator, require_reader
 from app.services import cron, job_service, queue, scheduler
 from app.services.job_service import JobError
+from app.services.url_guard import redact_url
 
 router = APIRouter(prefix=f"{settings.api_prefix}", tags=["automation"])
 
@@ -48,6 +51,16 @@ class ScheduleIn(BaseModel):
         except cron.CronError as exc:
             raise ValueError(str(exc)) from exc
         return value
+
+    @field_validator("webhook_url")
+    @classmethod
+    def _public_https_webhook(cls, value: str | None) -> str | None:
+        from app.services.url_guard import UnsafeURL, optional_https_webhook
+
+        try:
+            return optional_https_webhook(value)
+        except UnsafeURL as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class ScheduleOut(BaseModel):
@@ -86,6 +99,16 @@ class BulkRequest(BaseModel):
     engine: str | None = Field(default=None, max_length=32)
     github_token: str | None = Field(default=None, max_length=256)
     webhook_url: str | None = Field(default=None, max_length=2048)
+
+    @field_validator("webhook_url")
+    @classmethod
+    def _public_https_webhook(cls, value: str | None) -> str | None:
+        from app.services.url_guard import UnsafeURL, optional_https_webhook
+
+        try:
+            return optional_https_webhook(value)
+        except UnsafeURL as exc:
+            raise ValueError(str(exc)) from exc
 
 
 def _out(schedule: Schedule) -> ScheduleOut:
@@ -129,9 +152,12 @@ def create_schedule(
 @router.get("/schedules", response_model=list[ScheduleOut])
 def list_schedules(
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> list[ScheduleOut]:
-    schedules = db.scalars(select(Schedule).order_by(Schedule.created_at.desc())).all()
+    stmt = select(Schedule).order_by(Schedule.created_at.desc())
+    if not is_admin(principal):
+        stmt = stmt.where(Schedule.created_by == principal.name)
+    schedules = db.scalars(stmt).all()
     return [_out(s) for s in schedules]
 
 
@@ -139,11 +165,12 @@ def list_schedules(
 def get_schedule(
     schedule_id: EntityId,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> ScheduleOut:
     schedule = db.get(Schedule, schedule_id)
     if schedule is None:
         raise HTTPException(404, f"Schedule '{schedule_id}' not found")
+    http_deny_unless_owner(principal, schedule.created_by, kind="Schedule")
     return _out(schedule)
 
 
@@ -152,11 +179,12 @@ def update_schedule(
     schedule_id: EntityId,
     payload: ScheduleIn,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_author),
+    principal: Principal = Depends(require_author),
 ) -> ScheduleOut:
     schedule = db.get(Schedule, schedule_id)
     if schedule is None:
         raise HTTPException(404, f"Schedule '{schedule_id}' not found")
+    http_deny_unless_owner(principal, schedule.created_by, kind="Schedule")
 
     try:
         job_service.resolve_workflow(payload.workflow)
@@ -185,11 +213,12 @@ def update_schedule(
 def delete_schedule(
     schedule_id: EntityId,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_author),
+    principal: Principal = Depends(require_author),
 ) -> dict:
     schedule = db.get(Schedule, schedule_id)
     if schedule is None:
         raise HTTPException(404, f"Schedule '{schedule_id}' not found")
+    http_deny_unless_owner(principal, schedule.created_by, kind="Schedule")
     db.delete(schedule)
     db.commit()
     return {"deleted": schedule_id}
@@ -205,6 +234,8 @@ def run_schedule_now(
     schedule = db.get(Schedule, schedule_id)
     if schedule is None:
         raise HTTPException(404, f"Schedule '{schedule_id}' not found")
+
+    http_deny_unless_owner(principal, schedule.created_by, kind="Schedule")
 
     try:
         job = job_service.create_job(
@@ -313,10 +344,17 @@ def list_deliveries(
     status: str | None = Query(default=None, pattern="^(pending|delivered|failed)$"),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> list[dict]:
     """Webhook attempts, so a silently failing endpoint is visible."""
-    stmt = select(WebhookDelivery).order_by(WebhookDelivery.created_at.desc()).limit(limit)
+    stmt = (
+        select(WebhookDelivery)
+        .join(Job, Job.id == WebhookDelivery.job_id)
+        .order_by(WebhookDelivery.created_at.desc())
+        .limit(limit)
+    )
+    if not is_admin(principal):
+        stmt = stmt.where(Job.created_by == principal.name)
     if job_id:
         stmt = stmt.where(WebhookDelivery.job_id == job_id)
     if status:
@@ -326,7 +364,7 @@ def list_deliveries(
         {
             "id": d.id,
             "job_id": d.job_id,
-            "url": d.url,
+            "url": redact_url(d.url),
             "status": d.status,
             "attempts": d.attempts,
             "response_status": d.response_status,
@@ -342,12 +380,16 @@ def list_deliveries(
 def retry_delivery(
     delivery_id: EntityId,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_operator),
+    principal: Principal = Depends(require_operator),
 ) -> dict:
     """Put a failed delivery back in the queue after fixing the receiving end."""
     delivery = db.get(WebhookDelivery, delivery_id)
     if delivery is None:
         raise HTTPException(404, f"Delivery '{delivery_id}' not found")
+    job = db.get(Job, delivery.job_id)
+    if job is None:
+        raise HTTPException(404, f"Delivery '{delivery_id}' not found")
+    http_deny_unless_owner(principal, job.created_by, kind="Delivery")
 
     delivery.status = "pending"
     delivery.attempts = 0

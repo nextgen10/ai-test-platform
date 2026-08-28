@@ -37,7 +37,7 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false   # the workspace is written in-place
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           env:
@@ -63,8 +63,22 @@ spec:
           volumeMounts:
             - name: artifacts
               mountPath: /workspace
-              subPath: JOB_ID       # one workspace per job; jobs cannot see each other
+              subPath: JOB_ID
+            - name: hub
+              mountPath: /app/agent-hub
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: home
+              mountPath: /home/runner
       volumes:
         - name: artifacts
           persistentVolumeClaim:
             claimName: ai-test-artifacts
+        - name: hub
+          persistentVolumeClaim:
+            claimName: ai-test-hub
+        - name: tmp
+          emptyDir: {}
+        - name: home
+          emptyDir: {}

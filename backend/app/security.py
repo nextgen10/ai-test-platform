@@ -116,6 +116,17 @@ def configure_auth() -> None:
     mode = settings.auth_mode.strip().lower()
 
     if mode == "disabled":
+        allow = os.getenv("ALLOW_INSECURE_AUTH", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        if not allow:
+            raise AuthConfigError(
+                "AUTH_MODE=disabled requires ALLOW_INSECURE_AUTH=1. Refusing to "
+                "start an open API. For a loopback run, set that flag, or leave "
+                "AUTH_MODE=token and let start.sh mint a credential."
+            )
         _TOKENS = {}
         logger.warning(
             "AUTH_MODE=disabled — every endpoint is open, including hub writes "

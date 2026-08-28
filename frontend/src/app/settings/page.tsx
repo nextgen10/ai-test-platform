@@ -93,7 +93,7 @@ export default function SettingsPage() {
     return (
         <Box sx={{ maxWidth: 1100, mx: 'auto', pb: 6 }}>
             <PageHeader
-                title="Settings &amp; Preferences"
+                title="Settings & Preferences"
                 subtitle="Your preferences for this browser. They travel with each run — nothing here changes the platform for other people."
             />
 
@@ -372,7 +372,7 @@ export default function SettingsPage() {
                                         PAT Status
                                     </Typography>
                                     {token ? (
-                                        <Chip size="small" color="success" icon={<ShieldCheck size={12} />} label="Configured &amp; Saved" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                        <Chip size="small" color="success" icon={<ShieldCheck size={12} />} label="Configured for this session" sx={{ height: 20, fontSize: '0.7rem' }} />
                                     ) : (
                                         <Chip size="small" variant="outlined" label="Not Set (Uses System Default)" sx={{ height: 20, fontSize: '0.7rem' }} />
                                     )}
@@ -391,7 +391,7 @@ export default function SettingsPage() {
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
                                     <AlertTriangle size={13} style={{ flexShrink: 0, marginTop: 2 }} />
                                     <span>
-                                        Held in browser local storage and applied transiently to your jobs. Never stored permanently in the database.
+                                        Held in memory for this browser tab. A refresh clears it. It is never written to local storage or the database.
                                     </span>
                                 </Typography>
                             </CardContent>

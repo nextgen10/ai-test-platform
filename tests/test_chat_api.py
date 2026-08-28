@@ -85,16 +85,28 @@ def test_history_is_rendered_oldest_first_and_bounded():
 
 
 def test_agent_tool_grant_comes_from_the_agent_definition():
-    """The CLI must never be handed --allow-all again."""
+    """The CLI must never be handed --allow-all, shell, fetch, or write."""
     config = chat_orchestrator.ChatConfig(content="hi", agent_id="test-designer")
     cmd = chat_orchestrator._build_copilot_cmd(config, "prompt")
     assert "--allow-all" not in cmd
     assert "--allow-tool" in cmd
     granted = {cmd[i + 1] for i, part in enumerate(cmd) if part == "--allow-tool"}
-    assert granted == {"read", "write"}
+    assert granted == {"read"}
+    assert "write" not in granted
+    assert "shell" not in granted
+    assert "fetch" not in granted
 
     # No agent selected means no tools beyond reading.
     bare = chat_orchestrator._build_copilot_cmd(
         chat_orchestrator.ChatConfig(content="hi"), "prompt"
     )
     assert {bare[i + 1] for i, p in enumerate(bare) if p == "--allow-tool"} == {"read"}
+
+
+def test_chat_session_is_owned_by_the_caller(client):
+    session = client.post(
+        "/api/v1/chat/sessions",
+        json={"title": "Owned", "agent_id": "test-designer"},
+    ).json()
+    assert session["created_by"] == "test-operator"
+    client.delete(f"/api/v1/chat/sessions/{session['id']}")

@@ -530,7 +530,7 @@ export default function PipelineExplorer() {
             <Box sx={{ mb: 2.5 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.85rem' }}>
                 <ShieldCheck size={17} color={selectedStage.accent} />
-                Active Guardrails &amp; Verification Rules
+                Active Guardrails & Verification Rules
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 {selectedStage.guardrails.map((rule) => (

@@ -196,7 +196,7 @@ function LiveJobSidePanel({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Activity size={16} color={running ? theme.palette.primary.main : theme.palette.text.secondary} />
                         <Typography variant="subtitle2" fontWeight={800} sx={{ fontSize: '0.9rem' }}>
-                            Job Status &amp; Progress
+                            Job Status & Progress
                         </Typography>
                     </Box>
                     <Chip label={job.status} color={STATUS_COLOR[job.status]} size="small" sx={{ fontWeight: 800, fontSize: '0.7rem' }} />
@@ -393,7 +393,7 @@ function LiveJobSidePanel({
             {(job.provenance || job.copilot_model || job.copilot_token_set) && (
                 <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
                     <Typography variant="subtitle2" fontWeight={700} fontSize="0.88rem" gutterBottom>
-                        Reproducibility &amp; Provenance
+                        Reproducibility & Provenance
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
                         {job.provenance?.engine && (
@@ -942,8 +942,8 @@ export default function JobDetailPage() {
                         <QualityReportPanel
                             job={job}
                             report={job.quality_report}
-                            onApprove={async () => { await api.approveJob(job.id, job.created_by); await load(); }}
-                            onReject={async (reason) => { await api.rejectJob(job.id, job.created_by, reason); await load(); }}
+                            onApprove={async () => { await api.approveJob(job.id); await load(); }}
+                            onReject={async (reason) => { await api.rejectJob(job.id, reason); await load(); }}
                         />
                     )}
 

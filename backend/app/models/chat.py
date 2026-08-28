@@ -39,6 +39,7 @@ class ChatSession(Base):
 
     id = Column(String(32), primary_key=True, default=_new_id)
     title = Column(String(256), default="New Chat")
+    created_by = Column(String(128), default="anonymous", nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=_utcnow)
     last_activity = Column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 

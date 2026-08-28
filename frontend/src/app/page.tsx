@@ -206,7 +206,7 @@ export default function AgentHubLanding() {
               mx: 'auto',
               mb: 4.5,
             }}>
-              The unified enterprise control plane for onboarding, orchestrating, and running autonomous multi-agent workflows. Trigger agents and skills through a universal <strong>Agent Console</strong>, or launch specialized <strong>Custom UIs</strong> for mission-critical use cases like Test Design &amp; Evaluation.
+              The unified enterprise control plane for onboarding, orchestrating, and running autonomous multi-agent workflows. Trigger agents and skills through a universal <strong>Agent Console</strong>, or launch specialized <strong>Custom UIs</strong> for mission-critical use cases like Test Design & Evaluation.
             </Typography>
 
             {/* High-Impact CTA Actions */}
@@ -252,7 +252,7 @@ export default function AgentHubLanding() {
                   transition: 'all 0.2s ease',
                 }}
               >
-                Test Design &amp; Evaluation UI
+                Test Design & Evaluation UI
               </Button>
 
               <Button
@@ -334,7 +334,7 @@ export default function AgentHubLanding() {
             }}>
               <Layers size={14} />
               <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
-                ENTERPRISE USE CASES &amp; CONTROL PLANES
+                ENTERPRISE USE CASES & CONTROL PLANES
               </Typography>
             </Box>
             <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}>
@@ -373,7 +373,7 @@ export default function AgentHubLanding() {
                     </Box>
                     <Box>
                       <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '1.25rem' }}>
-                        Test Design &amp; Evaluation
+                        Test Design & Evaluation
                       </Typography>
                       <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
                         Dedicated Custom UI Use Case
@@ -578,7 +578,7 @@ export default function AgentHubLanding() {
                   </Box>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
-                      Document OCR &amp; Vision
+                      Document OCR & Vision
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       Visual Requirements Analysis
@@ -623,7 +623,7 @@ export default function AgentHubLanding() {
                   </Box>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
-                      Agent Hub Registry &amp; Onboarding
+                      Agent Hub Registry & Onboarding
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       Declarative File-Based Catalog
@@ -734,11 +734,11 @@ export default function AgentHubLanding() {
             }}>
               <Users size={14} />
               <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
-                ARCHITECTURE &amp; ENGINEERING
+                ARCHITECTURE & ENGINEERING
               </Typography>
             </Box>
             <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
-              Meet the Engineering &amp; Architecture Team
+              Meet the Engineering & Architecture Team
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
               The multi-disciplinary team uniting autonomous AI systems engineering, financial regulatory compliance, and enterprise test automation.
@@ -871,7 +871,7 @@ export default function AgentHubLanding() {
                 '&:hover': { borderColor: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.05)' },
               }}
             >
-              Test Design &amp; Evaluation UI
+              Test Design & Evaluation UI
             </Button>
           </Box>
         </Container>

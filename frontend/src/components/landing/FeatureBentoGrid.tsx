@@ -483,14 +483,14 @@ export default function FeatureBentoGrid() {
                   <RotateCcw size={24} />
                 </Box>
                 <Chip
-                  label="PILLARS 5 &amp; 6: HEALING &amp; TRUST"
+                  label="PILLARS 5 & 6: HEALING & TRUST"
                   size="small"
                   sx={{ fontWeight: 800, fontSize: '0.68rem', bgcolor: alpha(PURPLE, 0.12), color: PURPLE, border: `1px solid ${alpha(PURPLE, 0.3)}` }}
                 />
               </Box>
 
               <Typography variant="h6" sx={{ fontWeight: 800, mb: 1.25, fontSize: '1.15rem' }}>
-                In-Place Gap Closer &amp; Sandboxing
+                In-Place Gap Closer & Sandboxing
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.65, fontSize: '0.85rem' }}>
                 Reprocessing patches specific gaps non-destructively while preserving all passing test cases in an isolated workspace.
@@ -507,7 +507,7 @@ export default function FeatureBentoGrid() {
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
                   <CheckCircle2 size={16} color={PURPLE} style={{ marginTop: 2, flexShrink: 0 }} />
                   <Typography variant="caption" sx={{ fontSize: '0.76rem', color: 'text.secondary' }}>
-                    <strong>Automated Snapshot &amp; Rollback:</strong> The original suite is archived before mutation and auto-restored on failure.
+                    <strong>Automated Snapshot & Rollback:</strong> The original suite is archived before mutation and auto-restored on failure.
                   </Typography>
                 </Box>
 

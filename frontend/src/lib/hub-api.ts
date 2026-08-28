@@ -81,6 +81,7 @@ export type HubEntityType = 'agent' | 'skill' | 'prompt' | 'workflow';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
+        credentials: 'same-origin',
         ...init,
         headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     });

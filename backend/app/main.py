@@ -36,8 +36,10 @@ async def lifespan(app: FastAPI):
 
     init_db()
 
-    from app.services import queue, scheduler
+    from app.services import hub_registry, queue, scheduler
     from app.services.job_service import backfill_missing_evaluations
+
+    hub_registry.seed_hub()
 
     # Jobs abandoned by a worker that stopped renewing its lease go back in the
     # pool. This is no longer "fail everything in flight": with leases, another
@@ -71,6 +73,8 @@ async def lifespan(app: FastAPI):
             logger.info("worker stopped")
 
 
+_docs = "/docs" if settings.enable_docs or settings.auth_mode == "disabled" else None
+
 app = FastAPI(
     title="Agent Hub",
     version="0.3.0",
@@ -80,6 +84,9 @@ app = FastAPI(
         "chatbot interface or dedicated custom UIs."
     ),
     lifespan=lifespan,
+    docs_url=_docs,
+    redoc_url="/redoc" if _docs else None,
+    openapi_url="/openapi.json" if _docs else None,
 )
 
 app.add_middleware(
@@ -127,4 +134,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/", tags=["meta"])
 def root() -> dict[str, str]:
-    return {"service": settings.app_name, "docs": "/docs", "api": settings.api_prefix}
+    payload = {"service": settings.app_name, "api": settings.api_prefix}
+    if _docs:
+        payload["docs"] = "/docs"
+    return payload

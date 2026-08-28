@@ -36,6 +36,11 @@ class DockerExecutor:
         log_path = workspace / "output" / "execution.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
+        job_engine = settings.engine
+        override_engine = _runtime_value(job_id, "engine")
+        if override_engine in {"mock", "copilot"}:
+            job_engine = override_engine
+
         command = [
             "docker",
             "run",
@@ -57,7 +62,7 @@ class DockerExecutor:
             "-e",
             f"JOB_ID={job_id}",
             "-e",
-            f"ENGINE={settings.engine}",
+            f"ENGINE={job_engine}",
             "-e",
             f"STAGE={stage}",
             "-e",
@@ -129,4 +134,11 @@ class DockerExecutor:
             succeeded=False,
             exit_code=proc.returncode,
             detail=f"Container exited with code {proc.returncode}",
+        )
+
+    def cancel(self, job_id: str, external_name: str | None = None) -> None:
+        subprocess.run(
+            ["docker", "kill", f"ai-test-runner-{job_id}"],
+            capture_output=True,
+            check=False,
         )

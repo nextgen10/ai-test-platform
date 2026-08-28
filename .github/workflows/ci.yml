@@ -107,3 +107,48 @@ jobs:
           test -f /tmp/ws/output/workflow-code.md \
             || { echo "generic runner did not produce its primary artifact"; exit 1; }
           echo "RUNNER_KIND=generic dispatched correctly"
+
+  orchestrator-image:
+    name: Orchestrator image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the orchestrator image
+        run: docker build -f backend/Dockerfile -t ai-test-orchestrator:ci .
+
+      - name: Assert migrations and the hub are in the image
+        run: |
+          docker run --rm --entrypoint sh ai-test-orchestrator:ci -c '
+            set -e
+            test -d /srv/migrations || { echo "MISSING /srv/migrations"; exit 1; }
+            test -f /srv/migrations/env.py || { echo "MISSING /srv/migrations/env.py"; exit 1; }
+            test -d /srv/agent-hub/agents || { echo "MISSING /srv/agent-hub/agents"; exit 1; }
+            test -d /srv/app || { echo "MISSING /srv/app"; exit 1; }
+            echo "orchestrator image contents OK"
+          '
+
+  frontend-image:
+    name: Frontend image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the UI image
+        run: docker build -f frontend/Dockerfile -t ai-test-ui:ci frontend
+
+      - name: Assert the image starts and answers /api/health
+        run: |
+          cid="$(docker run -d -p 3100:3100 -e API_TARGET=http://127.0.0.1:9 -e UI_AUTH_MODE=session ai-test-ui:ci)"
+          trap 'docker rm -f "$cid" >/dev/null' EXIT
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3100/api/health | grep -q ok; then
+              echo "UI /api/health OK"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "UI did not become ready"
+          docker logs "$cid"
+          exit 1
+

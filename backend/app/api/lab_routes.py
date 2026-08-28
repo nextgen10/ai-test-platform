@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.access import deny_unless_owner
 from app.config import settings
 from app.database import get_db
 from app.security import Principal, require_operator, require_reader
@@ -75,11 +76,12 @@ def agent_fingerprint(
 def job_insights(
     job_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> dict:
     """Per-stage timing, tokens and cost for one run."""
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
     except JobError as exc:
         raise HTTPException(exc.status_code, str(exc)) from exc
     return insights.job_breakdown(job)

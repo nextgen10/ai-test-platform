@@ -190,7 +190,7 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
                         <TableRow>
                             <TableCell sx={{ width: 180, fontWeight: 700 }}>Dimension</TableCell>
                             <TableCell sx={{ width: 140, fontWeight: 700 }}>Rating</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Assessment &amp; Mathematical Rationale</TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>Assessment & Mathematical Rationale</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>

@@ -132,8 +132,9 @@ export default function WorkflowBuilderPage() {
     useEffect(() => {
         if (!jobId || !finished || fetchedFor.current === jobId) return;
         fetchedFor.current = jobId;
+        const ac = new AbortController();
 
-        fetch(api.artifactUrl(jobId, PRIMARY_ARTIFACT))
+        fetch(api.artifactUrl(jobId, PRIMARY_ARTIFACT), { signal: ac.signal })
             .then((r) => {
                 if (!r.ok) throw new Error(`The run finished but ${PRIMARY_ARTIFACT} was not written.`);
                 return r.text();
@@ -145,7 +146,11 @@ export default function WorkflowBuilderPage() {
                 setInstall({});
                 if (parsed.length === 0) setShowRaw(true);
             })
-            .catch((e) => setError(e instanceof Error ? e.message : 'Could not read the generated files'));
+            .catch((e) => {
+                if (e instanceof DOMException && e.name === 'AbortError') return;
+                setError(e instanceof Error ? e.message : 'Could not read the generated files');
+            });
+        return () => ac.abort();
     }, [jobId, finished]);
 
     // ------------------------------------------------------------- actions

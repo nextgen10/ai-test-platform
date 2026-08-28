@@ -604,7 +604,7 @@ export default function InteractiveSimulator() {
                   </Typography>
                 </Box>
                 <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.74rem' }}>
-                  Weighted scoring on Coverage, Completeness, Traceability, Correctness &amp; Uniqueness.
+                  Weighted scoring on Coverage, Completeness, Traceability, Correctness & Uniqueness.
                 </Typography>
               </Box>
               <Chip
@@ -776,7 +776,7 @@ export default function InteractiveSimulator() {
                           borderColor: alpha(GREEN, 0.25)
                         }}>
                           <Typography variant="caption" sx={{ fontWeight: 800, color: GREEN, display: 'block', mb: 0.25, fontSize: '0.72rem' }}>
-                            ASSERTION &amp; EXPECTED RESULT:
+                            ASSERTION & EXPECTED RESULT:
                           </Typography>
                           <Typography variant="body2" sx={{ fontSize: '0.82rem', color: 'text.primary', fontWeight: 500 }}>
                             {tc.expectedResult}

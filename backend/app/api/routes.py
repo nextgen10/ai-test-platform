@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from app.access import deny_unless_owner, is_admin
 from app.config import settings
 from app.database import get_db
 from app.models.jobs import JobStatus
@@ -37,11 +38,7 @@ def _handle(exc: JobError) -> HTTPException:
 @router.get("/health", tags=["meta"])
 def health() -> dict[str, str]:
     """Liveness. Deliberately unauthenticated and dependency-free."""
-    return {
-        "status": "ok",
-        "executor": settings.executor,
-        "engine": settings.engine,
-    }
+    return {"status": "ok"}
 
 
 @router.get("/ready", tags=["meta"])
@@ -50,11 +47,14 @@ def ready() -> dict[str, object]:
 
     Distinct from `/health` on purpose — a process can be alive with an
     unreachable database or a missing Copilot CLI, and a load balancer needs to
-    know the difference.
+    know the difference. The HTTP body only reports booleans; details stay in
+    the log so a probe is not a reconnaissance endpoint.
     """
+    import logging
+
+    log = logging.getLogger("ai-test-platform")
     checks: dict[str, dict[str, object]] = {}
 
-    # Database
     try:
         from sqlalchemy import text
 
@@ -64,40 +64,47 @@ def ready() -> dict[str, object]:
             connection.execute(text("SELECT 1"))
         checks["database"] = {"ok": True}
     except Exception as exc:  # noqa: BLE001 - report, never raise, from a probe
-        checks["database"] = {"ok": False, "detail": str(exc)}
+        log.warning("readiness database check failed: %s", exc)
+        checks["database"] = {"ok": False}
 
-    # Artifact storage
     try:
         settings.artifact_root.mkdir(parents=True, exist_ok=True)
-        checks["artifacts"] = {"ok": True, "path": str(settings.artifact_root)}
+        checks["artifacts"] = {"ok": True}
     except Exception as exc:  # noqa: BLE001
-        checks["artifacts"] = {"ok": False, "detail": str(exc)}
+        log.warning("readiness artifact check failed: %s", exc)
+        checks["artifacts"] = {"ok": False}
 
-    # Agent hub
     hub_ok = settings.agent_hub_dir.is_dir()
-    checks["agent_hub"] = {
-        "ok": hub_ok,
-        "path": str(settings.agent_hub_dir),
-        "workflows": len(hub_registry.list_workflows()) if hub_ok else 0,
-    }
+    if not hub_ok:
+        log.warning("readiness hub check failed: %s is not a directory", settings.agent_hub_dir)
+    checks["agent_hub"] = {"ok": hub_ok}
 
-    # Execution engine
-    if settings.engine == "mock":
-        checks["engine"] = {"ok": True, "engine": "mock", "detail": "stand-in output"}
+    # Copilot CLI lives on the runner image. When execution is delegated to
+    # docker/kubernetes, this process does not need the binary on PATH.
+    delegated = settings.executor.lower() in {"docker", "kubernetes", "k8s"}
+    if settings.engine == "mock" or delegated:
+        checks["engine"] = {"ok": True}
     else:
         import shutil as _shutil
 
         copilot = _shutil.which(job_service.copilot_bin())
-        checks["engine"] = {
-            "ok": bool(copilot),
-            "engine": "copilot",
-            "detail": copilot or f"{job_service.copilot_bin()!r} not found on PATH",
-        }
+        checks["engine"] = {"ok": bool(copilot)}
+        if not copilot:
+            log.warning("readiness engine check failed: %s not on PATH", job_service.copilot_bin())
 
-    ok = all(check["ok"] for check in checks.values())
+    public = {name: {"ok": bool(check["ok"])} for name, check in checks.items()}
+    ok = all(check["ok"] for check in public.values())
     if not ok:
-        raise HTTPException(status_code=503, detail={"status": "not_ready", "checks": checks})
-    return {"status": "ready", "checks": checks}
+        raise HTTPException(
+            status_code=503, detail={"status": "not_ready", "checks": public}
+        )
+    return {"status": "ready", "checks": public}
+
+
+@router.get("/me", tags=["meta"])
+def me(principal: Principal = Depends(require_reader)) -> dict[str, str]:
+    """Who the caller is. Used by the UI login to bind a session to a role."""
+    return {"name": principal.name, "role": principal.role_name}
 
 
 @router.get("/settings", tags=["meta"])
@@ -187,7 +194,7 @@ def list_agents(_: Principal = Depends(require_reader)) -> list[dict[str, object
 @router.get("/evaluations/benchmarks", tags=["evaluation"])
 def get_evaluation_benchmarks(
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> dict[str, object]:
     """Return golden benchmark datasets and platform evaluation metrics."""
     from app.config import PROJECT_ROOT
@@ -204,7 +211,8 @@ def get_evaluation_benchmarks(
                 "size_bytes": sample_file.stat().st_size,
             })
 
-    stats = job_service.platform_stats(db)
+    owner = None if is_admin(principal) else principal.name
+    stats = job_service.platform_stats(db, created_by=owner)
 
     return {
         "dimensions": [
@@ -247,9 +255,10 @@ def get_evaluation_benchmarks(
 @router.get("/stats", tags=["meta"])
 def stats(
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> dict[str, object]:
-    return job_service.platform_stats(db)
+    owner = None if is_admin(principal) else principal.name
+    return job_service.platform_stats(db, created_by=owner)
 
 
 # ------------------------------------------------------------------- jobs
@@ -288,9 +297,10 @@ def list_jobs(
     limit: int = Query(50, ge=1, le=200),
     status: JobStatus | None = None,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> list[JobOut]:
-    jobs = job_service.list_jobs(db, limit=limit, status=status)
+    owner = None if is_admin(principal) else principal.name
+    jobs = job_service.list_jobs(db, limit=limit, status=status, created_by=owner)
     return [JobOut.model_validate(job) for job in jobs]
 
 
@@ -298,10 +308,11 @@ def list_jobs(
 def get_job(
     job_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> JobDetailOut:
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
     except JobError as exc:
         raise _handle(exc) from exc
     return JobDetailOut.model_validate(job)
@@ -311,10 +322,11 @@ def get_job(
 def get_logs(
     job_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> LogsResponse:
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
     except JobError as exc:
         raise _handle(exc) from exc
     return LogsResponse(job_id=job.id, status=job.status, logs=job_service.read_logs(job))
@@ -324,10 +336,11 @@ def get_logs(
 def get_result(
     job_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> ResultResponse:
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
         result, validation = job_service.read_result(job)
     except JobError as exc:
         raise _handle(exc) from exc
@@ -344,10 +357,11 @@ def get_result(
 def list_artifacts(
     job_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> list[dict[str, object]]:
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
     except JobError as exc:
         raise _handle(exc) from exc
     return job_service.list_artifacts(job)
@@ -358,10 +372,11 @@ def download_artifact(
     job_id: str,
     artifact_path: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> FileResponse:
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
     except JobError as exc:
         raise _handle(exc) from exc
 
@@ -395,6 +410,7 @@ def approve_job(
     """
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
         job = job_service.approve_job(db, job, principal.name)
     except JobError as exc:
         raise _handle(exc) from exc
@@ -412,6 +428,7 @@ def reject_job(
     """Stop at the gate: the requirement is not ready to generate from."""
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
         job = job_service.reject_job(db, job, principal.name, payload.reason)
     except JobError as exc:
         raise _handle(exc) from exc
@@ -422,11 +439,12 @@ def reject_job(
 def reprocess_job(
     job_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_operator),
+    principal: Principal = Depends(require_operator),
 ) -> JobOut:
     """Re-run generation once, feeding the evaluator's recommendations back in."""
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
         job = job_service.start_reprocess(db, job)
     except JobError as exc:
         raise _handle(exc) from exc
@@ -438,10 +456,11 @@ def reprocess_job(
 def cancel_job(
     job_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_operator),
+    principal: Principal = Depends(require_operator),
 ) -> JobOut:
     try:
         job = job_service.get_job(db, job_id)
+        deny_unless_owner(principal, job.created_by, kind="Job")
         job = job_service.cancel_job(db, job)
     except JobError as exc:
         raise _handle(exc) from exc
@@ -471,6 +490,15 @@ def extract_ocr(
         mime_type=payload.mime_type,
         custom_instructions=payload.instructions,
     )
+
+    if extractor.used_fallback and settings.engine != "mock":
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Document extraction is unavailable (the Vision endpoint did not "
+                "succeed). Paste the requirement as text, or set ENGINE=mock."
+            ),
+        )
 
     return OcrExtractResponse(
         markdown=markdown_content,

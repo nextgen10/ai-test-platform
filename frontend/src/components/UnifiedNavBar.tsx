@@ -216,7 +216,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                     >
                         <Box sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider', mb: 0.5 }}>
                             <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Bespoke Use Cases &amp; Custom UIs
+                                Bespoke Use Cases & Custom UIs
                             </Typography>
                         </Box>
 

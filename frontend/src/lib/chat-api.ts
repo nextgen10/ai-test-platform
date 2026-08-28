@@ -65,6 +65,7 @@ export interface SendMessagePayload {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
+        credentials: 'same-origin',
         ...init,
         headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     });
@@ -122,6 +123,7 @@ export const chatApi = {
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
                     body: JSON.stringify(payload),
                     signal: controller.signal,
                 },
@@ -179,6 +181,7 @@ export const chatApi = {
             const response = await fetch(`${API_BASE}/chat/execute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
                 body: JSON.stringify(payload),
                 signal: controller.signal,
             });

@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.security import Principal, require_author, require_reader
 from app.services import hub_registry
-from app.services.hub_registry import InvalidEntityId
+from app.services.hub_registry import DeniedTool, InvalidEntityId
 
 router = APIRouter(prefix=f"{settings.api_prefix}/hub", tags=["hub"])
 
@@ -83,6 +83,8 @@ def create_agent(
         return hub_registry.create_agent(payload.id, payload.content)
     except InvalidEntityId as exc:
         raise _bad_id(exc) from exc
+    except DeniedTool as exc:
+        raise HTTPException(400, str(exc)) from exc
     except FileExistsError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -97,6 +99,8 @@ def update_agent(
         return hub_registry.update_agent(agent_id, payload.content)
     except InvalidEntityId as exc:
         raise _bad_id(exc) from exc
+    except DeniedTool as exc:
+        raise HTTPException(400, str(exc)) from exc
     except FileNotFoundError as exc:
         raise HTTPException(404, str(exc)) from exc
 

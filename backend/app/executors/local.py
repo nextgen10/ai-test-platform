@@ -12,6 +12,7 @@ from pathlib import Path
 
 from app.config import settings
 from app.executors.base import ExecutionResult
+from app.executors import runtime as exec_runtime
 
 
 def _runtime_value(job_id: str, name: str) -> str | None:
@@ -105,29 +106,41 @@ class LocalExecutor:
 
         with log_path.open("w", encoding="utf-8") as log_file:
             try:
-                proc = subprocess.run(
+                proc = subprocess.Popen(
                     command,
                     env=env,
                     stdout=log_file,
                     stderr=subprocess.STDOUT,
-                    timeout=settings.job_timeout_seconds,
-                    check=False,
                 )
-            except subprocess.TimeoutExpired:
-                log_file.write(
-                    f"\nTIMEOUT: exceeded {settings.job_timeout_seconds}s\n"
-                )
+            except OSError as exc:
                 return ExecutionResult(
                     succeeded=False,
-                    exit_code=124,
-                    detail=f"Runner exceeded {settings.job_timeout_seconds}s timeout",
+                    exit_code=127,
+                    detail=f"Could not start the runner: {exc}",
                 )
+            exec_runtime.register_process(job_id, proc)
+            try:
+                try:
+                    returncode = proc.wait(timeout=settings.job_timeout_seconds)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait(timeout=5)
+                    log_file.write(
+                        f"\nTIMEOUT: exceeded {settings.job_timeout_seconds}s\n"
+                    )
+                    return ExecutionResult(
+                        succeeded=False,
+                        exit_code=124,
+                        detail=f"Runner exceeded {settings.job_timeout_seconds}s timeout",
+                    )
+            finally:
+                exec_runtime.unregister_process(job_id)
 
-        if proc.returncode == 0:
+        if returncode == 0:
             return ExecutionResult(succeeded=True, exit_code=0)
 
         return ExecutionResult(
             succeeded=False,
-            exit_code=proc.returncode,
-            detail=f"Runner exited with code {proc.returncode}",
+            exit_code=returncode,
+            detail=f"Runner exited with code {returncode}",
         )

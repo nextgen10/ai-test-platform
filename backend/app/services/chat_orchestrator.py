@@ -11,9 +11,12 @@ import codecs
 import logging
 import os
 import shlex
+import shutil
+import tempfile
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from app.config import settings
 from app.services import cli_errors, hub_registry
@@ -129,16 +132,22 @@ def _build_copilot_cmd(config: ChatConfig, prompt_text: str) -> list[str]:
 
     if config.agent_id:
         cmd.extend(["--agent", config.agent_id])
-        # Grant exactly what the agent declares. This used to be --allow-all,
-        # which handed every tool to a profile that the (previously open)
-        # registry API could write — effectively remote code execution.
-        tools = hub_registry.agent_tools(config.agent_id)
+        # Chat never grants write/edit/shell/fetch against the hub. Hub writes
+        # are an author action through the Registry API, not a side effect of
+        # an operator chatting with an agent that declared `write`.
+        tools = [
+            t
+            for t in hub_registry.agent_tools(config.agent_id)
+            if t in {"read", "search"}
+        ]
     else:
-        # No agent selected means a free-form question, which needs no tools.
         tools = ["read"]
 
     for tool in tools:
         cmd.extend(["--allow-tool", tool])
+
+    # Agents may read hub files; they write only into the throwaway cwd.
+    cmd.extend(["--add-dir", str(settings.agent_hub_dir)])
 
     if config.skill_id:
         # Skills are loaded via --skill-path pointing at the skill directory
@@ -229,7 +238,8 @@ async def execute_streaming(config: ChatConfig) -> AsyncIterator[str]:
 
     cmd = _build_copilot_cmd(config, prompt_text)
     env = _build_env(config)
-    cwd = str(settings.agent_hub_dir)
+    work = Path(tempfile.mkdtemp(prefix="hub-chat-"))
+    cwd = str(work)
 
     # The prompt can contain anything the user typed, so log the shape of the
     # call without its contents.
@@ -253,6 +263,7 @@ async def execute_streaming(config: ChatConfig) -> AsyncIterator[str]:
             cwd=cwd,
         )
     except FileNotFoundError:
+        shutil.rmtree(work, ignore_errors=True)
         yield (
             f"The GitHub Copilot CLI (`{COPILOT_BIN}`) is not installed or not on "
             f"PATH. Install it, or set `ENGINE=mock` to work offline.\n\n"
@@ -260,6 +271,7 @@ async def execute_streaming(config: ChatConfig) -> AsyncIterator[str]:
         )
         return
     except Exception as exc:  # noqa: BLE001
+        shutil.rmtree(work, ignore_errors=True)
         logger.exception("Could not start the Copilot CLI")
         yield f"\n\nCould not start the agent: {exc}"
         return
@@ -337,6 +349,7 @@ async def execute_streaming(config: ChatConfig) -> AsyncIterator[str]:
                 await process.wait()
             except ProcessLookupError:
                 pass
+        shutil.rmtree(work, ignore_errors=True)
 
         elapsed = int((time.monotonic() - start) * 1000)
         logger.info("Chat completed in %dms", elapsed)

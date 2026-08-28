@@ -519,6 +519,23 @@ def _read_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
+class JobAborted(Exception):
+    """The worker should drop this job without recording a successful terminal state."""
+
+
+def _abort_if_signalled(job_id: str) -> None:
+    """Stop work if the lease was stolen or a person cancelled the job."""
+    from app.services import queue as work_queue
+
+    lost = work_queue.lease_lost.get()
+    if lost is not None and lost.is_set():
+        raise JobAborted("lease lost")
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        if job is not None and job.status is JobStatus.CANCELLED:
+            raise JobAborted("cancelled")
+
+
 def _guarded(job_id: str, work) -> None:
     """Run one orchestration step, guaranteeing the job ends somewhere terminal.
 
@@ -527,6 +544,9 @@ def _guarded(job_id: str, work) -> None:
     """
     try:
         work(job_id)
+    except JobAborted as exc:
+        logger.warning("job %s aborted (%s) — not marking a new terminal state", job_id, exc)
+        return
     except Exception as exc:  # noqa: BLE001 - last line of defence
         logger.exception("Unhandled orchestration error for job %s", job_id)
         try:
@@ -541,6 +561,7 @@ def _guarded(job_id: str, work) -> None:
 
 def _run_stage(job_id: str, stage: str, reprocess: bool = False, attempt: int = 0):
     """Dispatch one runner stage and stream its progress into job_events."""
+    _abort_if_signalled(job_id)
     job_id_var.set(job_id)
     workspace = settings.workspace_for(job_id)
     executor = get_executor()
@@ -1077,10 +1098,18 @@ def get_job(db: Session, job_id: str) -> Job:
     return job
 
 
-def list_jobs(db: Session, *, limit: int = 50, status: JobStatus | None = None) -> list[Job]:
+def list_jobs(
+    db: Session,
+    *,
+    limit: int = 50,
+    status: JobStatus | None = None,
+    created_by: str | None = None,
+) -> list[Job]:
     stmt = select(Job).order_by(Job.created_at.desc()).limit(limit)
     if status is not None:
         stmt = stmt.where(Job.status == status)
+    if created_by is not None:
+        stmt = stmt.where(Job.created_by == created_by)
     return list(db.scalars(stmt))
 
 
@@ -1128,12 +1157,26 @@ def cancel_job(db: Session, job: Job) -> Job:
         )
     job.error_message = "Cancelled by user"
     transition(db, job, JobStatus.CANCELLED, "Cancelled by user")
+    db.flush()
+    try:
+        from app.executors import get_executor
+        from app.executors import runtime as exec_runtime
+
+        exec_runtime.kill_process(job.id)
+        canceller = getattr(get_executor(), "cancel", None)
+        if canceller:
+            canceller(job.id, job.kubernetes_job_name)
+    except Exception:  # noqa: BLE001 - cancel must still succeed as a state change
+        logger.exception("could not stop the executor for cancelled job %s", job.id)
     return job
 
 
-def platform_stats(db: Session) -> dict[str, Any]:
+def platform_stats(db: Session, *, created_by: str | None = None) -> dict[str, Any]:
     """Dashboard counters (blueprint §44)."""
-    rows = db.execute(select(Job.status, func.count(Job.id)).group_by(Job.status)).all()
+    owner_filter = () if created_by is None else (Job.created_by == created_by,)
+    rows = db.execute(
+        select(Job.status, func.count(Job.id)).where(*owner_filter).group_by(Job.status)
+    ).all()
     by_status = {status.value: count for status, count in rows}
 
     total = sum(by_status.values())
@@ -1141,11 +1184,16 @@ def platform_stats(db: Session) -> dict[str, Any]:
     failed = by_status.get(JobStatus.FAILED.value, 0)
     finished = completed + failed
 
+    duration_where = (Job.status == JobStatus.COMPLETED, *owner_filter)
     mean_duration = db.scalar(
-        select(func.avg(Job.duration_ms)).where(Job.status == JobStatus.COMPLETED)
+        select(func.avg(Job.duration_ms)).where(*duration_where)
     )
     completed_jobs = db.scalars(
-        select(Job).where(Job.status == JobStatus.COMPLETED, Job.summary.is_not(None))
+        select(Job).where(
+            Job.status == JobStatus.COMPLETED,
+            Job.summary.is_not(None),
+            *owner_filter,
+        )
     ).all()
     case_counts = [
         (job.summary or {}).get("total", 0)

@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.access import http_deny_unless_owner, is_admin
 from app.config import settings
 from app.database import get_db
 from app.models.chat import ChatMessage, ChatRole, ChatSession
@@ -33,6 +34,36 @@ router = APIRouter(prefix=f"{settings.api_prefix}/chat", tags=["chat"])
 #: character budget on top; this bounds the query.
 HISTORY_TURNS = 20
 
+_global_chat_slots = asyncio.Semaphore(max(1, settings.chat_max_concurrent_total))
+_user_chat_slots: dict[str, asyncio.Semaphore] = {}
+_user_chat_lock = asyncio.Lock()
+
+
+async def _acquire_chat_slot(principal: Principal) -> asyncio.Semaphore:
+    """Bound concurrent Copilot processes per caller and globally."""
+    per_user = max(1, settings.chat_max_concurrent_per_user)
+    async with _user_chat_lock:
+        slot = _user_chat_slots.setdefault(principal.name, asyncio.Semaphore(per_user))
+    try:
+        await asyncio.wait_for(_global_chat_slots.acquire(), timeout=0.05)
+    except TimeoutError as exc:
+        raise HTTPException(
+            429, "The chat service is busy; retry shortly"
+        ) from exc
+    try:
+        await asyncio.wait_for(slot.acquire(), timeout=0.05)
+    except TimeoutError as exc:
+        _global_chat_slots.release()
+        raise HTTPException(
+            429, "Too many concurrent chat turns for this user"
+        ) from exc
+    return slot
+
+
+def _release_chat_slot(slot: asyncio.Semaphore) -> None:
+    slot.release()
+    _global_chat_slots.release()
+
 
 # ============================================================ sessions
 
@@ -40,10 +71,11 @@ HISTORY_TURNS = 20
 def create_session(
     payload: ChatSessionCreate,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_operator),
+    principal: Principal = Depends(require_operator),
 ) -> ChatSessionOut:
     session = ChatSession(
         title=payload.title,
+        created_by=principal.name,
         agent_id=payload.agent_id,
         skill_id=payload.skill_id,
         workflow_id=payload.workflow_id,
@@ -60,11 +92,13 @@ def create_session(
 def list_sessions(
     limit: int = 50,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> list[ChatSessionSummary]:
+    query = db.query(ChatSession)
+    if not is_admin(principal):
+        query = query.filter(ChatSession.created_by == principal.name)
     sessions = (
-        db.query(ChatSession)
-        .order_by(ChatSession.last_activity.desc())
+        query.order_by(ChatSession.last_activity.desc())
         .limit(max(1, min(limit, 200)))
         .all()
     )
@@ -75,11 +109,12 @@ def list_sessions(
 def get_session(
     session_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_reader),
+    principal: Principal = Depends(require_reader),
 ) -> ChatSessionOut:
     session = db.query(ChatSession).filter_by(id=session_id).first()
     if not session:
         raise HTTPException(404, f"Session '{session_id}' not found")
+    http_deny_unless_owner(principal, session.created_by, kind="Session")
     return ChatSessionOut.model_validate(session)
 
 
@@ -87,11 +122,12 @@ def get_session(
 def delete_session(
     session_id: str,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_operator),
+    principal: Principal = Depends(require_operator),
 ) -> dict:
     session = db.query(ChatSession).filter_by(id=session_id).first()
     if not session:
         raise HTTPException(404, f"Session '{session_id}' not found")
+    http_deny_unless_owner(principal, session.created_by, kind="Session")
     db.delete(session)
     db.commit()
     return {"deleted": session_id}
@@ -132,47 +168,53 @@ async def send_message(
     session_id: str,
     payload: ChatMessageIn,
     db: Session = Depends(get_db),
-    _: Principal = Depends(require_operator),
+    principal: Principal = Depends(require_operator),
 ):
     """Send a message and stream the assistant's response via SSE."""
     session = db.query(ChatSession).filter_by(id=session_id).first()
     if not session:
         raise HTTPException(404, f"Session '{session_id}' not found")
+    http_deny_unless_owner(principal, session.created_by, kind="Session")
+    slot = await _acquire_chat_slot(principal)
 
-    # Read the history *before* persisting this message, so the transcript sent
-    # to the agent ends at the previous turn.
-    history = _load_history(db, session_id, HISTORY_TURNS)
+    try:
+        # Read the history *before* persisting this message, so the transcript sent
+        # to the agent ends at the previous turn.
+        history = _load_history(db, session_id, HISTORY_TURNS)
 
-    next_seq = _next_sequence(db, session_id)
+        next_seq = _next_sequence(db, session_id)
 
-    user_msg = ChatMessage(
-        session_id=session_id,
-        sequence=next_seq,
-        role=ChatRole.USER,
-        content=payload.content,
-        agent_id=payload.agent_id,
-        model=payload.model,
-    )
-    db.add(user_msg)
+        user_msg = ChatMessage(
+            session_id=session_id,
+            sequence=next_seq,
+            role=ChatRole.USER,
+            content=payload.content,
+            agent_id=payload.agent_id,
+            model=payload.model,
+        )
+        db.add(user_msg)
 
-    # Update session config if changed
-    if payload.agent_id is not None:
-        session.agent_id = payload.agent_id or None
-    if payload.skill_id is not None:
-        session.skill_id = payload.skill_id or None
-    if payload.prompt_id is not None:
-        session.prompt_id = payload.prompt_id or None
-    if payload.workflow_id is not None:
-        session.workflow_id = payload.workflow_id or None
-    if payload.model is not None:
-        session.model = payload.model or None
+        # Update session config if changed
+        if payload.agent_id is not None:
+            session.agent_id = payload.agent_id or None
+        if payload.skill_id is not None:
+            session.skill_id = payload.skill_id or None
+        if payload.prompt_id is not None:
+            session.prompt_id = payload.prompt_id or None
+        if payload.workflow_id is not None:
+            session.workflow_id = payload.workflow_id or None
+        if payload.model is not None:
+            session.model = payload.model or None
 
-    # Auto-title from the first thing the user actually said.
-    if next_seq == 1 and session.title in (None, "", "New Chat", "New Session"):
-        session.title = payload.content[:80].strip() or "New Chat"
+        # Auto-title from the first thing the user actually said.
+        if next_seq == 1 and session.title in (None, "", "New Chat", "New Session"):
+            session.title = payload.content[:80].strip() or "New Chat"
 
-    db.commit()
-    db.refresh(user_msg)
+        db.commit()
+        db.refresh(user_msg)
+    except Exception:
+        _release_chat_slot(slot)
+        raise
 
     config = ChatConfig(
         content=payload.content,
@@ -224,34 +266,34 @@ async def send_message(
             return int((time.monotonic() - start) * 1000)
 
         try:
-            async for chunk in execute_streaming(config):
-                collected.append(chunk)
-                yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+            try:
+                async for chunk in execute_streaming(config):
+                    collected.append(chunk)
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
 
-        except (asyncio.CancelledError, GeneratorExit):
-            # The client hung up — usually because the user pressed Stop. Keep
-            # whatever arrived: silently discarding it loses visible work and
-            # leaves a user turn in the history with no reply after it.
-            _persist_reply("".join(collected), elapsed_ms(), interrupted=True)
-            raise
+            except (asyncio.CancelledError, GeneratorExit):
+                _persist_reply("".join(collected), elapsed_ms(), interrupted=True)
+                raise
 
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("SSE stream error")
-            _persist_reply("".join(collected), elapsed_ms(), interrupted=True)
-            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
-            return
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("SSE stream error")
+                _persist_reply("".join(collected), elapsed_ms(), interrupted=True)
+                yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
+                return
 
-        duration = elapsed_ms()
-        _persist_reply("".join(collected), duration, interrupted=False)
+            duration = elapsed_ms()
+            _persist_reply("".join(collected), duration, interrupted=False)
 
-        yield "data: " + json.dumps(
-            {
-                "type": "done",
-                "duration_ms": duration,
-                "agent_id": config.agent_id,
-                "model": config.model,
-            }
-        ) + "\n\n"
+            yield "data: " + json.dumps(
+                {
+                    "type": "done",
+                    "duration_ms": duration,
+                    "agent_id": config.agent_id,
+                    "model": config.model,
+                }
+            ) + "\n\n"
+        finally:
+            _release_chat_slot(slot)
 
     return StreamingResponse(
         event_stream(),
@@ -269,9 +311,10 @@ async def send_message(
 @router.post("/execute")
 async def execute_one_shot(
     payload: OneShotRequest,
-    _: Principal = Depends(require_operator),
+    principal: Principal = Depends(require_operator),
 ):
     """Fire-and-forget single execution — no session persistence, SSE stream."""
+    slot = await _acquire_chat_slot(principal)
     config = ChatConfig(
         content=payload.content,
         agent_id=payload.agent_id,
@@ -291,6 +334,8 @@ async def execute_one_shot(
         except Exception as exc:  # noqa: BLE001
             logger.exception("One-shot execution error")
             yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
+        finally:
+            _release_chat_slot(slot)
 
     return StreamingResponse(
         event_stream(),

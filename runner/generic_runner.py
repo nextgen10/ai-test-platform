@@ -57,6 +57,8 @@ MAX_PARALLEL_AGENTS = int(os.getenv("MAX_PARALLEL_AGENTS", "4"))
 #: Tool names an agent may declare. Anything else is ignored rather than passed
 #: through, so a typo cannot silently widen a grant.
 _KNOWN_TOOLS = frozenset({"read", "write", "edit", "search", "shell", "fetch"})
+_DENIED_TOOLS = frozenset({"shell", "fetch"})
+_ALLOWED_TOOLS = _KNOWN_TOOLS - _DENIED_TOOLS
 
 #: Written after every stage so a retry knows what already succeeded.
 CHECKPOINT_FILE = "run_checkpoint.json"
@@ -160,7 +162,7 @@ class GenericWorkflowRunner:
         tools = [
             str(t).strip().lower()
             for t in declared
-            if str(t).strip().lower() in _KNOWN_TOOLS
+            if str(t).strip().lower() in _ALLOWED_TOOLS
         ]
         return tools or ["read"]
 
@@ -169,7 +171,13 @@ class GenericWorkflowRunner:
         declared = self._agent_meta(agent_id).get("output_artifact")
         if not declared or declared == "workspace":
             return None
-        return self.workspace / str(declared)
+        workspace = self.workspace.resolve()
+        path = (workspace / str(declared)).resolve()
+        if not path.is_relative_to(workspace):
+            raise WorkflowError(
+                f"Agent '{agent_id}' output_artifact {declared!r} escapes the workspace"
+            )
+        return path
 
     def _output_schema(self, agent_id: str) -> Path | None:
         """The contract the agent declares, resolved against the project root."""
@@ -453,6 +461,7 @@ class GenericWorkflowRunner:
         # Grant exactly the tools the agent declares, rather than everything.
         for tool in self._tools_for(agent_id):
             cmd.extend(["--allow-tool", tool])
+        cmd.extend(["--add-dir", str(self.workspace)])
         cmd.extend(["-p", prompt])
 
         env = os.environ.copy()

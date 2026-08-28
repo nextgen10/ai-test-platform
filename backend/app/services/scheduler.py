@@ -18,6 +18,7 @@ from sqlalchemy import select, update
 
 from app.database import session_scope
 from app.models.automation import Schedule, WebhookDelivery
+from app.services.url_guard import UnsafeURL, assert_safe_to_fetch
 from app.models.jobs import Job
 from app.services import cron
 
@@ -90,7 +91,7 @@ def fire_due_schedules() -> int:
             payload = {
                 "workflow": schedule.workflow,
                 "requirement": schedule.requirement,
-                "created_by": f"schedule:{schedule.name}"[:128],
+                "created_by": schedule.created_by,
                 "copilot_model": schedule.copilot_model,
                 "engine": schedule.engine,
                 "webhook_url": schedule.webhook_url,
@@ -143,6 +144,7 @@ def enqueue_webhook(job_id: str, url: str, payload: dict) -> None:
 
 
 def _post(url: str, payload: dict) -> int:
+    assert_safe_to_fetch(url)
     body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         url,
@@ -175,6 +177,8 @@ def deliver_pending_webhooks() -> int:
         error: str | None = None
         try:
             status = _post(url, payload)
+        except UnsafeURL as exc:
+            error = str(exc)[:500]
         except urllib.error.HTTPError as exc:
             status = exc.code
             error = f"HTTP {exc.code}: {exc.reason}"

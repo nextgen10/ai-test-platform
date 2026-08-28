@@ -25,6 +25,7 @@ import socket
 import threading
 import uuid
 from datetime import datetime, timedelta, timezone
+from contextvars import ContextVar
 
 from sqlalchemy import select, update
 
@@ -51,6 +52,10 @@ POLL_SECONDS = float(os.getenv("JOB_POLL_SECONDS", "2"))
 
 #: How many jobs one worker runs at once.
 WORKER_CONCURRENCY = int(os.getenv("WORKER_CONCURRENCY", "2"))
+
+#: Set on the worker thread while it holds a job. Executors poll this so a
+#: stolen lease actually stops the first worker instead of racing the second.
+lease_lost: ContextVar[threading.Event | None] = ContextVar("lease_lost", default=None)
 
 #: How many times a job whose worker died is retried before it is failed for
 #: good. Bounded so a job that reliably kills its worker cannot loop forever.
@@ -230,11 +235,14 @@ def reclaim_expired() -> int:
                 exhausted += 1
                 continue
 
-            # Only the lease is cleared. Status is left alone: a RUNNING job
-            # that was approved must stay RUNNING, or it would be knocked back
-            # to QUEUED and re-run the stage the person already approved.
-            # Stages that already completed are skipped by the runner's
-            # checkpoint, so the retry costs only what actually failed.
+            # STARTING / ANALYZING never finished the first stage: put them
+            # back in QUEUED so claim_next will pick them up. VALIDATING and
+            # EVALUATING already passed the human gate — RUNNING is the
+            # claimable state that resumes generation. RUNNING stays RUNNING.
+            if job.status in (JobStatus.STARTING, JobStatus.ANALYZING):
+                job.status = JobStatus.QUEUED
+            elif job.status in (JobStatus.VALIDATING, JobStatus.EVALUATING):
+                job.status = JobStatus.RUNNING
             job.lease_owner = None
             job.lease_expires_at = None
             job.error_message = None
@@ -325,11 +333,15 @@ class Worker:
             logger.info("picked up job %s (%s, attempt %d)", job_id, status, attempt)
 
             with LeaseHeartbeat(job_id) as heartbeat:
-                job_service.execute_claimed(job_id)
-                if heartbeat.lost.is_set():
-                    logger.warning(
-                        "job %s finished but its lease had already been taken", job_id
-                    )
+                lost_token = lease_lost.set(heartbeat.lost)
+                try:
+                    job_service.execute_claimed(job_id)
+                    if heartbeat.lost.is_set():
+                        logger.warning(
+                            "job %s finished but its lease had already been taken", job_id
+                        )
+                finally:
+                    lease_lost.reset(lost_token)
         except Exception:  # noqa: BLE001 - a worker must survive any single job
             logger.exception("job %s raised out of the worker loop", job_id)
         finally:

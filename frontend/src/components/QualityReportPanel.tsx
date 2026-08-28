@@ -112,7 +112,7 @@ export default function QualityReportPanel({ job, report, onApprove, onReject }:
                                 onClick={() => act(onApprove)}
                                 sx={{ fontWeight: 800, textTransform: 'none', px: 2.5 }}
                             >
-                                Approve &amp; Generate
+                                Approve & Generate
                             </Button>
                             <Button
                                 variant="outlined"

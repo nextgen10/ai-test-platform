@@ -12,7 +12,6 @@ export interface UserSettings {
     /** Which engine to request per job or per message. Not server state. */
     generationEngine: 'mock' | 'copilot';
     copilotModel: string;
-    autoApproveQualityThreshold: number;
     savedAt?: string;
 }
 
@@ -24,7 +23,6 @@ const NEVER_PERSIST = ['githubToken', 'github_token', 'token', 'apiToken'] as co
 export const DEFAULT_SETTINGS: UserSettings = {
     generationEngine: 'copilot',
     copilotModel: '',
-    autoApproveQualityThreshold: 80,
 };
 
 /**

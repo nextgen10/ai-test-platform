@@ -35,17 +35,12 @@ spec:
             - containerPort: 3100
               name: http
           env:
-            # Read at server start by next.config.ts rewrites(). The browser only
-            # ever talks to this pod; it proxies to the orchestrator in-cluster.
             - name: API_TARGET
               value: "http://ai-test-orchestrator"
-            # The browser never holds an orchestrator credential: this
-            # proxy attaches it server-side. Must match an API_TOKENS entry.
-            - name: API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: orchestrator-auth
-                  key: UI_API_TOKEN
+            # Browser callers must log in with their own API token. The BFF
+            # forwards that cookie; it does not impersonate a shared role.
+            - name: UI_AUTH_MODE
+              value: "session"
           resources:
             requests:
               cpu: 100m
@@ -55,13 +50,13 @@ spec:
               memory: 512Mi
           readinessProbe:
             httpGet:
-              path: /dashboard
+              path: /api/health
               port: http
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /dashboard
+              path: /api/health
               port: http
             initialDelaySeconds: 20
             periodSeconds: 20

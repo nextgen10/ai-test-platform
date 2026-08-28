@@ -1,9 +1,77 @@
-# Runner egress is deny-by-default. It may resolve DNS and reach the internet on
-# 443 (for the Copilot API) — and nothing else. In particular it cannot reach the
-# Kubernetes API, the orchestrator, the database, or any in-cluster service.
+# Ingress is deny-by-default in this namespace. Each workload then opts in.
 #
-# Tighten `to` further with an egress gateway or CIDR allowlist for GitHub once
-# you have the address range your environment permits (blueprint §20).
+# Runner egress is also deny-by-default: DNS plus public 443 (IPv4 and IPv6),
+# excluding RFC1918, ULA, link-local and cloud metadata.
+#
+# NetworkPolicy is a no-op on minikube's default CNI. Start with `--cni=calico`
+# (or Cilium) if you want these rules actually enforced.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: ai-testing
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-from-orchestrator
+  namespace: ai-testing
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ai-test-orchestrator
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: orchestrator-from-ui
+  namespace: ai-testing
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-test-orchestrator
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ai-test-ui
+      ports:
+        - protocol: TCP
+          port: 8100
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ui-from-anywhere
+  namespace: ai-testing
+spec:
+  podSelector:
+    matchLabels:
+      app: ai-test-ui
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 3100
+---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -16,7 +84,7 @@ spec:
   policyTypes:
     - Egress
     - Ingress
-  ingress: []          # nothing may connect to a runner pod
+  ingress: []
   egress:
     - to:
         - namespaceSelector:
@@ -37,7 +105,17 @@ spec:
               - 10.0.0.0/8
               - 172.16.0.0/12
               - 192.168.0.0/16
-              - 169.254.169.254/32   # cloud instance metadata
+              - 169.254.169.254/32
+      ports:
+        - protocol: TCP
+          port: 443
+    - to:
+        - ipBlock:
+            cidr: ::/0
+            except:
+              - fe80::/10
+              - fc00::/7
+              - ::1/128
       ports:
         - protocol: TCP
           port: 443

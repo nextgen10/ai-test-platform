@@ -50,6 +50,7 @@ class ChatSessionOut(BaseModel):
     title: str
     created_at: datetime
     last_activity: datetime
+    created_by: str | None = None
     agent_id: str | None = None
     skill_id: str | None = None
     workflow_id: str | None = None
@@ -65,6 +66,7 @@ class ChatSessionSummary(BaseModel):
     title: str
     created_at: datetime
     last_activity: datetime
+    created_by: str | None = None
     agent_id: str | None = None
     model: str | None = None
 

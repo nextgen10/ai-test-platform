@@ -34,6 +34,6 @@ USER nextjs
 
 EXPOSE 3100
 
-# API_TARGET is read at server start by next.config.ts rewrites(), so the
+# API_TARGET is read at runtime by the /api/v1/[...path] route handler, so the
 # orchestrator address is injected at deploy time, not baked into the image.
 CMD ["node", "server.js"]

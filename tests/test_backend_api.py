@@ -11,9 +11,7 @@ def test_health_endpoint(client):
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "ok"
-    assert "executor" in data
-    assert "engine" in data
+    assert data == {"status": "ok"}
 
 
 def test_models_endpoint(client):
@@ -128,6 +126,25 @@ def test_ocr_extract_reports_api_failure_as_fallback(client, monkeypatch, caplog
     # URLError branch wins, the response body explaining *why* auth failed is
     # swallowed and this assertion catches it.
     assert "bad credentials" in caplog.text
+
+
+def test_ocr_fails_closed_when_vision_is_unavailable_and_engine_is_copilot(
+    client, monkeypatch
+):
+    """A silent canned document must not feed a real Copilot run."""
+    from app.config import settings as app_settings
+
+    monkeypatch.setattr(app_settings, "engine", "copilot")
+    fake_png = __import__("base64").b64encode(b"\x89PNG\r\n\x1a\n").decode("utf-8")
+    response = client.post(
+        "/api/v1/ocr/extract",
+        json={
+            "image_base64": fake_png,
+            "mime_type": "image/png",
+            "filename": "spec.png",
+        },
+    )
+    assert response.status_code == 503
 
 
 def test_ocr_extract_endpoint_rejects_invalid_base64(client):

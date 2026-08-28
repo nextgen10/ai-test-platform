@@ -34,7 +34,7 @@ def queued_job():
     with session_scope() as db:
         job = Job(
             workflow="test-case-generation",
-            created_by="queue-test",
+            created_by="test-operator",
             status=JobStatus.QUEUED,
             lease_owner="parked-for-test",
             lease_expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
@@ -111,6 +111,23 @@ def test_an_expired_lease_is_reclaimed_rather_than_failed(operator, queued_job):
 
     after = operator.get(f"/api/v1/jobs/{queued_job}").json()
     assert after["status"] == "QUEUED", "a reclaimed job must not be failed"
+    assert after["lease_owner"] is None
+    assert queue.claim(queued_job, worker="a-live-worker") is True
+    queue.release(queued_job, worker="a-live-worker")
+
+
+def test_an_analyzing_job_is_requeued_when_its_lease_expires(operator, queued_job):
+    """ANALYZING used to be reclaimed into a state that claim_next would skip."""
+    _unpark(queued_job)
+    with session_scope() as db:
+        job = db.get(Job, queued_job)
+        job.status = JobStatus.ANALYZING
+        job.lease_owner = "a-worker-that-died"
+        job.lease_expires_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+
+    assert queue.reclaim_expired() >= 1
+    after = operator.get(f"/api/v1/jobs/{queued_job}").json()
+    assert after["status"] == "QUEUED"
     assert after["lease_owner"] is None
     assert queue.claim(queued_job, worker="a-live-worker") is True
     queue.release(queued_job, worker="a-live-worker")

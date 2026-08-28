@@ -114,13 +114,13 @@ def test_a_schedule_with_bad_cron_is_rejected(author):
     assert response.status_code == 422
 
 
-def test_a_schedule_can_be_fired_by_hand(operator, schedule):
+def test_a_schedule_can_be_fired_by_hand(author, schedule):
     """Useful for checking a schedule works without waiting for its window."""
-    response = operator.post(f"/api/v1/schedules/{schedule['id']}/run")
+    response = author.post(f"/api/v1/schedules/{schedule['id']}/run")
     assert response.status_code == 201
     assert response.json()["schedule_id"] == schedule["id"]
 
-    job = operator.get(f"/api/v1/jobs/{response.json()['job_id']}").json()
+    job = author.get(f"/api/v1/jobs/{response.json()['job_id']}").json()
     assert job["schedule_id"] == schedule["id"]
 
 
@@ -153,7 +153,7 @@ def test_a_due_schedule_fires_once_even_with_several_replicas(author, operator):
         assert first == 1
         assert second == 0, "the same tick fired twice"
 
-        after = operator.get(f"/api/v1/schedules/{created['id']}").json()
+        after = author.get(f"/api/v1/schedules/{created['id']}").json()
         assert after["run_count"] == 1
         assert after["last_job_id"]
         # next_run_at moved forward, so it will not fire again immediately.
@@ -277,9 +277,18 @@ def test_a_failed_delivery_can_be_retried(operator):
     from app.database import session_scope
     from app.models.automation import WebhookDelivery
 
+    job_id = operator.post(
+        "/api/v1/jobs",
+        json={
+            "workflow": "test-case-generation",
+            "requirement": REQUIREMENT,
+            "engine": "mock",
+        },
+    ).json()["job_id"]
+
     with session_scope() as db:
         record = WebhookDelivery(
-            job_id="nonexistent-but-fine",
+            job_id=job_id,
             url="https://example.invalid/hook",
             status="failed",
             attempts=5,

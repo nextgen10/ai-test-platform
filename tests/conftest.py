@@ -29,16 +29,21 @@ for p in (ROOT, BACKEND_DIR, RUNNER_DIR):
 # rather than only that the happy path works.
 READER_TOKEN = "test-reader-token-0000000000"
 OPERATOR_TOKEN = "test-operator-token-000000000"
+OPERATOR_B_TOKEN = "test-operator-b-token-00000"
 AUTHOR_TOKEN = "test-author-token-00000000000"
+ADMIN_TOKEN = "test-admin-token-000000000000"
 
 # Assignment, not setdefault: a developer's shell (or a sourced .env) otherwise
 # decides how the suite runs, and the results stop being reproducible.
 os.environ["AUTH_MODE"] = "token"
+os.environ["ENABLE_DOCS"] = ""
 os.environ["API_TOKENS"] = ",".join(
     [
         f"{READER_TOKEN}:test-reader:reader",
         f"{OPERATOR_TOKEN}:test-operator:operator",
+        f"{OPERATOR_B_TOKEN}:test-operator-b:operator",
         f"{AUTHOR_TOKEN}:test-author:author",
+        f"{ADMIN_TOKEN}:test-admin:admin",
     ]
 )
 
@@ -99,8 +104,18 @@ def operator() -> TestClient:
 
 
 @pytest.fixture(scope="session")
+def operator_b() -> TestClient:
+    return _client(OPERATOR_B_TOKEN)
+
+
+@pytest.fixture(scope="session")
 def author() -> TestClient:
     return _client(AUTHOR_TOKEN)
+
+
+@pytest.fixture(scope="session")
+def admin() -> TestClient:
+    return _client(ADMIN_TOKEN)
 
 
 @pytest.fixture(scope="session")

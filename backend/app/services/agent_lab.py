@@ -272,6 +272,7 @@ def _copilot_run(
 
     for tool in hub_registry.agent_tools(agent_id):
         cmd.extend(["--allow-tool", tool])
+    cmd.extend(["--add-dir", str(workspace)])
 
     if model and model.strip().lower() not in {"", "default", "auto", "none"}:
         cmd.extend(["--model", model.strip()])

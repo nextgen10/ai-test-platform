@@ -273,7 +273,7 @@ export default function RealtimeFlowDiagram() {
             <text x="28" y="32" fill={AMBER} fontSize="11" fontWeight="800" textAnchor="middle">1</text>
             <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="700">Analyst Agent</text>
             <text x="50" y="47" fill={AMBER} fontSize="9.5" fontWeight="600">8 INVEST Criteria</text>
-            <text x="20" y="65" fill={mutedColor} fontSize="9.5">Scores clarity &amp; feasibility</text>
+            <text x="20" y="65" fill={mutedColor} fontSize="9.5">Scores clarity & feasibility</text>
           </g>
 
           {/* ARTIFACT 2 LABEL (Centered in 110px gap [510, 620]) */}

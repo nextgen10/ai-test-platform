@@ -17,7 +17,13 @@ RUN pip install --no-cache-dir -r /srv/requirements.txt \
     && pip install --no-cache-dir kubernetes==31.0.0 "psycopg[binary]==3.2.3"
 
 COPY backend/app /srv/app
+COPY backend/migrations /srv/migrations
 COPY schemas /srv/schemas
+COPY agent-hub /srv/agent-hub
+
+ENV PYTHONPATH=/srv \
+    AGENT_HUB_DIR=/srv/agent-hub \
+    AGENT_HUB_SEED=/srv/agent-hub
 
 RUN useradd --create-home --uid 10001 orchestrator \
     && mkdir -p /artifacts \

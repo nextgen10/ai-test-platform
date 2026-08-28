@@ -77,7 +77,7 @@ export default function TechnicalFAQ() {
           </Typography>
         </Box>
         <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
-          Technical Architecture &amp; Guardrails
+          Technical Architecture & Guardrails
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
           Everything you need to know about deterministic multi-agent test engineering.

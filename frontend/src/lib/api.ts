@@ -1,8 +1,8 @@
 /**
  * Orchestrator API client.
  *
- * Requests go to this origin and Next rewrites them to the FastAPI service
- * (see next.config.ts), so the browser never talks to a second origin.
+ * Requests go to this origin. A Next.js route handler proxies them to the
+ * FastAPI service, so the browser never talks to a second origin.
  */
 
 export const API_BASE = '/api/v1';
@@ -265,6 +265,7 @@ export interface ModelOption {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
+        credentials: 'same-origin',
         ...init,
         headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     });
@@ -283,7 +284,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-    health: () => request<{ status: string; executor: string; engine: string }>('/health'),
+    health: () => request<{ status: string }>('/health'),
     /** Platform configuration, including whether the server holds its own Copilot token. */
     settings: () =>
         request<{
@@ -321,16 +322,16 @@ export const api = {
 
     cancelJob: (id: string) => request<Job>(`/jobs/${id}`, { method: 'DELETE' }),
 
-    approveJob: (id: string, actor = 'anonymous') =>
+    approveJob: (id: string) =>
         request<Job>(`/jobs/${id}/approve`, {
             method: 'POST',
-            body: JSON.stringify({ actor }),
+            body: JSON.stringify({}),
         }),
 
-    rejectJob: (id: string, actor = 'anonymous', reason = '') =>
+    rejectJob: (id: string, reason = '') =>
         request<Job>(`/jobs/${id}/reject`, {
             method: 'POST',
-            body: JSON.stringify({ actor, reason }),
+            body: JSON.stringify({ reason }),
         }),
 
     reprocessJob: (id: string) => request<Job>(`/jobs/${id}/reprocess`, { method: 'POST' }),

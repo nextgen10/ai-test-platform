@@ -17,6 +17,13 @@ from pathlib import Path
 from app.config import settings
 from app.executors.base import ExecutionResult
 
+
+def _runtime_value(job_id: str, name: str) -> str | None:
+    path = settings.runtime_for(job_id) / name
+    if not path.is_file():
+        return None
+    return path.read_text(encoding="utf-8").strip() or None
+
 ARTIFACT_PVC = os.getenv("K8S_ARTIFACT_PVC", "ai-test-artifacts")
 
 
@@ -66,8 +73,13 @@ class KubernetesExecutor:
         self, job_id: str, k8s_job_name: str, stage: str = "generate",
         reprocess: bool = False, workflow: str = "test-case-generation",
         runner: str = "bespoke",
+        engine: str | None = None,
+        token_secret: str | None = None,
     ) -> dict:
         """Build the Job manifest. Pure function — unit-testable without a cluster."""
+        engine = engine or settings.engine
+        token_secret = token_secret or settings.k8s_secret_name
+        hub_pvc = settings.k8s_hub_pvc
         return {
             "apiVersion": "batch/v1",
             "kind": "Job",
@@ -105,12 +117,12 @@ class KubernetesExecutor:
                                 "imagePullPolicy": "IfNotPresent",
                                 "securityContext": {
                                     "allowPrivilegeEscalation": False,
-                                    "readOnlyRootFilesystem": False,
+                                    "readOnlyRootFilesystem": True,
                                     "capabilities": {"drop": ["ALL"]},
                                 },
                                 "env": [
                                     {"name": "JOB_ID", "value": job_id},
-                                    {"name": "ENGINE", "value": settings.engine},
+                                    {"name": "ENGINE", "value": engine},
                                     {"name": "STAGE", "value": stage},
                                     {"name": "WORKFLOW_ID", "value": workflow},
                                     {"name": "RUNNER_KIND", "value": runner},
@@ -128,7 +140,7 @@ class KubernetesExecutor:
                                         "name": "COPILOT_GITHUB_TOKEN",
                                         "valueFrom": {
                                             "secretKeyRef": {
-                                                "name": settings.k8s_secret_name,
+                                                "name": token_secret,
                                                 "key": "COPILOT_GITHUB_TOKEN",
                                                 "optional": True,
                                             }
@@ -150,7 +162,14 @@ class KubernetesExecutor:
                                         "name": "artifacts",
                                         "mountPath": "/workspace",
                                         "subPath": job_id,
-                                    }
+                                    },
+                                    {
+                                        "name": "hub",
+                                        "mountPath": "/app/agent-hub",
+                                        "readOnly": True,
+                                    },
+                                    {"name": "tmp", "mountPath": "/tmp"},
+                                    {"name": "home", "mountPath": "/home/runner"},
                                 ],
                             }
                         ],
@@ -158,12 +177,82 @@ class KubernetesExecutor:
                             {
                                 "name": "artifacts",
                                 "persistentVolumeClaim": {"claimName": ARTIFACT_PVC},
-                            }
+                            },
+                            {
+                                "name": "hub",
+                                "persistentVolumeClaim": {"claimName": hub_pvc},
+                            },
+                            {"name": "tmp", "emptyDir": {}},
+                            {"name": "home", "emptyDir": {}},
                         ],
                     },
                 },
             },
         }
+
+    def cancel(self, job_id: str, external_name: str | None = None) -> None:
+        """Delete the Kubernetes Job so the runner pod stops."""
+        name = external_name or self.external_name(job_id)
+        client = _load_client()
+        batch = client.BatchV1Api()
+        try:
+            batch.delete_namespaced_job(
+                name=name,
+                namespace=settings.k8s_namespace,
+                body=client.V1DeleteOptions(propagation_policy="Background"),
+            )
+        except client.exceptions.ApiException:
+            pass
+        self._delete_job_token_secret(client.CoreV1Api(), job_id)
+
+    def _job_token_secret_name(self, job_id: str) -> str:
+        return f"copilot-job-{job_id}"[:63]
+
+    def _ensure_job_token_secret(self, core, client, job_id: str) -> str:
+        token = _runtime_value(job_id, "copilot_token")
+        if not token:
+            return settings.k8s_secret_name
+        name = self._job_token_secret_name(job_id)
+        body = client.V1Secret(
+            metadata=client.V1ObjectMeta(
+                name=name,
+                namespace=settings.k8s_namespace,
+                labels={"app": "ai-test-runner", "job-id": job_id},
+            ),
+            string_data={"COPILOT_GITHUB_TOKEN": token},
+            type="Opaque",
+        )
+        try:
+            core.create_namespaced_secret(settings.k8s_namespace, body)
+        except client.exceptions.ApiException as exc:
+            if exc.status != 409:
+                raise
+            core.replace_namespaced_secret(name, settings.k8s_namespace, body)
+        return name
+
+    def _delete_job_token_secret(self, core, job_id: str) -> None:
+        name = self._job_token_secret_name(job_id)
+        if name == settings.k8s_secret_name:
+            return
+        try:
+            core.delete_namespaced_secret(name, settings.k8s_namespace)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _should_stop(self, job_id: str) -> str | None:
+        """Return a reason if this worker should drop the Kubernetes Job."""
+        from app.database import session_scope
+        from app.models.jobs import Job, JobStatus
+        from app.services import queue as work_queue
+
+        lost = work_queue.lease_lost.get()
+        if lost is not None and lost.is_set():
+            return "lease lost"
+        with session_scope() as db:
+            job = db.get(Job, job_id)
+            if job is not None and job.status is JobStatus.CANCELLED:
+                return "cancelled"
+        return None
 
     def run(
         self, job_id: str, workspace: Path, stage: str = "generate",
@@ -174,15 +263,18 @@ class KubernetesExecutor:
         batch = client.BatchV1Api()
         core = client.CoreV1Api()
 
-        # One Job per stage, so a reprocess does not collide with the first run.
         k8s_job_name = self.external_name(job_id, stage, attempt)
+        engine = _runtime_value(job_id, "engine") or settings.engine
+        token_secret = self._ensure_job_token_secret(core, client, job_id)
         manifest = self.build_manifest(
-            job_id, k8s_job_name, stage, reprocess, workflow, runner
+            job_id, k8s_job_name, stage, reprocess, workflow, runner,
+            engine=engine, token_secret=token_secret,
         )
 
         try:
             batch.create_namespaced_job(namespace=settings.k8s_namespace, body=manifest)
         except client.exceptions.ApiException as exc:
+            self._delete_job_token_secret(core, job_id)
             return ExecutionResult(
                 succeeded=False,
                 exit_code=1,
@@ -192,13 +284,18 @@ class KubernetesExecutor:
 
         deadline = time.monotonic() + settings.job_timeout_seconds
         succeeded: bool | None = None
+        stop_reason: str | None = None
 
         while time.monotonic() < deadline:
+            stop_reason = self._should_stop(job_id)
+            if stop_reason:
+                break
             try:
                 status = batch.read_namespaced_job_status(
                     name=k8s_job_name, namespace=settings.k8s_namespace
                 ).status
             except client.exceptions.ApiException as exc:
+                self._delete_job_token_secret(core, job_id)
                 return ExecutionResult(
                     False, 1, f"Lost track of Job: {exc.reason}", k8s_job_name
                 )
@@ -211,9 +308,7 @@ class KubernetesExecutor:
                 break
             time.sleep(3)
 
-        self._collect_logs(core, client, job_id, k8s_job_name, workspace)
-
-        if succeeded is None:
+        if stop_reason or succeeded is None:
             try:
                 batch.delete_namespaced_job(
                     name=k8s_job_name,
@@ -222,6 +317,16 @@ class KubernetesExecutor:
                 )
             except client.exceptions.ApiException:
                 pass
+
+        self._collect_logs(core, client, job_id, k8s_job_name, workspace)
+        self._delete_job_token_secret(core, job_id)
+
+        if stop_reason:
+            return ExecutionResult(
+                False, 130, f"Runner stopped ({stop_reason})", k8s_job_name
+            )
+
+        if succeeded is None:
             return ExecutionResult(
                 False,
                 124,

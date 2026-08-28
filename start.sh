@@ -39,7 +39,8 @@ fi
 : "${BACKEND_PORT:=8100}"
 : "${FRONTEND_PORT:=3100}"
 : "${AUTH_MODE:=token}"
-export EXECUTOR ENGINE AUTH_MODE
+: "${ENABLE_DOCS:=1}"
+export EXECUTOR ENGINE AUTH_MODE ENABLE_DOCS
 
 # The orchestrator refuses to start in token mode with no credentials, so that
 # an unconfigured deployment can never serve an open API. For a local run we
@@ -51,6 +52,7 @@ if [[ "$AUTH_MODE" == "token" && -z "${API_TOKENS:-}" ]]; then
     export API_TOKEN="$DEV_TOKEN"
     echo "  auth     token mode, dev credential generated for this run"
 elif [[ "$AUTH_MODE" == "disabled" ]]; then
+    export ALLOW_INSECURE_AUTH=1
     echo "  auth     DISABLED — every endpoint is open. Loopback only."
 else
     : "${API_TOKEN:=}"
@@ -116,7 +118,8 @@ fi
 
 (
     cd "$ROOT/frontend"
-    PORT="$FRONTEND_PORT" API_TARGET="http://127.0.0.1:$BACKEND_PORT" API_TOKEN="$API_TOKEN" exec npm run dev
+    PORT="$FRONTEND_PORT" API_TARGET="http://127.0.0.1:$BACKEND_PORT" \
+        API_TOKEN="$API_TOKEN" UI_AUTH_MODE=shared exec npm run dev
 ) > "$LOG_DIR/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 

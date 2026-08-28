@@ -609,7 +609,7 @@ export default function GeneratePage() {
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            Business Requirements &amp; Acceptance Criteria
+                            Business Requirements & Acceptance Criteria
                         </Typography>
 
                         {/* View Mode Toggle: Edit vs Formatted Preview vs Split View */}
@@ -652,7 +652,7 @@ export default function GeneratePage() {
                                 <ToggleButton value="split">
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                         <Columns size={12} />
-                                        <span>Image &amp; Spec Split</span>
+                                        <span>Image & Spec Split</span>
                                     </Box>
                                 </ToggleButton>
                             )}

@@ -43,16 +43,22 @@ POST /api/v1/jobs                     validate input, enforce rate limits
 Job row created (QUEUED)              requirement written to input/requirement.md
    |
    v
-BackgroundTasks -> run_job()          returns job_id immediately
+A worker claims the row (lease)       any replica can pick it up
    |
    v
-STARTING -> RUNNING                   executor dispatches the runner
+STARTING -> ANALYZING                 (bespoke test-generation: quality gate)
+   |
+   v
+AWAITING_APPROVAL                     human approve / reject (when the workflow asks)
+   |
+   v
+RUNNING                               executor dispatches the runner
    |
    v
 Runner: designer -> generator -> reviewer
    |                                  structured artifacts between each step
    v
-VALIDATING                            schema + business rules + quality gate
+VALIDATING / EVALUATING               schema + business rules + quality gate
    |
    +---- gate fails -> back to reviewer (max MAX_REVIEW_ATTEMPTS) -> FAILED
    |
@@ -72,9 +78,10 @@ nothing else down with it.
 ## State machine
 
 ```
-QUEUED -> STARTING -> RUNNING -> VALIDATING -> COMPLETED
-             |           |            |
-             +-----------+------------+--> FAILED / TIMEOUT / CANCELLED
+QUEUED -> STARTING -> ANALYZING -> AWAITING_APPROVAL -> RUNNING
+                                                        -> VALIDATING -> EVALUATING -> COMPLETED
+Any in-flight state can also go to FAILED / TIMEOUT / CANCELLED.
+REJECTED is the human-gate refusal.
 ```
 
 Transitions are enforced in `job_service.transition()`. An illegal transition
@@ -83,6 +90,12 @@ callback cannot move a `COMPLETED` job back to `RUNNING`.
 
 State lives in the database, never only in the UI. Every transition also appends
 a `job_events` row, giving a complete audit trail per job.
+
+Work is a **leased row**, not a BackgroundTask on the submit request. A worker
+claims with a conditional UPDATE, renews while it runs, and a replica that dies
+stops renewing. `reclaim_expired()` returns STARTING/ANALYZING jobs to QUEUED and
+VALIDATING/EVALUATING jobs to RUNNING so they stay claimable. Cancel kills the
+registered process (or deletes the Kubernetes Job), not just the status flag.
 
 ---
 
@@ -105,6 +118,10 @@ Artifacts are exchanged through an RWX PersistentVolumeClaim mounted by both the
 orchestrator and each runner, with the job id as a `subPath` so jobs cannot read
 each other's workspaces. Without RWX storage, switch to object storage and have
 the runner upload on completion.
+
+The agent hub is a second RWX volume (`ai-test-hub`). The orchestrator mounts it
+read-write so Registry edits persist; runner Jobs mount it **read-only**. The
+image carries a seed copy that is copied onto an empty volume once at startup.
 
 ---
 
@@ -138,19 +155,46 @@ Defenses, in depth:
    `copilot-instructions.md` state that requirement content is data, never
    instruction, and that embedded directives must be ignored and recorded in
    `assumptions`.
-2. **No shell pre-approval.** The runner passes only `read`/`write` tool
-   permissions. GitHub warns explicitly that pre-approving shell tools lets
+2. **No shell or fetch.** The registry refuses to persist an agent that declares
+   `shell` or `fetch`. The generic runner and chat path also strip those tools.
+   Chat grants only `read`/`search` against a throwaway working directory (plus
+   `--add-dir` on the hub). Hub writes go through the Registry API (`author`),
+   not through a chat operator. GitHub warns that pre-approving shell tools lets
    prompt injection execute commands.
 3. **No string interpolation.** User input is written to a file; prompts
    reference the path. The requirement never becomes part of a command line.
 4. **Workspace confinement.** Agents are instructed to read and write only under
    `/workspace`; the runner is non-root with all capabilities dropped.
-5. **Network confinement.** `NetworkPolicy` denies ingress entirely and limits
-   egress to DNS plus outbound 443, excluding RFC1918 and cloud metadata.
-6. **Output validation.** Nothing the model produces is trusted — it is parsed,
+5. **Network confinement.** Default-deny NetworkPolicy on the namespace, with
+   explicit allow rules (UI → orchestrator, orchestrator → postgres, runner
+   egress to DNS and 443 excluding RFC1918, cloud metadata, and IPv6 ULA).
+6. **Webhooks are not an SSRF gadget.** Callback URLs must be https to a public
+   host at create time; immediately before POST the orchestrator resolves DNS
+   and refuses private, loopback, and metadata addresses.
+7. **Output validation.** Nothing the model produces is trusted — it is parsed,
    schema-checked and business-validated before a job can complete.
-7. **Path-bounded downloads.** Artifact paths are resolved and checked to remain
+8. **Path-bounded downloads.** Artifact paths are resolved and checked to remain
    inside the job workspace.
+9. **Tenancy.** Non-admin callers see only rows they created. A guessed id is a
+   404, not a 403.
+
+---
+
+## Authentication
+
+The orchestrator authenticates with bearer tokens (`AUTH_MODE=token`,
+`API_TOKENS="<token>:<name>:<role>"`). Roles are reader, operator, author, and
+admin. `AUTH_MODE=disabled` requires `ALLOW_INSECURE_AUTH=1` and is loopback-only.
+
+The UI never holds a shared cluster token in the browser:
+
+- **Local `./start.sh`** sets `UI_AUTH_MODE=shared` and attaches a minted
+  `API_TOKEN` in the Next.js BFF.
+- **Kubernetes** sets `UI_AUTH_MODE=session`. The visitor pastes their own API
+  token on `/login`; the BFF stores it in an httpOnly cookie and uses it as
+  Bearer on every orchestrator call.
+
+`/docs` and OpenAPI are off unless `ENABLE_DOCS=1` (or auth is disabled).
 
 ---
 
@@ -165,20 +209,20 @@ answerable.
 
 ## Deliberately not built yet
 
-Per the blueprint's non-goals, the MVP omits: autonomous deployment, unrestricted
-shell access, event streaming beyond log polling, multi-cluster orchestration,
-persistent per-user Copilot workers, and automatic Git commits or pull requests.
+Per the blueprint's non-goals, the platform omits: autonomous deployment,
+unrestricted shell access, multi-cluster orchestration, persistent per-user
+Copilot workers, and automatic Git commits or pull requests.
 
-Known gaps, surfaced as UI placeholders rather than hidden:
+Known gaps:
 
-- **Authentication and RBAC** — no auth today. Add OIDC/SSO and the
-  admin/architect/QA-lead/tester/viewer roles before any shared deployment.
+- **OIDC / SSO** — tokens work; an identity provider is the next step for a
+  shared production deployment.
 - **Secret management** — Kubernetes `Secret` only; move to Vault or External
   Secrets for production.
 - **Evaluation** — the deterministic gate runs per job, but there is no golden
   dataset or release-over-release regression scoring yet. Build this before
   editing skills freely, or quality will drift silently.
-- **Log streaming** — the UI polls. Switch to SSE for a mostly one-way stream.
+- **Log streaming** — jobs still poll; chat already uses SSE.
 - **Object storage** — artifacts are on a filesystem/PVC; S3 or MinIO is the
   next step.
 - **MCP** — add only once the standalone workflow is stable, so a Jira or GitLab

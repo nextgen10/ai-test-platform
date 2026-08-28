@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, Container, Typography, Chip, Button, Breadcrumbs, useTheme } from '@mui/material';
+import { Box, Container, Typography, Chip, Button, Breadcrumbs, Stack, useTheme } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
 import {
     LayoutDashboard, ListChecks, BookOpen, SlidersHorizontal, Home, Bot, Layers,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import ThemeToggle from '@/components/ThemeToggle';
+import AuthStatus from '@/components/AuthStatus';
 import { UnifiedNavBar } from '@/components/UnifiedNavBar';
 import { coreNavItems, mapWorkflowsToUseCases, type UseCaseItem } from '@/config/nav';
 import { hubApi } from '@/lib/hub-api';
@@ -77,7 +78,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 items={items}
                 useCases={useCases}
                 onLogoClick={() => router.push('/')}
-                actions={<ThemeToggle />}
+                actions={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        <AuthStatus />
+                        <ThemeToggle />
+                    </Stack>
+                }
             />
 
             {/* Bespoke Use Case Context & Breadcrumb Ribbon */}

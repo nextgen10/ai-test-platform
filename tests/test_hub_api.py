@@ -223,3 +223,22 @@ def test_a_generated_bundle_installs_agents_before_its_workflow(reader, author):
 
     author.delete("/api/v1/hub/workflows/zz-bundle-workflow")
     author.delete("/api/v1/hub/agents/zz-bundle-agent")
+
+
+def test_registry_rejects_shell_and_fetch_tools(author):
+    body = """---
+name: zz-denied-tools
+description: Must be refused because shell is not granted on this platform.
+tools: ["read", "shell"]
+---
+
+# Denied
+"""
+    res = author.post(
+        "/api/v1/hub/agents",
+        json={"id": "zz-denied-tools", "content": body},
+    )
+    assert res.status_code == 400
+    assert "shell" in res.json()["detail"].lower()
+    assert author.get("/api/v1/hub/agents/zz-denied-tools").status_code == 404
+

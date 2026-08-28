@@ -144,6 +144,7 @@ def get_agent(agent_id: str) -> dict[str, Any] | None:
 
 def create_agent(agent_id: str, content: str) -> dict[str, Any]:
     """Write a new agent file.  Raises ``FileExistsError`` if it already exists."""
+    _assert_tools_allowed(content)
     path = _contained(_agents_dir(), f"{_safe_id(agent_id)}.agent.md")
     if path.exists():
         raise FileExistsError(f"Agent '{agent_id}' already exists")
@@ -153,6 +154,7 @@ def create_agent(agent_id: str, content: str) -> dict[str, Any]:
 
 
 def update_agent(agent_id: str, content: str) -> dict[str, Any]:
+    _assert_tools_allowed(content)
     path = _contained(_agents_dir(), f"{_safe_id(agent_id)}.agent.md")
     if not path.is_file():
         raise FileNotFoundError(f"Agent '{agent_id}' not found")
@@ -168,9 +170,56 @@ def delete_agent(agent_id: str) -> bool:
     return True
 
 
-#: Tools an agent may declare. The chat orchestrator grants exactly these to the
-#: CLI, so an unknown name must not silently widen the grant.
+class DeniedTool(ValueError):
+    """An agent definition asked for a tool this platform will not grant."""
+
+
+#: Tools an agent may declare. The chat orchestrator and generic runner grant
+#: exactly these to the CLI. ``shell`` and ``fetch`` are recognised so we can
+#: reject them at write time rather than silently honour them.
 KNOWN_TOOLS = frozenset({"read", "write", "edit", "search", "shell", "fetch"})
+DENIED_TOOLS = frozenset({"shell", "fetch"})
+ALLOWED_TOOLS = KNOWN_TOOLS - DENIED_TOOLS
+
+
+def _assert_tools_allowed(content: str) -> None:
+    """Refuse to persist an agent that would get shell or fetch at runtime."""
+    meta, _ = _parse_frontmatter(content)
+    declared = meta.get("tools") or []
+    if not isinstance(declared, list):
+        return
+    bad = [
+        str(t).strip().lower()
+        for t in declared
+        if str(t).strip().lower() in DENIED_TOOLS
+    ]
+    if bad:
+        raise DeniedTool(
+            f"Agents may not declare {bad}. shell and fetch are denied on this "
+            "platform because they turn prompt injection into host/network access."
+        )
+
+
+def seed_hub() -> None:
+    """Copy the image's baked hub onto an empty volume once.
+
+    Kubernetes mounts a PVC at AGENT_HUB_DIR so Registry writes reach runner
+    Jobs. The first boot of an empty volume would otherwise serve an empty
+    catalog. AGENT_HUB_SEED points at the copy baked into the image.
+    """
+    dest = _hub_root()
+    dest.mkdir(parents=True, exist_ok=True)
+    seed = settings.agent_hub_seed
+    if seed is None or not seed.is_dir():
+        return
+    if (dest / "agents").is_dir() and any((dest / "agents").glob("*.agent.md")):
+        return
+    import logging
+
+    logging.getLogger("ai-test-platform").info(
+        "Seeding agent hub at %s from %s", dest, seed
+    )
+    shutil.copytree(seed, dest, dirs_exist_ok=True)
 
 
 def agent_tools(agent_id: str) -> list[str]:
@@ -189,7 +238,7 @@ def agent_tools(agent_id: str) -> list[str]:
     if not isinstance(declared, list):
         return ["read"]
     allowed = [str(t).strip().lower() for t in declared]
-    allowed = [t for t in allowed if t in KNOWN_TOOLS]
+    allowed = [t for t in allowed if t in ALLOWED_TOOLS]
     return allowed or ["read"]
 
 

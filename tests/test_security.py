@@ -249,3 +249,69 @@ def test_rate_limits_are_per_authenticated_principal(operator, monkeypatch):
         },
     )
     assert response.status_code == 429
+
+
+# ---------------------------------------------------------------- tenancy / SSRF / docs
+
+_REQ = "x" * 40
+
+
+def test_operator_cannot_read_another_operators_job(operator, operator_b):
+    job_id = operator.post(
+        "/api/v1/jobs",
+        json={"requirement": _REQ, "workflow": "test-case-generation", "engine": "mock"},
+    ).json()["job_id"]
+    assert operator.get(f"/api/v1/jobs/{job_id}").status_code == 200
+    assert operator_b.get(f"/api/v1/jobs/{job_id}").status_code == 404
+    assert operator_b.get(f"/api/v1/jobs/{job_id}/logs").status_code == 404
+    listed = operator_b.get("/api/v1/jobs").json()
+    assert all(item["id"] != job_id for item in listed)
+
+
+def test_admin_can_read_any_job(operator, admin):
+    job_id = operator.post(
+        "/api/v1/jobs",
+        json={"requirement": _REQ, "workflow": "test-case-generation", "engine": "mock"},
+    ).json()["job_id"]
+    assert admin.get(f"/api/v1/jobs/{job_id}").status_code == 200
+
+
+def test_operator_cannot_read_another_operators_chat(operator, operator_b):
+    session_id = operator.post(
+        "/api/v1/chat/sessions", json={"title": "private"}
+    ).json()["id"]
+    assert operator.get(f"/api/v1/chat/sessions/{session_id}").status_code == 200
+    assert operator_b.get(f"/api/v1/chat/sessions/{session_id}").status_code == 404
+    listed = operator_b.get("/api/v1/chat/sessions").json()
+    assert all(item["id"] != session_id for item in listed)
+
+
+def test_webhook_url_must_be_public_https(operator):
+    bad = operator.post(
+        "/api/v1/jobs",
+        json={
+            "requirement": _REQ,
+            "workflow": "test-case-generation",
+            "engine": "mock",
+            "webhook_url": "http://127.0.0.1/hook",
+        },
+    )
+    assert bad.status_code == 422
+
+    ok = operator.post(
+        "/api/v1/jobs",
+        json={
+            "requirement": _REQ,
+            "workflow": "test-case-generation",
+            "engine": "mock",
+            "webhook_url": "https://example.invalid/hooks",
+        },
+    )
+    assert ok.status_code == 201
+
+
+def test_docs_are_closed_in_token_mode(anonymous):
+    assert anonymous.get("/docs").status_code == 404
+    assert anonymous.get("/openapi.json").status_code == 404
+    assert anonymous.get("/redoc").status_code == 404
+
