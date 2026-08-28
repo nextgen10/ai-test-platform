@@ -12,8 +12,8 @@ import {
   Drawer,
   Alert,
   useTheme,
-  alpha,
   useMediaQuery,
+  alpha,
   Tooltip,
 } from '@mui/material';
 import {
@@ -158,22 +158,6 @@ export const ChatPanel: React.FC = () => {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              color="primary"
-              startIcon={<FlaskConical size={14} />}
-              onClick={() => handleLaunchUseCase('/generate')}
-              sx={{
-                borderRadius: 1.5,
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                display: { xs: 'none', sm: 'inline-flex' },
-              }}
-            >
-              Open Test Gen UI
-            </Button>
             <Button
               size="small"
               variant="text"

@@ -491,7 +491,74 @@ export default function AgentHubLanding() {
               </Card>
             </Grid>
 
-            {/* Card 3: Document OCR & Vision Extraction */}
+            {/* Card 3: Workflow Builder (Meta Custom UI) */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Card
+                variant="outlined"
+                sx={{
+                  height: '100%', display: 'flex', flexDirection: 'column',
+                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3 },
+                  border: '1px solid', borderColor: 'divider', transition: 'all 0.25s ease',
+                  '&:hover': {
+                    borderColor: '#8b5cf6', transform: 'translateY(-3px)',
+                    boxShadow: '0 16px 36px -10px rgba(139, 92, 246, 0.2)',
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+                    <Layers size={22} />
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                        Workflow Builder
+                      </Typography>
+                      <Chip
+                        label="Custom UI"
+                        size="small"
+                        sx={{ height: 19, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}
+                      />
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Agents That Build Agents
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.86rem', lineHeight: 1.55, mb: 2, flex: 1 }}>
+                  Describe a multi-agent workflow in plain English. Four agents design the
+                  architecture, critique it, write the agent prompts and review the generated code &mdash;
+                  then you install the result into the Registry from the page. The new workflow is
+                  live in the Agent Console immediately, with nothing redeployed.
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 2 }}>
+                  {['architect', 'review architecture', 'write agents', 'review code'].map((stage, i) => (
+                    <Chip
+                      key={stage}
+                      label={`${i + 1}. ${stage}`}
+                      size="small"
+                      variant="outlined"
+                      sx={{ fontSize: '0.68rem', height: 21, fontWeight: 600 }}
+                    />
+                  ))}
+                </Box>
+
+                <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Button
+                    size="small" variant="outlined" color="inherit"
+                    startIcon={<Sparkles size={13} />}
+                    onClick={() => router.push('/use-cases/workflow-builder')}
+                    sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', fontSize: '0.8rem' }}
+                  >
+                    Build a Workflow
+                  </Button>
+                </Box>
+              </Card>
+            </Grid>
+
+            {/* Card 4: Document OCR & Vision Extraction */}
             <Grid size={{ xs: 12, sm: 6, md: 6 }}>
               <Card
                 variant="outlined"
@@ -536,7 +603,7 @@ export default function AgentHubLanding() {
               </Card>
             </Grid>
 
-            {/* Card 4: Agent & Workflow Registry */}
+            {/* Card 5: Agent & Workflow Registry */}
             <Grid size={{ xs: 12, sm: 6, md: 6 }}>
               <Card
                 variant="outlined"

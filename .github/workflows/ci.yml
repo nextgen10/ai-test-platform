@@ -1,0 +1,109 @@
+# Continuous integration for the Agent Hub platform.
+#
+# This exists because three separate things were broken on `main` at once — the
+# frontend production build, the runner image, and the runner's entrypoint —
+# and none of them are exercised by day-to-day development: `next dev` uses
+# Turbopack rather than the webpack production build, and the local executor
+# never touches a container. Every job below covers one of those blind spots.
+name: CI
+
+on:
+  push:
+    branches: [main, V1]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"   # matches backend/Dockerfile
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt -r runner/requirements.txt
+          pip install pytest pytest-randomly httpx
+
+      # pytest-randomly shuffles order on purpose: a suite that only passes in
+      # one order is a suite with hidden inter-test coupling.
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+  frontend:
+    name: Frontend production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # `npm ci` rather than `npm install`: the lockfile is what production
+      # installs, so it is what CI must build against.
+      - name: Install dependencies
+        run: npm ci
+
+      # This is the job that would have caught the prerender failure. `next dev`
+      # never runs this code path.
+      - name: Build
+        run: npm run build
+
+  runner-image:
+    name: Runner image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Built, not pushed. The point is that the Dockerfile's COPY paths still
+      # exist — that is what silently rotted when agents moved to agent-hub/.
+      - name: Build the runner image
+        run: docker build -f runner/Dockerfile -t ai-test-runner:ci .
+
+      # A build that succeeds but ships an image missing the generic runner is
+      # the failure mode that put the container executors a release behind, so
+      # assert the contents rather than trusting the build.
+      - name: Assert the image carries both runners and the hub
+        run: |
+          docker run --rm --entrypoint sh ai-test-runner:ci -c '
+            set -e
+            for f in agent_chain.py generic_runner.py agent_io.py \
+                     workflow_graph.py validate_output.py entrypoint.sh; do
+              test -f "/app/$f" || { echo "MISSING /app/$f"; exit 1; }
+            done
+            test -d /app/agent-hub/agents    || { echo "MISSING /app/agent-hub/agents"; exit 1; }
+            test -d /app/agent-hub/skills    || { echo "MISSING /app/agent-hub/skills"; exit 1; }
+            test -d /app/agent-hub/workflows || { echo "MISSING /app/agent-hub/workflows"; exit 1; }
+            echo "image contents OK"
+          '
+
+      # Proves the entrypoint actually dispatches on RUNNER_KIND, which is the
+      # bug this job was added for: the variable was set by both container
+      # executors and read by nothing.
+      - name: Assert the entrypoint honours RUNNER_KIND
+        run: |
+          mkdir -p /tmp/ws/input
+          echo "Build a workflow that scrapes a URL and summarizes it." \
+            > /tmp/ws/input/requirement.md
+          docker run --rm -v /tmp/ws:/workspace \
+            -e ENGINE=mock -e RUNNER_KIND=generic -e WORKFLOW_ID=workflow-builder \
+            ai-test-runner:ci
+          test -f /tmp/ws/output/workflow-code.md \
+            || { echo "generic runner did not produce its primary artifact"; exit 1; }
+          echo "RUNNER_KIND=generic dispatched correctly"

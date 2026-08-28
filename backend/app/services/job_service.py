@@ -30,7 +30,7 @@ from app.models.jobs import (
     JobStatus,
     utcnow,
 )
-from app.services import hub_registry
+from app.services import cli_errors, hub_registry
 
 logger = logging.getLogger(__name__)
 
@@ -572,13 +572,50 @@ def _run_stage(job_id: str, stage: str, reprocess: bool = False, attempt: int = 
     watcher = ProgressWatcher(job_id, log_path)
     watcher.start()
     try:
-        return executor.run(
+        result = executor.run(
             job_id, workspace, stage, reprocess, attempt,
             workflow=workflow, runner=runner,
         )
     finally:
         watcher.stop()
         watcher.join(timeout=PROGRESS_POLL_SECONDS * 2)
+
+    # An executor only knows the exit code, so a failed run arrives here as
+    # "Runner exited with code 1" no matter what went wrong. The runner already
+    # logged the real reason; lift it onto the result so the job row carries it
+    # and nobody has to open the log to find out the account is out of quota.
+    if not result.succeeded and result.exit_code != 124:
+        reason = _reason_from_log(log_path)
+        if reason:
+            result.detail = cli_errors.summarize(reason)
+
+    return result
+
+
+#: How the two runners announce a stage failure. Both put the agent's own
+#: message after the last colon, which is the part worth surfacing.
+_LOG_FAILURE = re.compile(
+    r"^(?:\[[\d:]+\]\s*)?(?:FAILED:\s*Agent\s+'(?P<agent1>[^']+)'\s+exited\s+\d+:"
+    r"|stage failed:\s*\S+\s+\((?P<agent2>[^)]+)\)(?:\s+after\s+\d+ms)?:)\s*(?P<reason>.+)$",
+    re.M,
+)
+
+
+def _reason_from_log(log_path: Path) -> str:
+    """The last failure the runner reported, or "" if it reported none."""
+    try:
+        text = log_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+    matches = list(_LOG_FAILURE.finditer(text))
+    if not matches:
+        return ""
+
+    last = matches[-1]
+    # The CLI pads its failure with a footer (credits, a resume command); the
+    # first line is the message, the rest is noise in a one-line error field.
+    return last.group("reason").strip().split("\n")[0][:400]
 
 
 def _fail(job_id: str, message: str, status: JobStatus = JobStatus.FAILED) -> None:
@@ -665,9 +702,10 @@ def _run_declarative_workflow(job_id: str) -> None:
         )
 
     with session_scope() as db:
-        transition(
-            db, db.get(Job, job_id), JobStatus.RUNNING, f"Running workflow {workflow}"
-        )
+        job = db.get(Job, job_id)
+        if job is None or job.status.is_terminal:
+            return
+        transition(db, job, JobStatus.RUNNING, f"Running workflow {workflow}")
 
     result = _run_stage(job_id, "workflow")
 
@@ -701,13 +739,21 @@ def _run_declarative_workflow(job_id: str) -> None:
             }
 
         if not result.succeeded:
+            # Lead with what the agent actually said. The runner's own exit code
+            # is the least informative thing available — "exited with code 1" is
+            # the same sentence whether the account is out of quota or the model
+            # wrote bad JSON, and the difference is what the reader needs.
             detail = result.detail or "Workflow runner reported failure"
             if metadata:
                 failed = [
                     s for s in metadata.get("stages", []) if s.get("status") == "failed"
                 ]
                 if failed:
-                    detail = f"{detail}: stage '{failed[0].get('stage')}' failed"
+                    stage = failed[0]
+                    detail = cli_errors.summarize(
+                        str(stage.get("detail") or detail),
+                        context=f"stage '{stage.get('stage')}', agent '{stage.get('agent_id')}'",
+                    )
             job.error_message = detail
             transition(db, job, JobStatus.FAILED, detail)
             return
@@ -759,9 +805,10 @@ def _analyze_requirement(job_id: str) -> None:
         transition(db, job, JobStatus.STARTING, f"Dispatching to {settings.executor} executor")
 
     with session_scope() as db:
-        transition(
-            db, db.get(Job, job_id), JobStatus.ANALYZING, "Scoring requirement quality"
-        )
+        job = db.get(Job, job_id)
+        if job is None or job.status.is_terminal:
+            return
+        transition(db, job, JobStatus.ANALYZING, "Scoring requirement quality")
 
     result = _run_stage(job_id, "quality")
 

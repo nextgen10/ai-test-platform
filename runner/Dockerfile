@@ -10,6 +10,7 @@ FROM node:22-bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     APP_DIR=/app \
+    AGENT_HUB_DIR=/app/agent-hub \
     WORKSPACE=/workspace
 
 # python3 for the chain driver and validator; ca-certificates for TLS to the
@@ -33,10 +34,28 @@ WORKDIR /app
 COPY runner/requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
 
-# Skills and agent profiles — Copilot resolves these from .github/ in the cwd.
-COPY copilot/.github /app/.github
+# The hub: agent profiles, skills, prompts and workflow definitions. This is the
+# same tree the Registry API reads and writes, so an agent onboarded through the
+# UI is visible to a containerised run. Both runners stage `.github/` into the
+# job workspace themselves at start-up, which is why none is baked in here.
+#
+# The subdirectories are copied individually on purpose: `agent-hub/.github`
+# holds relative symlinks for local Copilot CLI discovery, and a symlink is not
+# something to carry into an image.
+COPY agent-hub/agents    /app/agent-hub/agents
+COPY agent-hub/skills    /app/agent-hub/skills
+COPY agent-hub/prompts   /app/agent-hub/prompts
+COPY agent-hub/workflows /app/agent-hub/workflows
+
 COPY schemas /app/schemas
-COPY runner/agent_chain.py runner/validate_output.py runner/entrypoint.sh /app/
+
+# Both engines ship: agent_chain.py drives test-case-generation, and
+# generic_runner.py (with agent_io + workflow_graph) drives every workflow
+# onboarded as data. entrypoint.sh picks between them on $RUNNER_KIND — shipping
+# only one of the two is how the container executors ended up silently running
+# the bespoke chain for every workflow.
+COPY runner/agent_chain.py runner/generic_runner.py runner/agent_io.py \
+     runner/workflow_graph.py runner/validate_output.py runner/entrypoint.sh /app/
 
 RUN chmod +x /app/entrypoint.sh \
     && useradd --create-home --uid 10001 runner \

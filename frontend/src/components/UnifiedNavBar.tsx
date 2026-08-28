@@ -259,12 +259,12 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
 
                         <Divider sx={{ my: 1 }} />
                         <MenuItem
-                            onClick={() => handleSelectUseCase('/registry?tab=workflows')}
+                            onClick={() => handleSelectUseCase('/use-cases')}
                             sx={{ borderRadius: 1.5, py: 0.75, fontSize: '0.8rem', fontWeight: 600, color: 'primary.main' }}
                         >
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Layers size={14} />
-                                <span>Browse All Workflows in Registry &rarr;</span>
+                                <span>Browse All Use Cases &rarr;</span>
                             </Box>
                         </MenuItem>
                     </Menu>

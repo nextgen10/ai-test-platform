@@ -15,13 +15,21 @@ import {
 } from 'lucide-react';
 
 import PageHeader from '@/components/PageHeader';
-import { api, type AgentInfo, type SkillInfo, type BenchmarkResponse, type BenchmarkItem } from '@/lib/api';
+import { api, type AgentInfo, type SkillInfo, type BenchmarkResponse, type BenchmarkItem, type Workflow } from '@/lib/api';
 
 const AMBER = '#D9822B';
 const GREEN = '#1F8A70';
 const RED = '#D00000';
 const BLUE = '#2D6CDF';
+const PURPLE = '#8B5CF6';
 
+/**
+ * Hand-written notes for agents that have them.
+ *
+ * Enrichment, never a gate: an agent missing from this map still renders, using
+ * the role, description and artifact contract it declares in its own
+ * frontmatter. Adding an agent to the hub must not require editing this file.
+ */
 const STAGE_CONFIG: Record<string, {
     order: number;
     accent: string;
@@ -54,7 +62,7 @@ const STAGE_CONFIG: Record<string, {
     'test-designer': {
         order: 2,
         accent: RED,
-        schema: 'intermediate/test_design.json',
+        schema: 'schemas/test-design.schema.json',
         rules: [
             'Constructs coverage matrix across 5 mandatory categories',
             'Identifies stated vs inferred business rules',
@@ -65,7 +73,7 @@ const STAGE_CONFIG: Record<string, {
     'test-generator': {
         order: 3,
         accent: RED,
-        schema: 'intermediate/draft_test_cases.json',
+        schema: 'schemas/test-case.schema.json',
         rules: [
             'Generates concrete actionable steps (minimum 2 steps per case)',
             'Enforces explicit verifiable expected results',
@@ -106,6 +114,46 @@ const STAGE_CONFIG: Record<string, {
         ],
         brief: 'Healing & reprocess agent. Triggered on reprocess runs to patch missing test scenarios directly in-place without restarting the pipeline.',
     },
+    'workflow-architect': {
+        order: 10,
+        accent: PURPLE,
+        rules: [
+            'Emits a structured architecture as JSON, not prose',
+            'Decides how many agents the described work actually needs',
+            'Declares depends_on so independent stages can run concurrently',
+        ],
+        brief: 'Opening stage of the Workflow Builder. Reads a plain-English description of a desired workflow and designs the multi-agent architecture to deliver it.',
+    },
+    'architecture-reviewer': {
+        order: 11,
+        accent: PURPLE,
+        rules: [
+            'Independent critic: checks the design against the original request',
+            'May restructure stages, but keeps the approved JSON contract',
+            'Rejects designs that split work no agent can actually do alone',
+        ],
+        brief: 'Principal systems reviewer. Challenges the drafted architecture before a single agent prompt is written, when changing it is still cheap.',
+    },
+    'agent-writer': {
+        order: 12,
+        accent: PURPLE,
+        rules: [
+            'Generates the .workflow.yaml and every .agent.md the design needs',
+            'Chains each agent input to an earlier stage output, so the workflow runs',
+            'Enforces kebab-case ids and workspace-relative artifact paths',
+        ],
+        brief: 'Implementation engineer. Turns the approved architecture into the actual files the Registry accepts.',
+    },
+    'agent-code-reviewer': {
+        order: 13,
+        accent: PURPLE,
+        rules: [
+            'Validates YAML syntax and indentation before anything is installed',
+            'Hardens the generated prompts against hallucination and injection',
+            'Never alters the approved architecture — only the code quality',
+        ],
+        brief: 'Lead agent engineer. Final gate on generated code, producing the document the Workflow Builder UI installs from.',
+    },
 };
 
 const CATEGORIES = [
@@ -138,6 +186,7 @@ function DocsContent() {
 
     // Agents State
     const [agents, setAgents] = useState<AgentInfo[]>([]);
+    const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [selectedAgentId, setSelectedAgentId] = useState<string>('requirement-analyst');
     const [agentTab, setAgentTab] = useState<number>(0);
 
@@ -159,7 +208,9 @@ function DocsContent() {
             api.agents().catch(() => []),
             api.skills().catch(() => []),
             api.benchmarks().catch(() => null),
-        ]).then(([agentsData, skillsData, benchData]) => {
+            api.workflows().catch(() => []),
+        ]).then(([agentsData, skillsData, benchData, workflowsData]) => {
+            setWorkflows(workflowsData);
             const sortedAgents = [...agentsData].sort((a, b) => {
                 const orderA = STAGE_CONFIG[a.id]?.order ?? 99;
                 const orderB = STAGE_CONFIG[b.id]?.order ?? 99;
@@ -258,24 +309,21 @@ function DocsContent() {
                                         Multi-Agent Autonomous Execution Pipeline
                                     </Typography>
                                     <Chip
-                                        label="7 Specialized Agents &bull; 1 Human Approval Gate"
+                                        label={`${agents.length} Specialized Agents \u2022 ${workflows.length} Workflow${workflows.length === 1 ? '' : 's'}`}
                                         size="small"
                                         sx={{ fontWeight: 700, bgcolor: alpha(RED, 0.1), color: RED }}
                                     />
                                 </Box>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                                    Agents pass validated JSON artifacts rather than free text. The reviewer is prompted as an independent critic with bounded retries.
+                                    Every agent onboarded to the hub, across every workflow. Agents pass
+                                    validated artifacts rather than free text, and each one declares the
+                                    contract it must satisfy. Select one to read its full prompt.
                                 </Typography>
 
-                                {/* 6 Uniform Equal-Sized Stage Cards */}
+                                {/* Auto-fitting, so onboarding an agent does not need a column count here. */}
                                 <Box sx={{
                                     display: 'grid',
-                                    gridTemplateColumns: {
-                                        xs: 'repeat(1, minmax(0, 1fr))',
-                                        sm: 'repeat(2, minmax(0, 1fr))',
-                                        md: 'repeat(3, minmax(0, 1fr))',
-                                        lg: 'repeat(6, minmax(0, 1fr))',
-                                    },
+                                    gridTemplateColumns: 'repeat(auto-fit, minmax(158px, 1fr))',
                                     gap: 1.5,
                                     width: '100%',
                                 }}>
@@ -488,7 +536,7 @@ function DocsContent() {
                                                         Role Description
                                                     </Typography>
                                                     <Typography variant="body1" sx={{ lineHeight: 1.65 }}>
-                                                        {agentCfg?.brief || selectedAgent.role}
+                                                        {agentCfg?.brief || selectedAgent.description || selectedAgent.role}
                                                     </Typography>
                                                 </Box>
 

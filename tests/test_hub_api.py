@@ -162,3 +162,64 @@ def test_workflow_id_must_match_its_filename(author):
         },
     )
     assert res.status_code == 400
+
+
+def test_a_generated_bundle_installs_agents_before_its_workflow(reader, author):
+    """The order the Workflow Builder's UI installs a generated bundle in.
+
+    The builder writes the workflow first, because that is the readable order
+    for a person. Creating them in that order fails: the registry refuses a
+    workflow naming an agent that does not exist yet. The UI therefore sorts
+    skills and agents ahead of workflows before it starts writing, and this is
+    the contract that makes that reordering necessary rather than cosmetic.
+    """
+    agent = (
+        "---\n"
+        "name: zz-bundle-agent\n"
+        "description: A generated agent.\n"
+        'tools: ["read", "write"]\n'
+        "stage: work\n"
+        "input_artifact: input/requirement.md\n"
+        "output_artifact: output/result.md\n"
+        "---\n\n"
+        "# ZZ Bundle Agent\n"
+    )
+    workflow = (
+        "id: zz-bundle-workflow\n"
+        "name: ZZ Bundle Workflow\n"
+        "runner: generic\n"
+        "agents:\n"
+        "  - id: zz-bundle-agent\n"
+        "    stage: work\n"
+    )
+
+    # Written in the builder's own order, the workflow is refused.
+    first = author.post(
+        "/api/v1/hub/workflows",
+        json={"id": "zz-bundle-workflow", "content": workflow},
+    )
+    assert first.status_code == 400
+    assert "zz-bundle-agent" in first.json()["detail"]
+
+    # Written in dependency order, both land.
+    assert author.post(
+        "/api/v1/hub/agents", json={"id": "zz-bundle-agent", "content": agent}
+    ).status_code == 201
+    assert author.post(
+        "/api/v1/hub/workflows", json={"id": "zz-bundle-workflow", "content": workflow}
+    ).status_code == 201
+
+    # A second create is the 409 the UI turns into an offer to replace, and the
+    # message is what it matches on.
+    clash = author.post(
+        "/api/v1/hub/agents", json={"id": "zz-bundle-agent", "content": agent}
+    )
+    assert clash.status_code == 409
+    assert "already exists" in clash.json()["detail"]
+
+    # And the workflow is immediately live in the catalog — no redeploy.
+    listed = reader.get("/api/v1/hub/workflows").json()
+    assert "zz-bundle-workflow" in {w["id"] for w in listed}
+
+    author.delete("/api/v1/hub/workflows/zz-bundle-workflow")
+    author.delete("/api/v1/hub/agents/zz-bundle-agent")

@@ -1,0 +1,49 @@
+id: workflow-builder
+name: Workflow Builder
+description: Automatically designs and generates the code for new multi-agent workflows and their underlying agents.
+version: "1.0"
+skill: null
+
+runner: generic
+approval_gate: false
+available: true
+has_custom_ui: true
+custom_ui_route: /use-cases/workflow-builder
+
+agents:
+  - id: workflow-architect
+    stage: architect
+    optional: false
+    description: Designs the initial workflow YAML structure based on user requirements.
+  - id: architecture-reviewer
+    stage: review-architecture
+    optional: false
+    depends_on: [architect]
+    description: Critically reviews the designed architecture against the original requirement, refining the JSON structure.
+  - id: agent-writer
+    stage: write-agents
+    optional: false
+    depends_on: [review-architecture]
+    description: Writes the Markdown agent instructions for each agent defined in the approved architecture.
+  - id: agent-code-reviewer
+    stage: review-code
+    optional: false
+    depends_on: [write-agents]
+    description: Reviews the generated YAML and Markdown for syntax, quality, and prompt robustness.
+
+input:
+  type: text
+  label: Workflow Requirements
+  placeholder: Describe the multi-agent workflow you want to build (e.g. "I want a workflow that takes a URL, sends an agent to scrape it, and another agent to summarize it")
+  min_length: 5
+  max_length: 50000
+
+output:
+  type: markdown
+  schema: null
+  primary_artifact: output/workflow-code.md
+
+category: general
+icon: layers
+badge: "Custom UI"
+tags: ["meta", "builder"]

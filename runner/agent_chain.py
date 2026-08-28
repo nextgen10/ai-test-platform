@@ -861,7 +861,7 @@ def strip_markdown_fences(content: str) -> str:
     """Drop a ```markdown / ``` wrapper the vision model may put around its answer.
 
     Mirrors GHCPVisionExtractor._do_request in the backend. The runner ships as
-    its own image (it only gets runner/*.py and copilot/.github), so it cannot
+    its own image (runner/*.py plus agent-hub/ and schemas/), so it cannot
     import the backend service — the two copies must be kept in step by hand.
     """
     content = content.strip()

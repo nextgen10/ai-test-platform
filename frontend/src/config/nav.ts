@@ -31,7 +31,6 @@ export interface UseCaseItem {
 export const coreNavItems: NavItem[] = [
     { id: 'chat', label: 'Agent Console', path: '/chat', available: true },
     { id: 'registry', label: 'Registry', path: '/registry', available: true },
-    { id: 'use-cases', label: 'Use Cases', path: '/use-cases', available: true },
     { id: 'dashboard', label: 'Dashboard', path: '/dashboard', available: true },
     { id: 'jobs', label: 'Jobs', path: '/jobs', available: true },
     { id: 'automation', label: 'Automation', path: '/automation', available: true },

@@ -227,6 +227,7 @@ export interface AgentInfo {
     id: string;
     name: string;
     role: string;
+    description: string;
     tools: string[];
     input_artifact: string;
     output_artifact: string;
@@ -315,7 +316,7 @@ export const api = {
     }) =>
         request<{ job_id: string; status: JobStatus }>('/jobs', {
             method: 'POST',
-            body: JSON.stringify({ workflow: 'test-case-generation', ...payload }),
+            body: JSON.stringify(payload),
         }),
 
     cancelJob: (id: string) => request<Job>(`/jobs/${id}`, { method: 'DELETE' }),

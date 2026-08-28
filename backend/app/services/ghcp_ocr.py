@@ -91,10 +91,16 @@ class GHCPVisionExtractor:
         """Dynamically load the agent profile from .github/agents/<agent_name>.agent.md."""
         try:
             from app.config import PROJECT_ROOT
+            # agent-hub is the single source of truth for agents, exactly as it
+            # is for skills above; the others are container layouts where the
+            # hub is mounted elsewhere. This used to lead with copilot/.github,
+            # a directory that no longer exists, and so resolved only through
+            # the repository's root .github symlink — which meant an agent
+            # onboarded through the Registry was invisible here.
             candidates = [
-                PROJECT_ROOT / "copilot" / ".github" / "agents" / f"{self.agent_name}.agent.md",
-                PROJECT_ROOT / ".github" / "agents" / f"{self.agent_name}.agent.md",
-                Path(__file__).resolve().parents[3] / "copilot" / ".github" / "agents" / f"{self.agent_name}.agent.md",
+                PROJECT_ROOT / "agent-hub" / "agents" / f"{self.agent_name}.agent.md",
+                Path(__file__).resolve().parents[3] / "agent-hub" / "agents" / f"{self.agent_name}.agent.md",
+                Path("/app/agent-hub/agents") / f"{self.agent_name}.agent.md",
                 Path("/workspace/.github/agents") / f"{self.agent_name}.agent.md",
             ]
             for candidate in candidates:

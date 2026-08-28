@@ -16,7 +16,7 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 
 from app.config import settings
-from app.services import hub_registry
+from app.services import cli_errors, hub_registry
 
 logger = logging.getLogger("chat-orchestrator")
 
@@ -186,23 +186,12 @@ def _build_env(config: ChatConfig) -> dict[str, str]:
 
 
 def _friendly_stderr(err_msg: str) -> str:
-    """Turn a CLI failure into something a user can act on."""
-    lowered = err_msg.lower()
-    if "quota" in lowered:
-        return (
-            f"\n\n> **Copilot quota exceeded**\n>\n"
-            f"> `{err_msg}`\n>\n"
-            f"> Use a different token in **More Options**, or set `ENGINE=mock` "
-            f"to work offline."
-        )
-    if "authentication" in lowered or "token" in lowered or "unauthorized" in lowered:
-        return (
-            f"\n\n> **Authentication required**\n>\n"
-            f"> `{err_msg}`\n>\n"
-            f"> Enter a GitHub token with Copilot access in **More Options**, or "
-            f"configure one on the server."
-        )
-    return f"\n\n**The agent reported an error:**\n```\n{err_msg}\n```"
+    """Turn a CLI failure into something a user can act on.
+
+    Delegates to :mod:`app.services.cli_errors` so a job and a chat turn explain
+    the same failure the same way.
+    """
+    return cli_errors.as_markdown(err_msg)
 
 
 async def _drain(stream: asyncio.StreamReader | None, sink: list[bytes]) -> None:

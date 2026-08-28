@@ -67,7 +67,7 @@ type TabKey = 'schedules' | 'webhooks' | 'queue';
 
 const BLANK: SchedulePayload = {
     name: '',
-    workflow: 'test-case-generation',
+    workflow: '',
     cron: '0 6 * * 1',
     requirement: '',
     enabled: true,

@@ -169,6 +169,10 @@ def list_agents(_: Principal = Depends(require_reader)) -> list[dict[str, object
             "id": agent["id"],
             "name": agent["name"],
             "role": agent["role"],
+            # The agent's own one-line summary. Additive: clients that do not
+            # know about it are unaffected, and it saves the Docs page keeping a
+            # hand-written blurb for every agent in the hub.
+            "description": agent["description"],
             "tools": agent["tools"] or ["read"],
             "input_artifact": agent["input_artifact"],
             "output_artifact": agent["output_artifact"],

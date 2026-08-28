@@ -52,9 +52,9 @@ export default function JobsPage() {
                         <Button
                             variant="contained"
                             startIcon={<Sparkles size={16} />}
-                            onClick={() => router.push('/generate')}
+                            onClick={() => router.push('/use-cases')}
                         >
-                            New Job
+                            Run a Workflow
                         </Button>
                     </>
                 }

@@ -712,7 +712,7 @@ export default function JobDetailPage() {
     const [validation, setValidation] = useState<ValidationReport | null>(null);
     const [logs, setLogs] = useState('');
     const [artifacts, setArtifacts] = useState<{ path: string; size_bytes: number }[]>([]);
-    const [tab, setTab] = useState(0);
+    const [tabKey, setTabKey] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -770,17 +770,48 @@ export default function JobDetailPage() {
         return () => clearInterval(timer);
     }, [job, load]);
 
+    const isBespoke = !workflow || workflow.runner === 'bespoke';
+
+    const availableTabs = React.useMemo(() => {
+        const tabs: { key: string, label: string, disabled?: boolean }[] = [];
+        if (isBespoke || job?.quality_report) {
+            tabs.push({ key: 'quality', label: 'Requirement Quality', disabled: !job?.quality_report });
+        }
+        if (isBespoke || suite) {
+            tabs.push({ key: 'results', label: 'Generated Test Cases', disabled: !suite });
+        }
+        if (isBespoke || job?.evaluation) {
+            tabs.push({ key: 'evaluation', label: '5-D Evaluation (RQS)', disabled: !job?.evaluation });
+        }
+        if (!isBespoke && !suite && job?.summary && job?.status === 'COMPLETED') {
+            tabs.push({ key: 'result_summary', label: 'Result Summary' });
+        }
+        tabs.push({ key: 'logs', label: 'Execution Logs' });
+        tabs.push({ key: 'artifacts', label: 'Artifacts' });
+        return tabs;
+    }, [isBespoke, job, suite]);
+
+    useEffect(() => {
+        if (!tabKey && availableTabs.length > 0) {
+            const firstActive = availableTabs.find(t => !t.disabled);
+            if (firstActive) setTabKey(firstActive.key);
+        }
+    }, [availableTabs, tabKey]);
+
     const [autoSwitched, setAutoSwitched] = useState(false);
     useEffect(() => {
         if (autoSwitched || !job) return;
         if (job.status === 'AWAITING_APPROVAL') {
-            setTab(0);
+            setTabKey('quality');
             setAutoSwitched(true);
         } else if (suite) {
-            setTab(1);
+            setTabKey('results');
+            setAutoSwitched(true);
+        } else if (!isBespoke && job.status === 'COMPLETED') {
+            setTabKey('result_summary');
             setAutoSwitched(true);
         }
-    }, [job, suite, autoSwitched]);
+    }, [job, suite, autoSwitched, isBespoke]);
 
     if (loading) {
         return (
@@ -890,8 +921,8 @@ export default function JobDetailPage() {
                 <Box sx={{ minWidth: 0, width: '100%' }}>
                     <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 2.5, overflow: 'hidden' }}>
                         <Tabs
-                            value={tab}
-                            onChange={(_, value) => setTab(value)}
+                            value={availableTabs.findIndex(t => t.key === tabKey) !== -1 ? tabKey : false}
+                            onChange={(_, value) => setTabKey(value)}
                             variant="scrollable"
                             scrollButtons="auto"
                             sx={{
@@ -900,19 +931,14 @@ export default function JobDetailPage() {
                                 '& .MuiTab-root': { fontWeight: 700, fontSize: '0.88rem', textTransform: 'none', minHeight: 50 },
                             }}
                         >
-                            <Tab
-                                label="Requirement Quality"
-                                disabled={!job.quality_report}
-                            />
-                            <Tab label="Generated Test Cases" disabled={!suite} />
-                            <Tab label="5-D Evaluation (RQS)" disabled={!job.evaluation} />
-                            <Tab label="Execution Logs" />
-                            <Tab label="Artifacts" />
+                            {availableTabs.map((t) => (
+                                <Tab key={t.key} value={t.key} label={t.label} disabled={t.disabled} />
+                            ))}
                         </Tabs>
                     </Paper>
 
-                    {/* Tab 0: Requirement Quality */}
-                    {tab === 0 && job.quality_report && (
+                    {/* Panels */}
+                    {tabKey === 'quality' && job.quality_report && (
                         <QualityReportPanel
                             job={job}
                             report={job.quality_report}
@@ -921,11 +947,9 @@ export default function JobDetailPage() {
                         />
                     )}
 
-                    {/* Tab 1: Test Cases (Results) */}
-                    {tab === 1 && suite && <ResultsTab suite={suite} jobId={job.id} />}
+                    {tabKey === 'results' && suite && <ResultsTab suite={suite} jobId={job.id} />}
 
-                    {/* Tab 2: 5-D Evaluation */}
-                    {tab === 2 && job.evaluation && (
+                    {tabKey === 'evaluation' && job.evaluation && (
                         <EvaluationPanel
                             job={job}
                             evaluation={job.evaluation}
@@ -933,8 +957,25 @@ export default function JobDetailPage() {
                         />
                     )}
 
-                    {/* Tab 3: Execution Logs */}
-                    {tab === 3 && (
+                    {tabKey === 'result_summary' && job.summary && (
+                        <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="h6" fontWeight={800} mb={2}>Result Summary</Typography>
+                            <Box sx={{ display: 'grid', gap: 2 }}>
+                                {Object.entries(job.summary).map(([k, v]) => (
+                                    <Box key={k}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700 }}>
+                                            {k.replace(/_/g, ' ')}
+                                        </Typography>
+                                        <Typography variant="body2" fontWeight={500}>
+                                            {String(v)}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Paper>
+                    )}
+
+                    {tabKey === 'logs' && (
                         <Paper
                             elevation={0}
                             sx={{
@@ -966,8 +1007,7 @@ export default function JobDetailPage() {
                         </Paper>
                     )}
 
-                    {/* Tab 4: Artifacts */}
-                    {tab === 4 && (
+                    {tabKey === 'artifacts' && (
                         <Paper elevation={0} sx={{ overflowX: 'auto', borderRadius: 3, border: '1px solid', borderColor: 'divider', width: '100%', minWidth: 0 }}>
                             <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
                                 <TableHead>

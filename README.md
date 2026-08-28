@@ -304,7 +304,12 @@ The `./k8s/cluster.sh` helper manages the Kubernetes environment lifecycle:
 - Located above the Test Cases table in the **Generated Test Cases** tab.
 - Generates Microsoft Excel-compatible UTF-8 BOM CSV files (`test_cases_<job_id>.csv`) formatted with test case IDs, priorities, categories, preconditions, numbered steps, and expected results.
 
-### 4. Resilient Model Fallback & Provenance
+### 4. Workflow Builder — Agents That Build Agents
+- A meta-workflow at **Use Cases → Workflow Builder** (`/use-cases/workflow-builder`). Describe a multi-agent workflow in plain English; four agents design the architecture, critique it, write the agent prompts, and review the generated code.
+- The page parses the result back into files and creates them through the Registry API, installing skills and agents **before** the workflow that references them — the registry rejects a workflow naming an agent that does not exist yet.
+- The new workflow is live in the Use Cases menu and the Agent Console immediately. No redeploy, no migration.
+
+### 5. Resilient Model Fallback & Provenance
 - If a custom model flag (`--model`) is restricted on a GitHub token, the runner automatically falls back to the Copilot account default model without crashing the job.
 - Full transparency recorded in the **Reproducibility & Provenance** card with an amber `⚠️ Model Fallback: <requested> ➔ <effective>` badge.
 
@@ -312,14 +317,17 @@ The `./k8s/cluster.sh` helper manages the Kubernetes environment lifecycle:
 
 ## 7. Troubleshooting & FAQ
 
-### 1. `ImagePullBackOff` in Kubernetes
+### 1. Every job fails immediately with "Copilot quota exceeded"
+The GitHub account behind the run has no Copilot requests left. Every workflow fails at its first agent, which looks like a platform outage but is an account limit. Supply a different token in **More Options**, wait for the monthly quota to reset, or set `ENGINE=mock` in `.env` to exercise the whole platform offline with deterministic stand-in output.
+
+### 2. `ImagePullBackOff` in Kubernetes
 - **Cause**: Image was not loaded into Minikube's internal containerd store.
 - **Fix**: Re-run `./k8s/deploy.sh`, which automatically exports local images and loads them into Minikube.
 
-### 2. Database Migration / Column Errors
+### 3. Database Migration / Column Errors
 - If upgrading from an older deployment, run `kubectl delete namespace ai-testing && ./k8s/deploy.sh` to initialize fresh PostgreSQL tables.
 
-### 3. macOS DNS / Port-Forward Hanging
+### 4. macOS DNS / Port-Forward Hanging
 - Ensure you started Minikube with `--driver=vfkit`. If Minikube was previously started with `--driver=podman`, wipe it with `minikube delete` and start with `minikube start --driver=vfkit --memory=4096 --cpus=3 --container-runtime=containerd`.
 
 ---

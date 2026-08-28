@@ -84,9 +84,9 @@ export default function DashboardPage() {
                         <Button
                             variant="contained"
                             startIcon={<Sparkles size={16} />}
-                            onClick={() => router.push('/generate')}
+                            onClick={() => router.push('/use-cases')}
                         >
-                            Generate Test Cases
+                            Run a Workflow
                         </Button>
                     </>
                 }
