@@ -75,45 +75,7 @@ export const ConfigBar: React.FC = () => {
 
   const selectedWorkflow = catalog?.workflows.find((w) => w.id === config.workflowId);
   const effectiveEngine = config.engine ?? platform?.engine ?? 'mock';
-
-  // Cascading filters
-  const filteredAgents = catalog?.agents.filter((ag) => {
-    if (config.workflowId && selectedWorkflow) {
-      return selectedWorkflow.agents.some((wa) => wa.id === ag.id);
-    }
-    return true;
-  }) || [];
-
-  const filteredWorkflows = catalog?.workflows.filter((wf) => {
-    if (config.agentId) {
-      return wf.agents.some((wa) => wa.id === config.agentId);
-    }
-    return true;
-  }) || [];
-
-  const handleAgentChange = (newAgentId: string | null) => {
-    const updates: any = { agentId: newAgentId };
-    if (newAgentId && config.workflowId) {
-      const wf = catalog?.workflows.find((w) => w.id === config.workflowId);
-      if (wf && !wf.agents.some((a) => a.id === newAgentId)) {
-        // If the new agent is not in the currently selected workflow, clear the workflow
-        updates.workflowId = null;
-      }
-    }
-    updateConfig(updates);
-  };
-
-  const handleWorkflowChange = (newWorkflowId: string | null) => {
-    const updates: any = { workflowId: newWorkflowId };
-    if (newWorkflowId) {
-      const wf = catalog?.workflows.find((w) => w.id === newWorkflowId);
-      if (wf && config.agentId && !wf.agents.some((a) => a.id === config.agentId)) {
-        // If the current agent is not in the new workflow, clear the agent
-        updates.agentId = null;
-      }
-    }
-    updateConfig(updates);
-  };
+  const runMode = Boolean(config.workflowId);
 
   const selectSx = {
     fontSize: '0.82rem',
@@ -148,13 +110,16 @@ export const ConfigBar: React.FC = () => {
             labelId="agent-select-label"
             value={config.agentId || ''}
             label="Agent"
-            onChange={(e) => handleAgentChange(e.target.value || null)}
+            onChange={(e) => {
+              const val = e.target.value || null;
+              updateConfig({ agentId: val, ...(val ? { workflowId: null } : {}) });
+            }}
             sx={selectSx}
           >
             <MenuItem value="">
               <em>Auto / Default</em>
             </MenuItem>
-            {filteredAgents.map((ag) => (
+            {(catalog?.agents ?? []).map((ag) => (
               <MenuItem key={ag.id} value={ag.id}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Bot size={14} color={theme.palette.primary.main} />
@@ -174,13 +139,16 @@ export const ConfigBar: React.FC = () => {
             labelId="workflow-select-label"
             value={config.workflowId || ''}
             label="Workflow"
-            onChange={(e) => handleWorkflowChange(e.target.value || null)}
+            onChange={(e) => {
+              const val = e.target.value || null;
+              updateConfig({ workflowId: val, ...(val ? { agentId: null } : {}) });
+            }}
             sx={selectSx}
           >
             <MenuItem value="">
               <em>None — chat with the agent</em>
             </MenuItem>
-            {filteredWorkflows.map((wf) => (
+            {(catalog?.workflows ?? []).map((wf) => (
               <MenuItem key={wf.id} value={wf.id} disabled={wf.available === false}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <WorkflowIcon size={14} color="#3b82f6" />
@@ -291,7 +259,7 @@ export const ConfigBar: React.FC = () => {
             {selectedWorkflow.agents.length} agent
             {selectedWorkflow.agents.length === 1 ? '' : 's'}
             {selectedWorkflow.approval_gate ? ', pausing for your approval partway' : ''}. Your
-            message becomes its input, and you will be taken to the job page.
+            Your message is a job brief, not a chat turn. Send opens the job page.
           </Typography>
         </Box>
       )}

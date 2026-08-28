@@ -11,37 +11,40 @@ import {
   alpha,
   Typography,
 } from '@mui/material';
-import { Send, Square, Sparkles } from 'lucide-react';
+import { Send, Square } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 import { hubApi } from '@/lib/hub-api';
 
-type QuickPrompt = { label: string; agent?: string; prompt?: string };
-
-const DEFAULT_QUICK_PROMPTS: QuickPrompt[] = [
-  { label: 'Generate test cases for login', agent: 'test-designer' },
-  { label: 'Assess INVEST quality of requirement', agent: 'requirement-analyst' },
-  { label: 'Review code for security & edge cases', prompt: 'code-review' },
-  { label: 'Extract requirement from document', agent: 'ocr-extractor' },
-];
+type QuickPrompt = { label: string; agent?: string; workflow?: string; prompt?: string };
 
 export const ChatInput: React.FC = () => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
-  const { isStreaming, sendMessage, stopStreaming, updateConfig, config } = useChatContext();
+  const { isStreaming, sendMessage, stopStreaming, updateConfig, config, messages } = useChatContext();
   const [text, setText] = useState('');
-  const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>(DEFAULT_QUICK_PROMPTS);
+  const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    hubApi.catalog()
-      .then(catalog => {
-        const topAgents = catalog.agents.slice(0, 2).map(a => ({ label: a.description || `Ask ${a.name}`, agent: a.id }));
-        const topPrompts = catalog.prompts.slice(0, 2).map(p => ({ label: p.description || p.name, prompt: p.id }));
-        if (topAgents.length > 0 || topPrompts.length > 0) {
-           setQuickPrompts([...topAgents, ...topPrompts]);
-        }
+    hubApi
+      .catalog()
+      .then((catalog) => {
+        const wf = catalog.workflows
+          .filter((w) => w.available !== false)
+          .slice(0, 2)
+          .map((w) => ({ label: `Run ${w.name}`, workflow: w.id }));
+        const agents = catalog.agents
+          .filter((a) => a.id !== 'ocr-extractor')
+          .slice(0, 3)
+          .map((a) => ({ label: `Ask ${a.name}`, agent: a.id }));
+        setQuickPrompts([...wf, ...agents]);
       })
-      .catch(() => { /* keep defaults */ });
+      .catch(() => {
+        setQuickPrompts([
+          { label: 'Ask Test Designer', agent: 'test-designer' },
+          { label: 'Ask Requirement Analyst', agent: 'requirement-analyst' },
+        ]);
+      });
   }, []);
 
   const handleSend = () => {
@@ -51,6 +54,11 @@ export const ChatInput: React.FC = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape' && isStreaming) {
+      e.preventDefault();
+      stopStreaming();
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -58,15 +66,28 @@ export const ChatInput: React.FC = () => {
   };
 
   const handleChipClick = (item: QuickPrompt) => {
+    if (item.workflow) {
+      updateConfig({ workflowId: item.workflow, agentId: null });
+      setText('');
+      inputRef.current?.focus();
+      return;
+    }
     if (item.agent) {
-      updateConfig({ agentId: item.agent });
+      updateConfig({ agentId: item.agent, workflowId: null });
     }
     if (item.prompt) {
       updateConfig({ promptId: item.prompt });
     }
-    setText(item.label);
     inputRef.current?.focus();
   };
+
+  const placeholder = config.workflowId
+    ? `Describe the input for ${config.workflowId}. Send starts a job and leaves this page.`
+    : config.agentId
+      ? `Message @${config.agentId}…`
+      : 'Message an agent, or pick a workflow above to run a job…';
+
+  const showSuggestions = messages.length === 0 && !isStreaming && !config.workflowId;
 
   return (
     <Box
@@ -77,57 +98,56 @@ export const ChatInput: React.FC = () => {
         bgcolor: isLight ? '#ffffff' : '#0d1117',
       }}
     >
-      {/* Quick Starter Suggestions */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          mb: 1.5,
-          overflowX: 'auto',
-          pb: 0.5,
-          scrollbarWidth: 'none',
-          '&::-webkit-scrollbar': { display: 'none' },
-        }}
-      >
-        <Typography
-          variant="caption"
+      {showSuggestions && quickPrompts.length > 0 && (
+        <Box
           sx={{
-            fontWeight: 700,
-            fontSize: '0.72rem',
-            color: 'text.secondary',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-            whiteSpace: 'nowrap',
-            display: { xs: 'none', sm: 'inline' },
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            mb: 1.5,
+            overflowX: 'auto',
+            pb: 0.5,
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
           }}
         >
-          Suggestions:
-        </Typography>
-        {quickPrompts.map((item, idx) => (
-          <Chip
-            key={idx}
-            label={item.label}
-            size="small"
-            onClick={() => handleChipClick(item)}
-            icon={<Sparkles size={11} />}
+          <Typography
+            variant="caption"
             sx={{
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              bgcolor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)',
-              border: '1px solid',
-              borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)',
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
-                borderColor: theme.palette.primary.main,
-              },
+              fontWeight: 700,
+              fontSize: '0.72rem',
+              color: 'text.secondary',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              whiteSpace: 'nowrap',
+              display: { xs: 'none', sm: 'inline' },
             }}
-          />
-        ))}
-      </Box>
+          >
+            Start with
+          </Typography>
+          {quickPrompts.map((item) => (
+            <Chip
+              key={item.label}
+              label={item.label}
+              size="small"
+              onClick={() => handleChipClick(item)}
+              sx={{
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                bgcolor: isLight ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)',
+                border: '1px solid',
+                borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  borderColor: theme.palette.primary.main,
+                },
+              }}
+            />
+          ))}
+        </Box>
+      )}
 
-      {/* Main Input Box */}
       <Paper
         elevation={0}
         sx={{
@@ -138,10 +158,9 @@ export const ChatInput: React.FC = () => {
           borderColor: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
           bgcolor: isLight ? '#fcfcfc' : '#161b22',
           overflow: 'hidden',
-          transition: 'border-color 0.2s, box-shadow 0.2s',
+          transition: 'border-color 0.2s',
           '&:focus-within': {
             borderColor: 'primary.main',
-            boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
           },
         }}
       >
@@ -151,11 +170,7 @@ export const ChatInput: React.FC = () => {
           minRows={2}
           maxRows={8}
           fullWidth
-          placeholder={
-            config.agentId
-              ? `Ask @${config.agentId} anything or trigger the workflow...`
-              : 'Ask Agent Hub / GitHub Copilot anything, type a requirement, or ask for code/tests...'
-          }
+          placeholder={placeholder}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -169,7 +184,6 @@ export const ChatInput: React.FC = () => {
           }}
         />
 
-        {/* Action Row */}
         <Box
           sx={{
             display: 'flex',
@@ -182,56 +196,54 @@ export const ChatInput: React.FC = () => {
             bgcolor: isLight ? '#f8fafc' : '#11161d',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', fontSize: '0.72rem' }}
-            >
-              Press <strong>Enter ↵</strong> to send, <strong>Shift+Enter</strong> for newline
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.72rem' }}>
             {isStreaming ? (
-              <Button
-                variant="contained"
-                color="error"
-                size="small"
-                startIcon={<Square size={13} fill="currentColor" />}
-                onClick={stopStreaming}
-                sx={{
-                  borderRadius: 1.5,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.8rem',
-                  py: 0.5,
-                  px: 1.5,
-                }}
-              >
-                Stop
-              </Button>
+              <>Esc or Stop to halt</>
             ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                endIcon={<Send size={13} />}
-                disabled={!text.trim()}
-                onClick={handleSend}
-                sx={{
-                  borderRadius: 1.5,
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  fontSize: '0.82rem',
-                  py: 0.5,
-                  px: 2,
-                  boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.3)}`,
-                }}
-              >
-                Send
-              </Button>
+              <>
+                Enter to send · Shift+Enter for a newline
+              </>
             )}
-          </Box>
+          </Typography>
+
+          {isStreaming ? (
+            <Button
+              variant="contained"
+              color="error"
+              size="small"
+              startIcon={<Square size={13} fill="currentColor" />}
+              onClick={stopStreaming}
+              sx={{
+                borderRadius: 1.5,
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                py: 0.5,
+                px: 1.5,
+              }}
+            >
+              Stop
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              endIcon={<Send size={13} />}
+              disabled={!text.trim()}
+              onClick={handleSend}
+              sx={{
+                borderRadius: 1.5,
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                py: 0.5,
+                px: 2,
+              }}
+            >
+              {config.workflowId ? 'Run job' : 'Send'}
+            </Button>
+          )}
         </Box>
       </Paper>
     </Box>

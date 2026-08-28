@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,6 +11,8 @@ import {
   CardContent,
   Drawer,
   Alert,
+  TextField,
+  CircularProgress,
   useTheme,
   useMediaQuery,
   alpha,
@@ -19,7 +21,6 @@ import {
 import {
   Bot,
   PanelLeft,
-  FlaskConical,
   Workflow,
   ChevronRight,
   Plus,
@@ -50,41 +51,65 @@ export const ChatPanel: React.FC = () => {
     loadSessions,
     updateConfig,
     createSession,
+    config,
+    sessionLoading,
   } = useChatContext();
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [catalog, setCatalog] = useState<HubCatalog | null>(null);
+  const [catalogQuery, setCatalogQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
 
   useEffect(() => {
     loadSessions();
   }, [loadSessions]);
 
-  // Quick-start cards come from the registry, so onboarding an agent or
-  // workflow puts it on this screen without a code change.
   useEffect(() => {
     hubApi.catalog().then(setCatalog).catch(() => setCatalog(null));
   }, []);
 
-  // Autoscroll on new messages or streaming chunks
+  const onScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottom.current = remaining < 96;
+  };
+
   useEffect(() => {
+    if (!stickToBottom.current) return;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingContent]);
 
-  const handleLaunchUseCase = (route: string) => {
-    router.push(route);
-  };
+  const q = catalogQuery.trim().toLowerCase();
+  const workflows = useMemo(
+    () =>
+      (catalog?.workflows ?? [])
+        .filter((wf) => wf.available !== false)
+        .filter((wf) => !q || `${wf.name} ${wf.description} ${wf.id}`.toLowerCase().includes(q)),
+    [catalog, q],
+  );
+  const agents = useMemo(
+    () =>
+      (catalog?.agents ?? [])
+        .filter((ag) => ag.id !== 'ocr-extractor')
+        .filter((ag) => !q || `${ag.name} ${ag.description} ${ag.id}`.toLowerCase().includes(q)),
+    [catalog, q],
+  );
+
+  const selectedWorkflow = catalog?.workflows.find((w) => w.id === config.workflowId);
+  const showEmpty = messages.length === 0 && !isStreaming && !sessionLoading;
 
   const quickCardSx = (accent: string) => ({
     cursor: 'pointer',
     borderRadius: 2,
     height: '100%',
-    transition: 'all 0.2s',
+    transition: 'border-color 0.15s, transform 0.15s',
     '&:hover': {
       borderColor: accent,
-      transform: 'translateY(-2px)',
-      boxShadow: `0 4px 12px ${alpha(accent, 0.15)}`,
+      transform: 'translateY(-1px)',
     },
   });
 
@@ -92,16 +117,14 @@ export const ChatPanel: React.FC = () => {
     <Box
       sx={{
         display: 'flex',
-        height: 'calc(100vh - 60px)',
+        height: '100%',
         width: '100%',
         bgcolor: isLight ? '#ffffff' : '#0a0d12',
         overflow: 'hidden',
       }}
     >
-      {/* Desktop Sidebar */}
       {!isMobile && sidebarOpen && <SessionSidebar />}
 
-      {/* Mobile Drawer */}
       <Drawer
         anchor="left"
         open={mobileDrawerOpen}
@@ -111,7 +134,6 @@ export const ChatPanel: React.FC = () => {
         <SessionSidebar onCloseMobile={() => setMobileDrawerOpen(false)} />
       </Drawer>
 
-      {/* Main Chat Area */}
       <Box
         sx={{
           flex: 1,
@@ -122,7 +144,6 @@ export const ChatPanel: React.FC = () => {
           position: 'relative',
         }}
       >
-        {/* Header Bar */}
         <Box
           sx={{
             display: 'flex',
@@ -136,7 +157,7 @@ export const ChatPanel: React.FC = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Tooltip title={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}>
+            <Tooltip title={sidebarOpen ? 'Hide sessions' : 'Show sessions'}>
               <IconButton
                 size="small"
                 onClick={() => {
@@ -157,13 +178,13 @@ export const ChatPanel: React.FC = () => {
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {isMobile && (
             <Button
               size="small"
               variant="text"
               color="inherit"
               startIcon={<Plus size={14} />}
-              onClick={() => createSession('New Session')}
+              onClick={() => createSession('New Chat')}
               sx={{
                 borderRadius: 1.5,
                 fontSize: '0.78rem',
@@ -173,35 +194,26 @@ export const ChatPanel: React.FC = () => {
             >
               New
             </Button>
-          </Box>
+          )}
         </Box>
 
-        {/* Configuration Bar */}
         <ConfigBar />
 
-        {/* Error Alert */}
         {error && (
-          <Alert
-            severity="error"
-            onClose={clearError}
-            sx={{ m: 1.5, mb: 0, borderRadius: 1.5 }}
-          >
+          <Alert severity="error" onClose={clearError} sx={{ m: 1.5, mb: 0, borderRadius: 1.5 }}>
             {error}
           </Alert>
         )}
 
         {notice && (
-          <Alert
-            severity="info"
-            onClose={clearNotice}
-            sx={{ m: 1.5, mb: 0, borderRadius: 1.5 }}
-          >
+          <Alert severity="info" onClose={clearNotice} sx={{ m: 1.5, mb: 0, borderRadius: 1.5 }}>
             {notice}
           </Alert>
         )}
 
-        {/* Message Feed */}
         <Box
+          ref={scrollerRef}
+          onScroll={onScroll}
           sx={{
             flex: 1,
             overflowY: 'auto',
@@ -209,14 +221,34 @@ export const ChatPanel: React.FC = () => {
             flexDirection: 'column',
           }}
         >
-          {messages.length === 0 && !isStreaming ? (
-            /* Empty State Hero Greeting */
+          {sessionLoading ? (
+            <Box sx={{ m: 'auto', py: 8 }}>
+              <CircularProgress size={28} />
+            </Box>
+          ) : showEmpty && selectedWorkflow ? (
+            <Box sx={{ m: 'auto', p: { xs: 2, sm: 4 }, maxWidth: 640, textAlign: 'center' }}>
+              <Workflow size={32} color="#3b82f6" />
+              <Typography variant="h5" sx={{ fontWeight: 800, mt: 2, mb: 1 }}>
+                Run {selectedWorkflow.name}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+                This is a workflow, not a chat. Your next message becomes the job
+                input
+                {selectedWorkflow.approval_gate ? ' and it will pause for approval' : ''}. You
+                will leave this page for the job.
+              </Typography>
+              <Button size="small" onClick={() => updateConfig({ workflowId: null })}>
+                Switch to chat instead
+              </Button>
+            </Box>
+          ) : showEmpty ? (
             <Box
               sx={{
                 m: 'auto',
                 p: { xs: 2, sm: 4 },
-                maxWidth: 720,
+                maxWidth: 760,
                 textAlign: 'center',
+                width: '100%',
               }}
             >
               <Box
@@ -237,47 +269,53 @@ export const ChatPanel: React.FC = () => {
               </Typography>
               <Typography
                 variant="body2"
-                sx={{ color: 'text.secondary', maxWidth: 520, mx: 'auto', mb: 3 }}
+                sx={{ color: 'text.secondary', maxWidth: 520, mx: 'auto', mb: 2 }}
               >
-                Trigger any onboarded agent, multi-agent workflow, skill, or prompt template. Select an agent from the configuration bar above, or choose a quick-start flow below.
+                Chat with an onboarded agent, or run a workflow as a job. Pick one
+                below — Send will not do both.
               </Typography>
 
-              {/* Quick start, straight from the registry */}
-              <Grid container spacing={2} sx={{ textAlign: 'left' }}>
-                {(catalog?.workflows ?? [])
-                  .filter((wf) => wf.available !== false)
-                  .slice(0, 2)
-                  .map((wf) => (
-                    <Grid size={{ xs: 12, sm: 6 }} key={wf.id}>
-                      <Card
-                        variant="outlined"
-                        sx={quickCardSx('#3b82f6')}
-                        onClick={() =>
-                          wf.has_custom_ui && wf.custom_ui_route
-                            ? router.push(wf.custom_ui_route)
-                            : updateConfig({ workflowId: wf.id, agentId: null })
-                        }
-                      >
-                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                            <Workflow size={16} color="#3b82f6" />
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                              {wf.name}
-                            </Typography>
-                          </Box>
-                          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-                            {wf.description}
-                          </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#3b82f6', fontSize: '0.75rem', fontWeight: 600 }}>
-                            <span>{wf.has_custom_ui ? 'Open its UI' : 'Run this workflow'}</span>
-                            <ChevronRight size={13} />
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
+              <TextField
+                size="small"
+                placeholder="Filter agents and workflows…"
+                value={catalogQuery}
+                onChange={(e) => setCatalogQuery(e.target.value)}
+                fullWidth
+                sx={{ mb: 2, maxWidth: 400, mx: 'auto', display: 'block' }}
+              />
 
-                {(catalog?.agents ?? []).slice(0, 2).map((agent) => (
+              <Grid container spacing={2} sx={{ textAlign: 'left' }}>
+                {workflows.slice(0, 8).map((wf) => (
+                  <Grid size={{ xs: 12, sm: 6 }} key={wf.id}>
+                    <Card
+                      variant="outlined"
+                      sx={quickCardSx('#3b82f6')}
+                      onClick={() =>
+                        wf.has_custom_ui && wf.custom_ui_route
+                          ? router.push(wf.custom_ui_route)
+                          : updateConfig({ workflowId: wf.id, agentId: null })
+                      }
+                    >
+                      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+                          <Workflow size={16} color="#3b82f6" />
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            {wf.name}
+                          </Typography>
+                        </Box>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                          {wf.description}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#3b82f6', fontSize: '0.75rem', fontWeight: 600 }}>
+                          <span>{wf.has_custom_ui ? 'Open its UI' : 'Run as a job'}</span>
+                          <ChevronRight size={13} />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+
+                {agents.slice(0, 8).map((agent) => (
                   <Grid size={{ xs: 12, sm: 6 }} key={agent.id}>
                     <Card
                       variant="outlined"
@@ -292,10 +330,10 @@ export const ChatPanel: React.FC = () => {
                           </Typography>
                         </Box>
                         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-                          {agent.description || 'Specialized Copilot agent reasoning profile.'}
+                          {agent.description || 'Specialized Copilot agent.'}
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontSize: '0.75rem', fontWeight: 600 }}>
-                          <span>Activate this agent</span>
+                          <span>Chat with this agent</span>
                           <ChevronRight size={13} />
                         </Box>
                       </CardContent>
@@ -303,12 +341,12 @@ export const ChatPanel: React.FC = () => {
                   </Grid>
                 ))}
 
-                {catalog && catalog.agents.length === 0 && catalog.workflows.length === 0 && (
+                {catalog && workflows.length === 0 && agents.length === 0 && (
                   <Grid size={{ xs: 12 }}>
                     <Card variant="outlined" sx={{ borderRadius: 2, borderStyle: 'dashed' }}>
                       <CardContent sx={{ textAlign: 'center', py: 4 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                          Nothing onboarded yet
+                          {q ? 'Nothing matches that filter' : 'Nothing onboarded yet'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 2 }}>
                           Add an agent or workflow in the Registry and it will appear here.
@@ -323,13 +361,11 @@ export const ChatPanel: React.FC = () => {
               </Grid>
             </Box>
           ) : (
-            /* Render active message history */
             <Box sx={{ py: 1 }}>
               {messages.map((m) => (
                 <ChatMessage key={m.id || m.sequence} message={m} />
               ))}
 
-              {/* Streaming active response */}
               {isStreaming && (
                 <>
                   {streamingContent ? (
@@ -352,7 +388,6 @@ export const ChatPanel: React.FC = () => {
           )}
         </Box>
 
-        {/* Input Bar */}
         <ChatInput />
       </Box>
     </Box>

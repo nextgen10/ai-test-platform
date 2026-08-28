@@ -7,7 +7,7 @@ import logging
 import time
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -18,6 +18,7 @@ from app.database import get_db
 from app.models.chat import ChatMessage, ChatRole, ChatSession
 from app.schemas.chat import (
     ChatMessageIn,
+    ChatMessageOut,
     ChatSessionCreate,
     ChatSessionOut,
     ChatSessionSummary,
@@ -108,6 +109,7 @@ def list_sessions(
 @router.get("/sessions/{session_id}", response_model=ChatSessionOut)
 def get_session(
     session_id: str,
+    message_limit: int = Query(200, ge=1, le=500),
     db: Session = Depends(get_db),
     principal: Principal = Depends(require_reader),
 ) -> ChatSessionOut:
@@ -115,7 +117,16 @@ def get_session(
     if not session:
         raise HTTPException(404, f"Session '{session_id}' not found")
     http_deny_unless_owner(principal, session.created_by, kind="Session")
-    return ChatSessionOut.model_validate(session)
+    out = ChatSessionOut.model_validate(session)
+    rows = (
+        db.query(ChatMessage)
+        .filter_by(session_id=session_id)
+        .order_by(ChatMessage.sequence.desc())
+        .limit(message_limit)
+        .all()
+    )
+    out.messages = [ChatMessageOut.model_validate(m) for m in reversed(rows)]
+    return out
 
 
 @router.delete("/sessions/{session_id}")

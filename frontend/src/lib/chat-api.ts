@@ -129,9 +129,14 @@ export const chatApi = {
                 },
             );
 
-            if (!response.ok) {
-                throw new Error(`Chat request failed (${response.status})`);
-            }
+    if (!response.ok) {
+        let detail = `Request failed (${response.status})`;
+        try {
+            const body = await response.json();
+            if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : detail;
+        } catch { /* non-JSON error body */ }
+        throw new Error(detail);
+    }
 
             const reader = response.body?.getReader();
             if (!reader) throw new Error('No response body');

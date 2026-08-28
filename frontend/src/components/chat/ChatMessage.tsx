@@ -95,7 +95,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming =
                 color: isLight ? '#0f172a' : '#f8fafc',
               }}
             >
-              {isUser ? 'You' : 'GitHub Copilot / Agent Hub'}
+              {isUser ? 'You' : message.agent_id ? message.agent_id : 'Assistant'}
             </Typography>
 
             {!isUser && message.agent_id && (

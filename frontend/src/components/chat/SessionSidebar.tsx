@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -10,6 +10,7 @@ import {
   ListItemButton,
   ListItemText,
   Tooltip,
+  TextField,
   useTheme,
   alpha,
 } from '@mui/material';
@@ -18,6 +19,15 @@ import { useChatContext } from '@/contexts/ChatContext';
 
 interface SessionSidebarProps {
   onCloseMobile?: () => void;
+}
+
+function relativeTime(iso: string): string {
+  const delta = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (Number.isNaN(delta) || delta < 45) return 'just now';
+  if (delta < 3600) return `${Math.floor(delta / 60)}m`;
+  if (delta < 86400) return `${Math.floor(delta / 3600)}h`;
+  if (delta < 86400 * 14) return `${Math.floor(delta / 86400)}d`;
+  return new Date(iso).toLocaleDateString();
 }
 
 export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile }) => {
@@ -30,6 +40,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
     selectSession,
     deleteSession,
   } = useChatContext();
+  const [query, setQuery] = useState('');
 
   const handleNewChat = async () => {
     await createSession('New Chat');
@@ -40,6 +51,17 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
     selectSession(id);
     onCloseMobile?.();
   };
+
+  const handleDelete = (id: string, title: string) => {
+    if (!window.confirm(`Delete “${title || 'this session'}”? This cannot be undone.`)) return;
+    void deleteSession(id);
+  };
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return sessions;
+    return sessions.filter((s) => (s.title || '').toLowerCase().includes(q));
+  }, [sessions, query]);
 
   return (
     <Box
@@ -53,7 +75,6 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
         borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
       }}
     >
-      {/* Top action: New Chat */}
       <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)' }}>
         <Button
           fullWidth
@@ -67,14 +88,22 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
             fontSize: '0.84rem',
             textTransform: 'none',
             py: 0.8,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.25)}`,
           }}
         >
-          New Session
+          New chat
         </Button>
+        {sessions.length > 6 && (
+          <TextField
+            size="small"
+            placeholder="Filter sessions"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            fullWidth
+            sx={{ mt: 1, '& input': { fontSize: '0.8rem' } }}
+          />
+        )}
       </Box>
 
-      {/* Sessions List */}
       <Box sx={{ flex: 1, overflowY: 'auto', p: 1 }}>
         <Typography
           variant="caption"
@@ -89,18 +118,18 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
             letterSpacing: 0.5,
           }}
         >
-          Recent Sessions
+          Sessions
         </Typography>
 
-        {sessions.length === 0 ? (
+        {visible.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 4, px: 2 }}>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.78rem' }}>
-              No session history yet. Start a new session above!
+              {query ? 'No matching sessions.' : 'No sessions yet. Start one above.'}
             </Typography>
           </Box>
         ) : (
           <List disablePadding sx={{ mt: 0.5 }}>
-            {sessions.map((s) => {
+            {visible.map((s) => {
               const isActive = s.id === activeSessionId;
               return (
                 <ListItemButton
@@ -125,8 +154,8 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                           ? alpha(theme.palette.primary.main, 0.14)
                           : alpha(theme.palette.primary.main, 0.22)
                         : isLight
-                        ? 'rgba(0,0,0,0.03)'
-                        : 'rgba(255,255,255,0.03)',
+                          ? 'rgba(0,0,0,0.03)'
+                          : 'rgba(255,255,255,0.03)',
                       '& .delete-btn': { opacity: 1 },
                     },
                   }}
@@ -137,12 +166,17 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                     style={{ flexShrink: 0, marginRight: 8 }}
                   />
                   <ListItemText
-                    primary={s.title || 'Untitled Session'}
+                    primary={s.title || 'Untitled'}
+                    secondary={relativeTime(s.last_activity)}
                     primaryTypographyProps={{
                       fontSize: '0.82rem',
                       fontWeight: isActive ? 700 : 500,
                       noWrap: true,
                       color: isActive ? 'primary.main' : isLight ? '#1e293b' : '#e2e8f0',
+                    }}
+                    secondaryTypographyProps={{
+                      fontSize: '0.68rem',
+                      noWrap: true,
                     }}
                   />
                   <Tooltip title="Delete session">
@@ -151,7 +185,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                       className="delete-btn"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteSession(s.id);
+                        handleDelete(s.id, s.title);
                       }}
                       sx={{
                         opacity: { xs: 1, md: 0 },
