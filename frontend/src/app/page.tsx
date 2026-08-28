@@ -39,42 +39,43 @@ import InteractiveSimulator from '@/components/landing/InteractiveSimulator';
 import TechnicalFAQ from '@/components/landing/TechnicalFAQ';
 import { mapWorkflowsToUseCases, type UseCaseItem } from '@/config/nav';
 import { hubApi } from '@/lib/hub-api';
+import { colors } from '@/theme';
 
-const RED = '#D00000';
-const GREEN = '#1F8A70';
+const RED = colors.primary.main;
+const GREEN = colors.success;
 
 const TEAM_MEMBERS = [
   {
-    name: 'Dr. Elena Rostova',
-    role: 'VP, Lead AI Architect',
-    department: 'Autonomous Systems & AI Infrastructure',
-    image: '/team/elena.jpg',
-    specialty: 'Multi-Agent State Machine Architecture & Deterministic Orchestration',
-    bio: 'Pioneered deterministic LLM state machine pipelines with mathematical quality scoring. Oversees model orchestration and security guardrail enforcement.',
+    name: 'Surendran Madhavan',
+    role: 'Executive Sponsor / Program Dir.',
+    department: 'Executive Leadership & Strategy',
+    image: 'https://ui-avatars.com/api/?name=Surendran+Madhavan&background=0D8ABC&color=fff&size=256',
+    specialty: 'Strategic Vision & Business Alignment',
+    bio: 'Provides the strategic vision, executive oversight, and secures the budget for the initiative to ensure alignment with broader organizational goals at Cognizant.',
   },
   {
-    name: 'Marcus Vance',
-    role: 'Executive Director, Head of QA',
-    department: 'Enterprise Quality & Test Engineering',
-    image: '/team/marcus.jpg',
-    specialty: '5-Category Coverage Matrices & Automated Regression Verification',
-    bio: 'Over 18 years leading enterprise QA organizations. Designed the 5-category coverage matrix ensuring 100% boundary, negative, and data state verification.',
+    name: 'Inderpalsingh Gill',
+    role: 'Principal Engineering Manager',
+    department: 'Technical Leadership & Delivery',
+    image: 'https://ui-avatars.com/api/?name=Inderpalsingh+Gill&background=1F8A70&color=fff&size=256',
+    specialty: 'Delivery Lifecycle & Enterprise Compliance',
+    bio: 'Oversees the delivery lifecycle, removes blockers, and ensures the platform meets enterprise compliance and delivery standards.',
   },
   {
-    name: 'Sarah Jenkins',
-    role: 'Director, Regulatory & Compliance',
-    department: 'Financial Regulation & Audit Assurance',
-    image: '/team/sarah.jpg',
-    specialty: 'Basel III, MiFID II, Dodd-Frank Verification & Traceability',
-    bio: 'Specialist in high-assurance financial compliance. Ensures all synthesized test cases maintain bidirectional audit traceability to institutional specifications.',
+    name: 'Karthik Kolli',
+    role: 'Lead AI Product Owner',
+    department: 'Product & Quality Strategy',
+    image: 'https://ui-avatars.com/api/?name=Karthik+Kolli&background=F59E0B&color=fff&size=256',
+    specialty: 'Testing Standards & Agentic Workflows',
+    bio: 'Drives the functional requirements, sets testing standards, and prioritizes the roadmap for new Agentic workflows to ensure generated tests meet QA benchmarks.',
   },
   {
-    name: 'David Chen',
-    role: 'Senior Principal Engineer',
-    department: 'Multi-Agent R&D & Tooling',
-    image: '/team/david.jpg',
-    specialty: 'Sandboxed Tool Execution, Schema Validation & In-Place Delta Reprocessing',
-    bio: 'Architected the non-destructive Gap Closer and isolated /workspace trust boundary. Specializes in bounded retry loops and Draft-07 JSON Schema conformance.',
+    name: 'Aniket Kalyan Marwadi',
+    role: 'Lead AI Architect & Principal Creator',
+    department: 'Core Architecture & System Design',
+    image: 'https://ui-avatars.com/api/?name=Aniket+Marwadi&background=D00000&color=fff&size=256',
+    specialty: 'Multi-Agent Orchestration & Frontend Systems',
+    bio: 'The mastermind, architect, and sole developer of the entire solution. Responsible for the end-to-end technical execution and design of the platform.',
   },
 ];
 
@@ -131,31 +132,13 @@ export default function AgentHubLanding() {
         pt: { xs: 7, md: 10 },
         pb: { xs: 6, md: 9 },
         position: 'relative',
-        bgcolor: isLight ? '#FAFBFC' : 'background.default',
+        bgcolor: isLight ? colors.background.secondary : 'background.default',
         borderBottom: '1px solid',
         borderColor: 'divider',
         textAlign: 'center',
-        overflow: 'hidden',
       }}>
-        {/* Ambient Radial Glow */}
-        <Box sx={{
-          position: 'absolute',
-          top: '-20%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: { xs: 400, md: 800 },
-          height: { xs: 300, md: 500 },
-          background: isLight
-            ? 'radial-gradient(circle, rgba(208, 0, 0, 0.07) 0%, rgba(45, 108, 223, 0.03) 50%, transparent 80%)'
-            : 'radial-gradient(circle, rgba(208, 0, 0, 0.14) 0%, rgba(45, 108, 223, 0.07) 50%, transparent 80%)',
-          filter: 'blur(60px)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }} />
-
         <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, position: 'relative', zIndex: 1 }}>
           <Box sx={{ maxWidth: 960, mx: 'auto' }}>
-            {/* Status Pill */}
             <Box sx={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -163,45 +146,41 @@ export default function AgentHubLanding() {
               px: 2,
               py: 0.65,
               mb: 3,
-              borderRadius: 5,
+              borderRadius: '2px',
               border: '1px solid',
-              borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.12)',
-              bgcolor: isLight ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.04)',
-              backdropFilter: 'blur(8px)',
-              boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
             }}>
               <Box sx={{
-                width: 8, height: 8, borderRadius: '50%', bgcolor: GREEN,
-                boxShadow: `0 0 10px ${GREEN}`, animation: 'pulse 2s infinite',
+                width: 6, height: 18, bgcolor: 'primary.main', flexShrink: 0,
               }} />
               <Typography variant="caption" sx={{
-                fontWeight: 800, color: 'text.secondary', letterSpacing: '0.06em',
-                fontSize: { xs: '0.68rem', sm: '0.74rem' },
+                fontWeight: 500, color: 'text.secondary',
+                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
               }}>
-                ENTERPRISE MULTI-AGENT PLATFORM &bull; AUTONOMOUS ORCHESTRATION
+                Enterprise multi-agent platform
               </Typography>
             </Box>
 
-            {/* Headline */}
             <Typography variant="h1" sx={{
               mb: 2.5,
-              fontWeight: 800,
-              letterSpacing: '-0.035em',
+              fontWeight: 300,
+              letterSpacing: 0,
               color: 'text.primary',
-              fontSize: { xs: '2.4rem', sm: '3.2rem', md: '4rem' },
-              lineHeight: 1.1,
+              fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' },
+              lineHeight: 1.2,
             }}>
-              <Box component="span" sx={{ color: 'primary.main', position: 'relative', display: 'inline-block' }}>
+              <Box component="span" sx={{ color: 'text.primary' }}>
                 Agent HUB
               </Box>
               {' '}Platform
             </Typography>
 
-            {/* Subtitle */}
             <Typography variant="body1" sx={{
               color: 'text.secondary',
-              fontSize: { xs: '1.05rem', sm: '1.2rem' },
-              lineHeight: 1.65,
+              fontSize: { xs: '1rem', sm: '1.125rem' },
+              fontWeight: 300,
+              lineHeight: 1.5,
               maxWidth: 820,
               mx: 'auto',
               mb: 4.5,
@@ -209,7 +188,6 @@ export default function AgentHubLanding() {
               The unified enterprise control plane for onboarding, orchestrating, and running autonomous multi-agent workflows. Trigger agents and skills through a universal <strong>Agent Console</strong>, or launch specialized <strong>Custom UIs</strong> for mission-critical use cases like Test Design & Evaluation.
             </Typography>
 
-            {/* High-Impact CTA Actions */}
             <Box sx={{
               display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center',
               gap: 2, mb: 5,
@@ -219,17 +197,10 @@ export default function AgentHubLanding() {
                 color="primary"
                 size="large"
                 onClick={() => router.push('/chat')}
-                startIcon={<Terminal size={20} />}
-                sx={{
-                  height: 52, px: 3.5, fontSize: '0.98rem', fontWeight: 800,
-                  borderRadius: 2.5,
-                  boxShadow: '0 6px 20px rgba(208,0,0,0.35)',
-                  '&:hover': { boxShadow: '0 8px 26px rgba(208,0,0,0.48)', transform: 'translateY(-1px)' },
-                  transition: 'all 0.2s ease',
-                }}
+                startIcon={<Terminal size={18} />}
               >
                 Open Agent Console
-                <ArrowRight size={19} style={{ marginLeft: 6 }} />
+                <ArrowRight size={16} style={{ marginLeft: 6 }} />
               </Button>
 
               <Button
@@ -239,17 +210,11 @@ export default function AgentHubLanding() {
                 onClick={() => router.push('/generate')}
                 startIcon={<FlaskConical size={18} color={RED} />}
                 sx={{
-                  height: 52, px: 3.5, fontSize: '0.95rem', fontWeight: 700,
-                  borderRadius: 2.5,
-                  borderColor: isLight ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
-                  bgcolor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.03)',
-                  backdropFilter: 'blur(8px)',
+                  borderColor: 'divider',
                   '&:hover': {
-                    borderColor: 'primary.main',
-                    bgcolor: isLight ? 'rgba(208,0,0,0.04)' : 'rgba(208,0,0,0.08)',
-                    transform: 'translateY(-1px)',
+                    borderColor: 'text.primary',
+                    bgcolor: 'action.hover',
                   },
-                  transition: 'all 0.2s ease',
                 }}
               >
                 Test Design & Evaluation UI
@@ -262,7 +227,7 @@ export default function AgentHubLanding() {
                 onClick={() => scrollToSection('use-cases')}
                 startIcon={<Layers size={18} />}
                 sx={{
-                  height: 52, px: 2.5, fontSize: '0.92rem', fontWeight: 700,
+                  height: 52, px: 2.5, fontSize: '0.92rem', fontWeight: 500,
                   borderRadius: 2.5, color: 'text.secondary',
                   '&:hover': { color: 'text.primary' },
                 }}
@@ -288,17 +253,17 @@ export default function AgentHubLanding() {
                       backdropFilter: 'blur(8px)', textAlign: 'center',
                     }}
                   >
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.05rem', lineHeight: 1.1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 500, color: 'text.primary', fontSize: '1.05rem', lineHeight: 1.1 }}>
                       {metric.title}
                     </Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mt: 0.25, fontSize: '0.74rem' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mt: 0.25, fontSize: '0.74rem' }}>
                       {metric.subtitle}
                     </Typography>
                     <Chip
                       label={metric.tag}
                       size="small"
                       sx={{
-                        mt: 0.75, height: 16, fontSize: '0.62rem', fontWeight: 800,
+                        mt: 0.75, height: 16, fontSize: '0.62rem', fontWeight: 500,
                         bgcolor: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
                         color: 'text.secondary',
                       }}
@@ -329,15 +294,15 @@ export default function AgentHubLanding() {
             <Box sx={{
               display: 'inline-flex', alignItems: 'center', gap: 1,
               px: 1.75, py: 0.5, mb: 1.5, borderRadius: 3,
-              bgcolor: isLight ? 'rgba(208,0,0,0.06)' : 'rgba(208,0,0,0.12)',
+              bgcolor: isLight ? 'rgba(230,0,0,0.06)' : 'rgba(230,0,0,0.12)',
               color: 'primary.main',
             }}>
               <Layers size={14} />
-              <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
+              <Typography variant="caption" sx={{ fontWeight: 500, letterSpacing: '0.04em' }}>
                 ENTERPRISE USE CASES & CONTROL PLANES
               </Typography>
             </Box>
-            <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}>
+            <Typography variant="h3" sx={{ fontWeight: 500, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}>
               One Platform. Flexible Interaction Modes.
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
@@ -355,11 +320,11 @@ export default function AgentHubLanding() {
                   borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3.5 },
                   position: 'relative', overflow: 'hidden',
                   transition: 'all 0.25s ease',
-                  border: '2px solid', borderColor: isLight ? 'rgba(208,0,0,0.2)' : 'rgba(208,0,0,0.3)',
-                  boxShadow: isLight ? '0 12px 32px -10px rgba(208,0,0,0.1)' : '0 12px 32px -10px rgba(208,0,0,0.25)',
+                  border: '2px solid', borderColor: isLight ? 'rgba(230,0,0,0.2)' : 'rgba(230,0,0,0.3)',
+                  boxShadow: isLight ? '0 12px 32px -10px rgba(230,0,0,0.1)' : '0 12px 32px -10px rgba(230,0,0,0.25)',
                   '&:hover': {
                     borderColor: 'primary.main', transform: 'translateY(-4px)',
-                    boxShadow: isLight ? '0 20px 40px -12px rgba(208,0,0,0.2)' : '0 20px 40px -12px rgba(208,0,0,0.4)',
+                    boxShadow: isLight ? '0 20px 40px -12px rgba(230,0,0,0.2)' : '0 20px 40px -12px rgba(230,0,0,0.4)',
                   },
                 }}
               >
@@ -372,15 +337,15 @@ export default function AgentHubLanding() {
                       <FlaskConical size={24} />
                     </Box>
                     <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '1.25rem' }}>
+                      <Typography variant="h5" sx={{ fontWeight: 500, fontSize: '1.25rem' }}>
                         Test Design & Evaluation
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                         Dedicated Custom UI Use Case
                       </Typography>
                     </Box>
                   </Box>
-                  <Chip label="Custom UI" size="small" color="primary" sx={{ fontWeight: 800, fontSize: '0.72rem', height: 24 }} />
+                  <Chip label="Custom UI" size="small" color="primary" sx={{ fontWeight: 500, fontSize: '0.72rem', height: 24 }} />
                 </Box>
 
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.6, mb: 2.5, flex: 1 }}>
@@ -388,12 +353,12 @@ export default function AgentHubLanding() {
                 </Typography>
 
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     Multi-Agent Pipeline:
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
                     {['Requirement Analyst', 'Test Designer', 'Test Generator', 'Test Reviewer', 'Test Evaluator'].map((ag, idx) => (
-                      <Chip key={idx} label={`${idx + 1}. ${ag}`} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 600, height: 22 }} />
+                      <Chip key={idx} label={`${idx + 1}. ${ag}`} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 500, height: 22 }} />
                     ))}
                   </Box>
                 </Box>
@@ -403,7 +368,7 @@ export default function AgentHubLanding() {
                     variant="contained" color="primary"
                     startIcon={<ExternalLink size={16} />}
                     onClick={() => router.push('/generate')}
-                    sx={{ borderRadius: 2, fontWeight: 800, textTransform: 'none', px: 2.5, py: 1 }}
+                    sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2.5, py: 1 }}
                   >
                     Launch Custom UI
                   </Button>
@@ -411,7 +376,7 @@ export default function AgentHubLanding() {
                     variant="outlined" color="inherit"
                     startIcon={<Terminal size={14} />}
                     onClick={() => router.push('/chat?workflow=test-case-generation')}
-                    sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none', px: 2 }}
+                    sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2 }}
                   >
                     Run via Agent Console
                   </Button>
@@ -445,15 +410,15 @@ export default function AgentHubLanding() {
                       <Terminal size={24} />
                     </Box>
                     <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 800, fontSize: '1.25rem' }}>
+                      <Typography variant="h5" sx={{ fontWeight: 500, fontSize: '1.25rem' }}>
                         Universal Agent Console
                       </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                         Interactive Execution Plane
                       </Typography>
                     </Box>
                   </Box>
-                  <Chip label="Core Platform" size="small" sx={{ fontWeight: 800, fontSize: '0.72rem', height: 24, bgcolor: 'rgba(59,130,246,0.12)', color: '#3b82f6' }} />
+                  <Chip label="Core Platform" size="small" sx={{ fontWeight: 500, fontSize: '0.72rem', height: 24, bgcolor: 'rgba(59,130,246,0.12)', color: '#3b82f6' }} />
                 </Box>
 
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.6, mb: 2.5, flex: 1 }}>
@@ -461,12 +426,12 @@ export default function AgentHubLanding() {
                 </Typography>
 
                 <Box sx={{ mb: 3 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     Capabilities:
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
                     {['Agent Switcher', 'Model Choice', 'SSE Stream', 'Prompt Hydration', 'Session History'].map((cap, idx) => (
-                      <Chip key={idx} label={cap} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 600, height: 22 }} />
+                      <Chip key={idx} label={cap} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 500, height: 22 }} />
                     ))}
                   </Box>
                 </Box>
@@ -474,7 +439,7 @@ export default function AgentHubLanding() {
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                   <Button
                     variant="contained"
-                    sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, borderRadius: 2, fontWeight: 800, textTransform: 'none', px: 2.5, py: 1 }}
+                    sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2.5, py: 1 }}
                     startIcon={<Terminal size={16} />}
                     onClick={() => router.push('/chat')}
                   >
@@ -483,7 +448,7 @@ export default function AgentHubLanding() {
                   <Button
                     variant="outlined" color="inherit"
                     onClick={() => router.push('/registry')}
-                    sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none', px: 2 }}
+                    sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2 }}
                   >
                     Browse Registry
                   </Button>
@@ -511,13 +476,13 @@ export default function AgentHubLanding() {
                   </Box>
                   <Box sx={{ minWidth: 0 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1.1rem' }}>
                         Workflow Builder
                       </Typography>
                       <Chip
                         label="Custom UI"
                         size="small"
-                        sx={{ height: 19, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}
+                        sx={{ height: 19, fontSize: '0.65rem', fontWeight: 500, bgcolor: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}
                       />
                     </Box>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -540,7 +505,7 @@ export default function AgentHubLanding() {
                       label={`${i + 1}. ${stage}`}
                       size="small"
                       variant="outlined"
-                      sx={{ fontSize: '0.68rem', height: 21, fontWeight: 600 }}
+                      sx={{ fontSize: '0.68rem', height: 21, fontWeight: 500 }}
                     />
                   ))}
                 </Box>
@@ -550,7 +515,7 @@ export default function AgentHubLanding() {
                     size="small" variant="outlined" color="inherit"
                     startIcon={<Sparkles size={13} />}
                     onClick={() => router.push('/use-cases/workflow-builder')}
-                    sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', fontSize: '0.8rem' }}
+                    sx={{ borderRadius: 1.5, fontWeight: 500, textTransform: 'none', fontSize: '0.8rem' }}
                   >
                     Build a Workflow
                   </Button>
@@ -577,7 +542,7 @@ export default function AgentHubLanding() {
                     <FileSearch size={22} />
                   </Box>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1.1rem' }}>
                       Document OCR & Vision
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -595,7 +560,7 @@ export default function AgentHubLanding() {
                     size="small" variant="outlined" color="inherit"
                     startIcon={<Terminal size={13} />}
                     onClick={() => router.push('/generate')}
-                    sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', fontSize: '0.8rem' }}
+                    sx={{ borderRadius: 1.5, fontWeight: 500, textTransform: 'none', fontSize: '0.8rem' }}
                   >
                     Open OCR workspace
                   </Button>
@@ -622,7 +587,7 @@ export default function AgentHubLanding() {
                     <Layers size={22} />
                   </Box>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.1rem' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1.1rem' }}>
                       Agent Hub Registry & Onboarding
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -640,7 +605,7 @@ export default function AgentHubLanding() {
                     size="small" variant="outlined" color="inherit"
                     startIcon={<Layers size={13} />}
                     onClick={() => router.push('/registry')}
-                    sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', fontSize: '0.8rem' }}
+                    sx={{ borderRadius: 1.5, fontWeight: 500, textTransform: 'none', fontSize: '0.8rem' }}
                   >
                     Open Registry
                   </Button>
@@ -729,15 +694,15 @@ export default function AgentHubLanding() {
               py: 0.5,
               mb: 1.5,
               borderRadius: 3,
-              bgcolor: isLight ? 'rgba(208,0,0,0.06)' : 'rgba(208,0,0,0.12)',
+              bgcolor: isLight ? 'rgba(230,0,0,0.06)' : 'rgba(230,0,0,0.12)',
               color: 'primary.main',
             }}>
               <Users size={14} />
-              <Typography variant="caption" sx={{ fontWeight: 800, letterSpacing: '0.04em' }}>
+              <Typography variant="caption" sx={{ fontWeight: 500, letterSpacing: '0.04em' }}>
                 ARCHITECTURE & ENGINEERING
               </Typography>
             </Box>
-            <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
+            <Typography variant="h3" sx={{ fontWeight: 500, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
               Meet the Engineering & Architecture Team
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
@@ -769,8 +734,8 @@ export default function AgentHubLanding() {
                       borderColor: 'primary.main',
                       transform: 'translateY(-5px)',
                       boxShadow: isLight
-                        ? '0 16px 36px -10px rgba(208,0,0,0.15)'
-                        : '0 16px 36px -10px rgba(208,0,0,0.3)',
+                        ? '0 16px 36px -10px rgba(230,0,0,0.15)'
+                        : '0 16px 36px -10px rgba(230,0,0,0.3)',
                     },
                   }}
                 >
@@ -797,9 +762,9 @@ export default function AgentHubLanding() {
                     size="small"
                     color="primary"
                     variant="outlined"
-                    sx={{ fontWeight: 800, fontSize: '0.72rem', mb: 1.25 }}
+                    sx={{ fontWeight: 500, fontSize: '0.72rem', mb: 1.25 }}
                   />
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1.75, fontSize: '0.76rem' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, display: 'block', mb: 1.75, fontSize: '0.76rem' }}>
                     {member.department}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.84rem', lineHeight: 1.55, mt: 'auto' }}>
@@ -833,7 +798,7 @@ export default function AgentHubLanding() {
         textAlign: 'center',
       }}>
         <Container maxWidth="md">
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, mb: 1.5, letterSpacing: '-0.02em' }}>
             Ready to Orchestrate Multi-Agent Workflows?
           </Typography>
           <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 3.5, fontSize: '1.05rem' }}>
@@ -849,9 +814,9 @@ export default function AgentHubLanding() {
               sx={{
                 height: 48,
                 px: 3.5,
-                fontWeight: 800,
+                fontWeight: 500,
                 borderRadius: 2,
-                boxShadow: '0 4px 16px rgba(208,0,0,0.4)',
+                boxShadow: '0 4px 16px rgba(230,0,0,0.4)',
               }}
             >
               Open Agent Console
@@ -865,7 +830,7 @@ export default function AgentHubLanding() {
               sx={{
                 height: 48,
                 px: 3.5,
-                fontWeight: 700,
+                fontWeight: 500,
                 borderRadius: 2,
                 borderColor: 'rgba(255,255,255,0.3)',
                 '&:hover': { borderColor: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.05)' },
