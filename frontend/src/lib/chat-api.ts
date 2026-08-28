@@ -3,6 +3,7 @@
  */
 
 import { API_BASE } from './api';
+import { errorFromResponse } from './api-errors';
 
 // ------------------------------------------------------------------ types
 
@@ -69,17 +70,6 @@ export interface SendMessagePayload {
 
 // ------------------------------------------------------------------- helpers
 
-async function errorFromResponse(response: Response, fallback: string): Promise<Error> {
-    let detail = fallback;
-    try {
-        const body = await response.json();
-        if (typeof body?.detail === 'string') detail = body.detail;
-    } catch {
-        /* non-JSON error body */
-    }
-    return new Error(detail);
-}
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'same-origin',
@@ -88,7 +78,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
 
     if (!response.ok) {
-        throw await errorFromResponse(response, `Request failed (${response.status})`);
+        throw await errorFromResponse(response);
     }
     return response.json() as Promise<T>;
 }
@@ -201,10 +191,7 @@ export const chatApi = {
             );
 
             if (!response.ok) {
-                throw await errorFromResponse(
-                    response,
-                    `Request failed (${response.status})`,
-                );
+                throw await errorFromResponse(response);
             }
 
             yield* parseSseEvents(response);

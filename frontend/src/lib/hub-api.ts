@@ -3,6 +3,7 @@
  */
 
 import { API_BASE } from './api';
+import { errorFromResponse } from './api-errors';
 
 // ------------------------------------------------------------------ types
 
@@ -87,20 +88,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
 
     if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-            const body = await response.json();
-            if (body?.detail) {
-                if (Array.isArray(body.detail)) {
-                    detail = body.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
-                } else if (typeof body.detail === 'string') {
-                    detail = body.detail;
-                } else {
-                    detail = JSON.stringify(body.detail);
-                }
-            }
-        } catch { /* non-JSON error body */ }
-        throw new Error(detail);
+        throw await errorFromResponse(response);
     }
     return response.json() as Promise<T>;
 }

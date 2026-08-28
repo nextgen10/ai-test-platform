@@ -5,6 +5,8 @@
  * FastAPI service, so the browser never talks to a second origin.
  */
 
+import { errorFromResponse } from './api-errors';
+
 export const API_BASE = '/api/v1';
 
 /**
@@ -281,14 +283,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
 
     if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-            const body = await response.json();
-            if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : detail;
-        } catch {
-            /* non-JSON error body; keep the status-based message */
-        }
-        throw new Error(detail);
+        throw await errorFromResponse(response);
     }
     return response.json() as Promise<T>;
 }
