@@ -373,6 +373,7 @@ export const ChatPanel: React.FC = () => {
                       message={{
                         role: 'assistant',
                         content: streamingContent,
+                        agent_id: config.agentId,
                       }}
                       isStreaming={true}
                     />

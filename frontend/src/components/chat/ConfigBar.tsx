@@ -31,6 +31,7 @@ import { useChatContext } from '@/contexts/ChatContext';
 import { hubApi, type HubCatalog } from '@/lib/hub-api';
 import { api } from '@/lib/api';
 import { getSessionGithubToken, setSessionGithubToken } from '@/lib/settings';
+import { useRouter } from 'next/navigation';
 
 interface PlatformInfo {
   engine: string;
@@ -40,6 +41,7 @@ interface PlatformInfo {
 export const ConfigBar: React.FC = () => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
+  const router = useRouter();
   const { config, updateConfig } = useChatContext();
 
   const [catalog, setCatalog] = useState<HubCatalog | null>(null);
@@ -114,12 +116,15 @@ export const ConfigBar: React.FC = () => {
               const val = e.target.value || null;
               updateConfig({ agentId: val, ...(val ? { workflowId: null } : {}) });
             }}
+            disabled={runMode}
             sx={selectSx}
           >
             <MenuItem value="">
               <em>Auto / Default</em>
             </MenuItem>
-            {(catalog?.agents ?? []).map((ag) => (
+            {(catalog?.agents ?? [])
+              .filter((ag) => ag.id !== 'ocr-extractor')
+              .map((ag) => (
               <MenuItem key={ag.id} value={ag.id}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Bot size={14} color={theme.palette.primary.main} />
@@ -140,8 +145,17 @@ export const ConfigBar: React.FC = () => {
             value={config.workflowId || ''}
             label="Workflow"
             onChange={(e) => {
-              const val = e.target.value || null;
-              updateConfig({ workflowId: val, ...(val ? { agentId: null } : {}) });
+              const id = e.target.value;
+              if (!id) {
+                updateConfig({ workflowId: null });
+                return;
+              }
+              const wf = catalog?.workflows.find((w) => w.id === id);
+              if (wf?.has_custom_ui && wf.custom_ui_route) {
+                router.push(wf.custom_ui_route);
+                return;
+              }
+              updateConfig({ workflowId: id });
             }}
             sx={selectSx}
           >
@@ -258,7 +272,7 @@ export const ConfigBar: React.FC = () => {
             <strong>{selectedWorkflow.name}</strong> runs as a job through{' '}
             {selectedWorkflow.agents.length} agent
             {selectedWorkflow.agents.length === 1 ? '' : 's'}
-            {selectedWorkflow.approval_gate ? ', pausing for your approval partway' : ''}. Your
+            {selectedWorkflow.approval_gate ? ', pausing for your approval partway' : ''}.
             Your message is a job brief, not a chat turn. Send opens the job page.
           </Typography>
         </Box>
@@ -287,6 +301,7 @@ export const ConfigBar: React.FC = () => {
               value={config.skillId || ''}
               label="Skill Context"
               onChange={(e) => updateConfig({ skillId: e.target.value || null })}
+              disabled={runMode}
               sx={selectSx}
             >
               <MenuItem value="">
@@ -312,6 +327,7 @@ export const ConfigBar: React.FC = () => {
               value={config.promptId || ''}
               label="Prompt Template"
               onChange={(e) => updateConfig({ promptId: e.target.value || null })}
+              disabled={runMode}
               sx={selectSx}
             >
               <MenuItem value="">

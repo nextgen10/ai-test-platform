@@ -22,12 +22,13 @@ interface SessionSidebarProps {
 }
 
 function relativeTime(iso: string): string {
-  const delta = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (Number.isNaN(delta) || delta < 45) return 'just now';
+  const stamp = /([zZ]|[+-]\d{2}:\d{2})$/.test(iso) ? iso : `${iso}Z`;
+  const delta = (Date.now() - new Date(stamp).getTime()) / 1000;
+  if (Number.isNaN(delta) || delta < 60) return 'just now';
   if (delta < 3600) return `${Math.floor(delta / 60)}m`;
   if (delta < 86400) return `${Math.floor(delta / 3600)}h`;
   if (delta < 86400 * 14) return `${Math.floor(delta / 86400)}d`;
-  return new Date(iso).toLocaleDateString();
+  return new Date(stamp).toLocaleDateString();
 }
 
 export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile }) => {
@@ -188,7 +189,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                         handleDelete(s.id, s.title);
                       }}
                       sx={{
-                        opacity: { xs: 1, md: 0 },
+                        opacity: 1,
                         transition: 'opacity 0.2s',
                         p: 0.4,
                         color: 'text.secondary',

@@ -594,10 +594,10 @@ export default function AgentHubLanding() {
                   <Button
                     size="small" variant="outlined" color="inherit"
                     startIcon={<Terminal size={13} />}
-                    onClick={() => router.push('/chat?agent=ocr-extractor')}
+                    onClick={() => router.push('/generate')}
                     sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none', fontSize: '0.8rem' }}
                   >
-                    Run in Agent Console
+                    Open OCR workspace
                   </Button>
                 </Box>
               </Card>

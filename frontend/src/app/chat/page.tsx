@@ -9,16 +9,18 @@ export default function ChatPage() {
   return (
     // The provider reads `?agent=…&workflow=…` to seed its configuration, and
     // useSearchParams needs a Suspense boundary above it.
-    <Suspense
-      fallback={
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
-      <ChatProvider>
-        <ChatPanel />
-      </ChatProvider>
-    </Suspense>
+    <Box sx={{ flex: 1, minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Suspense
+        fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <CircularProgress />
+          </Box>
+        }
+      >
+        <ChatProvider>
+          <ChatPanel />
+        </ChatProvider>
+      </Suspense>
+    </Box>
   );
 }

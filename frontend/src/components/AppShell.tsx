@@ -57,9 +57,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Chat page takes full viewport below nav without outer container margins
     const isChat = pathname === '/chat';
 
-    // Check if current route is a bespoke use case
+    // Check if current route is a bespoke use case. Workflows that launch in
+    // the Console live at `/chat?workflow=…`; that must not paint a use-case
+    // ribbon over the Console itself.
     const activeUseCase = useCases.find((uc) => {
         const base = uc.path.split('?')[0];
+        if (!base || base === '/' || base === '/chat') return false;
         return pathname === base || pathname.startsWith(base + '/');
     });
 
@@ -68,10 +71,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             sx={{
                 display: 'flex',
                 flexDirection: 'column',
+                height: isChat ? '100vh' : undefined,
                 minHeight: '100vh',
                 bgcolor: 'background.default',
                 color: 'text.primary',
                 overflowX: 'hidden',
+                overflow: isChat ? 'hidden' : undefined,
             }}
         >
             <UnifiedNavBar
@@ -163,7 +168,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             )}
 
             {isChat ? (
-                <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box
+                    component="main"
+                    sx={{
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                    }}
+                >
                     {children}
                 </Box>
             ) : (

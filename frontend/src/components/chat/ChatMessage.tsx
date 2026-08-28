@@ -21,6 +21,15 @@ interface ChatMessageProps {
   isStreaming?: boolean;
 }
 
+function displayAgent(id?: string | null): string {
+  if (!id) return 'Assistant';
+  return id
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming = false }) => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
@@ -95,24 +104,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming =
                 color: isLight ? '#0f172a' : '#f8fafc',
               }}
             >
-              {isUser ? 'You' : message.agent_id ? message.agent_id : 'Assistant'}
+              {isUser ? 'You' : displayAgent(message.agent_id)}
             </Typography>
 
             {!isUser && message.agent_id && (
-              <Chip
-                icon={<Sparkles size={12} />}
-                label={message.agent_id}
-                size="small"
-                variant="outlined"
-                sx={{
-                  height: 20,
-                  fontSize: '0.72rem',
-                  fontWeight: 600,
-                  borderColor: alpha(theme.palette.primary.main, 0.4),
-                  color: 'primary.main',
-                  bgcolor: alpha(theme.palette.primary.main, 0.06),
-                }}
-              />
+              <Sparkles size={13} color={theme.palette.primary.main} />
             )}
 
             {!isUser && message.model && (

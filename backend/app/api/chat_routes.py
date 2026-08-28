@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, noload
 
 from app.access import http_deny_unless_owner, is_admin
 from app.config import settings
@@ -91,7 +91,7 @@ def create_session(
 
 @router.get("/sessions", response_model=list[ChatSessionSummary])
 def list_sessions(
-    limit: int = 50,
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     principal: Principal = Depends(require_reader),
 ) -> list[ChatSessionSummary]:
@@ -100,7 +100,7 @@ def list_sessions(
         query = query.filter(ChatSession.created_by == principal.name)
     sessions = (
         query.order_by(ChatSession.last_activity.desc())
-        .limit(max(1, min(limit, 200)))
+        .limit(limit)
         .all()
     )
     return [ChatSessionSummary.model_validate(s) for s in sessions]
@@ -113,7 +113,12 @@ def get_session(
     db: Session = Depends(get_db),
     principal: Principal = Depends(require_reader),
 ) -> ChatSessionOut:
-    session = db.query(ChatSession).filter_by(id=session_id).first()
+    session = (
+        db.query(ChatSession)
+        .options(noload(ChatSession.messages))
+        .filter_by(id=session_id)
+        .first()
+    )
     if not session:
         raise HTTPException(404, f"Session '{session_id}' not found")
     http_deny_unless_owner(principal, session.created_by, kind="Session")

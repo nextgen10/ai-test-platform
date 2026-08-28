@@ -110,3 +110,43 @@ def test_chat_session_is_owned_by_the_caller(client):
     ).json()
     assert session["created_by"] == "test-operator"
     client.delete(f"/api/v1/chat/sessions/{session['id']}")
+
+
+def test_get_session_returns_the_last_n_messages(client):
+    """Opening a session must not hydrate an unbounded transcript."""
+    from app.database import SessionLocal
+    from app.models.chat import ChatMessage, ChatRole
+
+    session_id = client.post(
+        "/api/v1/chat/sessions", json={"title": "Long transcript"}
+    ).json()["id"]
+
+    db = SessionLocal()
+    try:
+        for i in range(1, 12):
+            db.add(
+                ChatMessage(
+                    session_id=session_id,
+                    sequence=i,
+                    role=ChatRole.USER if i % 2 else ChatRole.ASSISTANT,
+                    content=f"msg-{i}",
+                )
+            )
+        db.commit()
+    finally:
+        db.close()
+
+    capped = client.get(f"/api/v1/chat/sessions/{session_id}?message_limit=5").json()
+    assert [m["sequence"] for m in capped["messages"]] == [7, 8, 9, 10, 11]
+    assert [m["content"] for m in capped["messages"]] == [
+        "msg-7",
+        "msg-8",
+        "msg-9",
+        "msg-10",
+        "msg-11",
+    ]
+
+    defaulted = client.get(f"/api/v1/chat/sessions/{session_id}").json()
+    assert len(defaulted["messages"]) == 11
+
+    client.delete(f"/api/v1/chat/sessions/{session_id}")

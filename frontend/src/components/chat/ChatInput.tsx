@@ -14,13 +14,21 @@ import {
 import { Send, Square } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 import { hubApi } from '@/lib/hub-api';
+import { useRouter } from 'next/navigation';
 
-type QuickPrompt = { label: string; agent?: string; workflow?: string; prompt?: string };
+type QuickPrompt = {
+  label: string;
+  agent?: string;
+  workflow?: string;
+  prompt?: string;
+  customUiRoute?: string | null;
+};
 
 export const ChatInput: React.FC = () => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const { isStreaming, sendMessage, stopStreaming, updateConfig, config, messages } = useChatContext();
+  const router = useRouter();
   const [text, setText] = useState('');
   const [quickPrompts, setQuickPrompts] = useState<QuickPrompt[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,7 +40,11 @@ export const ChatInput: React.FC = () => {
         const wf = catalog.workflows
           .filter((w) => w.available !== false)
           .slice(0, 2)
-          .map((w) => ({ label: `Run ${w.name}`, workflow: w.id }));
+          .map((w) => ({
+            label: w.has_custom_ui ? `Open ${w.name}` : `Run ${w.name}`,
+            workflow: w.id,
+            customUiRoute: w.has_custom_ui ? w.custom_ui_route : null,
+          }));
         const agents = catalog.agents
           .filter((a) => a.id !== 'ocr-extractor')
           .slice(0, 3)
@@ -66,6 +78,10 @@ export const ChatInput: React.FC = () => {
   };
 
   const handleChipClick = (item: QuickPrompt) => {
+    if (item.customUiRoute) {
+      router.push(item.customUiRoute);
+      return;
+    }
     if (item.workflow) {
       updateConfig({ workflowId: item.workflow, agentId: null });
       setText('');

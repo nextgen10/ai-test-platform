@@ -106,14 +106,19 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setMessages(session.messages);
         setStreamingContent('');
         streamedRef.current = '';
-        setConfig((prev) => ({
-            ...prev,
-            agentId: session.agent_id,
-            skillId: session.skill_id,
-            workflowId: session.workflow_id,
-            promptId: session.prompt_id,
-            model: session.model,
-        }));
+        // A stored workflow_id is leftover config, not a job in progress.
+        // Restoring it would flip Send back to "Run job" on a real transcript.
+        setConfig((prev) =>
+            exclusiveConfig(
+                {
+                    ...prev,
+                    skillId: session.skill_id,
+                    promptId: session.prompt_id,
+                    model: session.model,
+                },
+                { agentId: session.agent_id, workflowId: null },
+            ),
+        );
     }, []);
 
     // Restore ?session= once. Landing ?agent= / ?workflow= apply once, then
@@ -182,7 +187,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 title,
                 agent_id: from.agentId,
                 skill_id: from.skillId,
-                workflow_id: from.workflowId,
                 prompt_id: from.promptId,
                 model: from.model,
             });
@@ -197,8 +201,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const createSession = useCallback(
         async (title?: string): Promise<ChatSession> => {
             abortRef.current?.();
+            const chatConfig = { ...config, workflowId: null };
+            setConfig(chatConfig);
             try {
-                const session = await openSession(title, config);
+                const session = await openSession(title, chatConfig);
                 setMessages([]);
                 setStreamingContent('');
                 return session;

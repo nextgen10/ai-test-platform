@@ -63,6 +63,17 @@ export interface SendMessagePayload {
 
 // ------------------------------------------------------------------- helpers
 
+async function errorFromResponse(response: Response, fallback: string): Promise<Error> {
+    let detail = fallback;
+    try {
+        const body = await response.json();
+        if (typeof body?.detail === 'string') detail = body.detail;
+    } catch {
+        /* non-JSON error body */
+    }
+    return new Error(detail);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
         credentials: 'same-origin',
@@ -71,12 +82,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
 
     if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-            const body = await response.json();
-            if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : detail;
-        } catch { /* non-JSON error body */ }
-        throw new Error(detail);
+        throw await errorFromResponse(response, `Request failed (${response.status})`);
     }
     return response.json() as Promise<T>;
 }
@@ -129,14 +135,12 @@ export const chatApi = {
                 },
             );
 
-    if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-            const body = await response.json();
-            if (body?.detail) detail = typeof body.detail === 'string' ? body.detail : detail;
-        } catch { /* non-JSON error body */ }
-        throw new Error(detail);
-    }
+            if (!response.ok) {
+                throw await errorFromResponse(
+                    response,
+                    `Request failed (${response.status})`,
+                );
+            }
 
             const reader = response.body?.getReader();
             if (!reader) throw new Error('No response body');
@@ -192,7 +196,10 @@ export const chatApi = {
             });
 
             if (!response.ok) {
-                throw new Error(`Execution failed (${response.status})`);
+                throw await errorFromResponse(
+                    response,
+                    `Execution failed (${response.status})`,
+                );
             }
 
             const reader = response.body?.getReader();
