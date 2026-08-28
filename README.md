@@ -362,3 +362,25 @@ ai-test-platform/
 ├── start.sh                   # Instant native runner for local development
 └── .env.example               # Template environment configuration
 ```
+
+---
+
+## 9. Team & Architecture
+
+This AI Test Platform is a multi-agent system built for the enterprise. 
+
+### 👑 Executive Leadership & Strategy
+*   **Surendran Madhavan (Cognizant)** – *Executive Sponsor / Program Director, AI Platforms*
+    Provides the strategic vision, executive oversight, and secures the budget for the initiative to ensure alignment with broader organizational goals.
+
+### 🧭 Technical Leadership & Delivery
+*   **Inderpalsingh Gill (Cognizant)** – *Principal Engineering Manager / Delivery Head*
+    Oversees the delivery lifecycle, removes blockers, and ensures the platform meets enterprise compliance and delivery standards.
+
+### 🎯 Product & Quality Strategy
+*   **Karthik Kolli (Cognizant)** – *Lead AI Product Owner / QA Manager*
+    Drives the functional requirements, sets testing standards, and prioritizes the roadmap for new Agentic workflows to ensure generated tests meet QA benchmarks.
+
+### 🧠 Core Architecture & System Design
+*   **Aniket Kalyan Marwadi (Cognizant)** – *Lead AI Architect & Principal Creator*
+    **The mastermind, architect, and sole developer of the entire solution.** Responsible for the end-to-end technical execution—from designing the scalable backend orchestrators and integrating the Model Context Protocol (MCP), to engineering the AI agents and building the interactive React frontend that powers the platform.
