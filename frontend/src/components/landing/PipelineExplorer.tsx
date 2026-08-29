@@ -19,15 +19,16 @@ import {
   Check,
   ShieldCheck,
   RotateCcw,
-  Sparkles,
   ArrowRight,
   UserCheck,
 } from 'lucide-react';
+import SectionHeader from './SectionHeader';
+import { AccentTag } from './Tags';
 
-const AMBER = '#D9822B';
-const GREEN = '#1F8A70';
-const RED = '#D00000';
-const BLUE = '#2D6CDF';
+const AMBER = '#af8626';
+const GREEN = '#469a6c';
+const RED = '#e60000';
+const BLUE = '#00759e';
 
 export interface StageInfo {
   id: string;
@@ -220,7 +221,7 @@ export const STAGES_DATA: StageInfo[] = [
   }
 ];
 
-export default function PipelineExplorer() {
+export default function PipelineExplorer({ index }: { index?: string }) {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const [selectedId, setSelectedId] = useState<string>('analyst');
@@ -238,72 +239,39 @@ export default function PipelineExplorer() {
   return (
     <Box sx={{ width: '100%' }}>
       {/* Top control bar */}
-      <Box sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 2,
-        mb: 4,
-      }}>
-        <Box>
-          <Box sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 1.75,
-            py: 0.5,
-            mb: 1,
-            borderRadius: 4,
-            bgcolor: alpha(RED, isLight ? 0.08 : 0.15),
-            border: `1px solid ${alpha(RED, 0.25)}`,
-          }}>
-            <Sparkles size={14} color={RED} />
-            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.08em', fontSize: '0.72rem' }}>
-              INTERACTIVE RUN ARCHITECTURE
-            </Typography>
+      <SectionHeader
+        index={index}
+        eyebrow="Inside this custom UI"
+        title="The six-agent chain"
+        lede="Test Design is a workflow like any other. Click a stage to inspect the artifact it hands to the next agent."
+        action={
+          <Box sx={{ display: 'flex' }}>
+            <Button
+              variant={!reprocessMode ? 'contained' : 'outlined'}
+              color={!reprocessMode ? 'primary' : 'inherit'}
+              onClick={() => {
+                setReprocessMode(false);
+                if (selectedId === 'gapcloser') setSelectedId('analyst');
+              }}
+              sx={{ borderRadius: '2px 0 0 2px' }}
+            >
+              Standard run
+            </Button>
+            <Button
+              variant={reprocessMode ? 'contained' : 'outlined'}
+              color={reprocessMode ? 'primary' : 'inherit'}
+              onClick={() => {
+                setReprocessMode(true);
+                setSelectedId('gapcloser');
+              }}
+              startIcon={<RotateCcw size={14} />}
+              sx={{ borderRadius: '0 2px 2px 0', ml: '-1px' }}
+            >
+              Reprocess loop
+            </Button>
           </Box>
-          <Typography variant="h3" sx={{ fontWeight: 800, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
-            The 6-Agent Autonomous Chain
-          </Typography>
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Button
-            size="small"
-            variant={!reprocessMode ? "contained" : "outlined"}
-            color="primary"
-            onClick={() => {
-              setReprocessMode(false);
-              if (selectedId === 'gapcloser') setSelectedId('analyst');
-            }}
-            sx={{ fontWeight: 700, borderRadius: 2, px: 2, py: 0.75 }}
-          >
-            Standard Run Flow
-          </Button>
-          <Button
-            size="small"
-            variant={reprocessMode ? "contained" : "outlined"}
-            sx={{
-              fontWeight: 700,
-              borderRadius: 2,
-              px: 2,
-              py: 0.75,
-              borderColor: alpha(BLUE, 0.5),
-              color: reprocessMode ? '#fff' : BLUE,
-              bgcolor: reprocessMode ? BLUE : 'transparent',
-              '&:hover': { bgcolor: reprocessMode ? alpha(BLUE, 0.85) : alpha(BLUE, 0.08) }
-            }}
-            onClick={() => {
-              setReprocessMode(true);
-              setSelectedId('gapcloser');
-            }}
-            startIcon={<RotateCcw size={14} />}
-          >
-            Smart Reprocess Loop
-          </Button>
-        </Box>
-      </Box>
+        }
+      />
 
       {/* Main interactive split view */}
       <Box sx={{
@@ -315,26 +283,24 @@ export default function PipelineExplorer() {
         {/* Left column: Pipeline visual node graph */}
         <Paper elevation={0} sx={{
           p: { xs: 2.5, md: 3 },
-          borderRadius: 3.5,
+          borderRadius: 2,
           border: '1px solid',
           borderColor: 'divider',
           bgcolor: 'background.paper',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          boxShadow: isLight
-            ? '0 12px 30px -10px rgba(0,0,0,0.06)'
-            : '0 12px 30px -10px rgba(0,0,0,0.5)',
+          boxShadow: 'none',
         }}>
           <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 800, letterSpacing: '0.05em', fontSize: '0.74rem' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500, letterSpacing: '0.05em', fontSize: '0.74rem' }}>
               CLICK ANY NODE TO INSPECT LIVE ARTIFACTS
             </Typography>
             <Chip
               size="small"
               label={reprocessMode ? "Reprocess Mode Active" : "Full Execution Chain"}
               color={reprocessMode ? "info" : "default"}
-              sx={{ fontWeight: 700, fontSize: '0.72rem' }}
+              sx={{ fontWeight: 500, fontSize: '0.72rem' }}
             />
           </Box>
 
@@ -354,17 +320,14 @@ export default function PipelineExplorer() {
                     onClick={() => setSelectedId(stage.id)}
                     sx={{
                       p: 1.75,
-                      borderRadius: 2.5,
+                      borderRadius: 2,
                       border: '1.5px solid',
                       borderColor: isSelected ? stage.accent : (isDimmed ? 'transparent' : 'divider'),
-                      bgcolor: isSelected
-                        ? alpha(stage.accent, isLight ? 0.08 : 0.16)
-                        : (isDimmed ? (isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)') : 'background.paper'),
+                      bgcolor: isSelected ? alpha(stage.accent, 0.04) : 'background.paper',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       position: 'relative',
                       opacity: isDimmed ? 0.55 : 1,
-                      boxShadow: isSelected ? `0 4px 18px ${alpha(stage.accent, 0.22)}` : 'none',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -379,7 +342,7 @@ export default function PipelineExplorer() {
                           justifyContent: 'center',
                           bgcolor: alpha(stage.accent, isSelected ? 1 : 0.15),
                           color: isSelected ? '#FFFFFF' : stage.accent,
-                          fontWeight: 800,
+                          fontWeight: 500,
                           fontSize: '0.82rem'
                         }}>
                           {stage.id === 'approval' ? (
@@ -394,7 +357,7 @@ export default function PipelineExplorer() {
                         {/* Title & summary */}
                         <Box>
                           <Typography variant="subtitle2" sx={{
-                            fontWeight: isSelected ? 800 : 700,
+                            fontWeight: isSelected ? 500 : 400,
                             color: isSelected ? (isLight ? 'text.primary' : '#fff') : 'text.primary',
                             display: 'flex',
                             alignItems: 'center',
@@ -406,7 +369,7 @@ export default function PipelineExplorer() {
                               <Chip
                                 label="Loop"
                                 size="small"
-                                sx={{ height: 18, fontSize: '0.65rem', bgcolor: alpha(BLUE, 0.15), color: BLUE, fontWeight: 800 }}
+                                sx={{ height: 18, fontSize: '0.65rem', bgcolor: 'transparent', color: BLUE, fontWeight: 500, border: `1px solid ${BLUE}` }}
                               />
                             )}
                           </Typography>
@@ -424,11 +387,11 @@ export default function PipelineExplorer() {
                             fontFamily: 'ui-monospace, monospace',
                             fontSize: '0.72rem',
                             color: isSelected ? stage.accent : 'text.secondary',
-                            fontWeight: 700,
+                            fontWeight: 500,
                             bgcolor: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
                             px: 1,
                             py: 0.35,
-                            borderRadius: 1
+                            borderRadius: 2
                           }}
                         >
                           → {stage.outputArtifact}
@@ -451,10 +414,10 @@ export default function PipelineExplorer() {
                       px: 2,
                       py: 0.5
                     }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 700 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', fontWeight: 500 }}>
                         ↓ Final Verified Suite
                       </Typography>
-                      <Typography variant="caption" sx={{ color: alpha(BLUE, 0.9), fontSize: '0.7rem', fontWeight: 700 }}>
+                      <Typography variant="caption" sx={{ color: alpha(BLUE, 0.9), fontSize: '0.7rem', fontWeight: 500 }}>
                         ↺ In-Place Reprocess Target
                       </Typography>
                     </Box>
@@ -468,8 +431,8 @@ export default function PipelineExplorer() {
         {/* Right column: Live Artifact Inspector & Guardrail Details */}
         <Paper elevation={0} sx={{
           p: { xs: 2.5, md: 3.5 },
-          borderRadius: 3.5,
-          border: '1.5px solid',
+          borderRadius: 2,
+          border: '1px solid',
           borderColor: selectedStage.accent,
           bgcolor: 'background.paper',
           display: 'flex',
@@ -477,9 +440,7 @@ export default function PipelineExplorer() {
           justifyContent: 'space-between',
           position: 'relative',
           overflow: 'hidden',
-          boxShadow: isLight
-            ? `0 14px 36px ${alpha(selectedStage.accent, 0.12)}`
-            : `0 14px 36px ${alpha(selectedStage.accent, 0.25)}`,
+          boxShadow: 'none',
         }}>
           {/* Top accent banner */}
           <Box sx={{
@@ -500,17 +461,17 @@ export default function PipelineExplorer() {
                     label={`Agent Step ${selectedStage.number} of 7`}
                     size="small"
                     sx={{
-                      fontWeight: 800,
+                      fontWeight: 500,
                       fontSize: '0.7rem',
                       bgcolor: alpha(selectedStage.accent, 0.15),
                       color: selectedStage.accent
                     }}
                   />
-                  <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', color: 'text.secondary', fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ fontFamily: 'ui-monospace, monospace', color: 'text.secondary', fontWeight: 500 }}>
                     {selectedStage.outputArtifact}
                   </Typography>
                 </Box>
-                <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                <Typography variant="h5" sx={{ fontWeight: 500 }}>
                   {selectedStage.name}
                 </Typography>
               </Box>
@@ -528,7 +489,7 @@ export default function PipelineExplorer() {
 
             {/* Guardrails check */}
             <Box sx={{ mb: 2.5 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.85rem' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 500, mb: 1.25, display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.85rem' }}>
                 <ShieldCheck size={17} color={selectedStage.accent} />
                 Active Guardrails & Verification Rules
               </Typography>
@@ -550,25 +511,25 @@ export default function PipelineExplorer() {
                 justifyContent: 'space-between',
                 px: 2,
                 py: 1,
-                bgcolor: (t) => t.palette.mode === 'light' ? '#2A303C' : '#0B0F15',
+                bgcolor: (t) => t.palette.mode === 'light' ? '#2a2a2a' : '#1c1c1c',
                 borderTopLeftRadius: 10,
                 borderTopRightRadius: 10,
                 border: '1px solid',
-                borderColor: (t) => t.palette.mode === 'light' ? '#3B4354' : '#1C2333',
+                borderColor: (t) => t.palette.mode === 'light' ? '#5a5d5c' : '#1c1c1c',
                 borderBottom: 'none',
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#FF5F56' }} />
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#FFBD2E' }} />
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#27C93F' }} />
-                  <Typography variant="caption" sx={{ ml: 1, fontWeight: 700, color: '#A0AEC0', fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#da0000' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#e4a911' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#469a6c' }} />
+                  <Typography variant="caption" sx={{ ml: 1, fontWeight: 500, color: '#b8b3a2', fontSize: '0.72rem', fontFamily: 'monospace' }}>
                     {selectedStage.outputArtifact}
                   </Typography>
                 </Box>
                 <Chip
                   label="SCHEMA DRAFT-07 VALID"
                   size="small"
-                  sx={{ height: 18, fontSize: '0.62rem', fontWeight: 800, bgcolor: alpha(GREEN, 0.2), color: '#34D399' }}
+                  sx={{ height: 18, fontSize: '0.62rem', fontWeight: 500, bgcolor: 'transparent', color: GREEN, border: `1px solid ${GREEN}` }}
                 />
               </Box>
 
@@ -576,15 +537,15 @@ export default function PipelineExplorer() {
                 p: 2,
                 borderBottomLeftRadius: 10,
                 borderBottomRightRadius: 10,
-                bgcolor: (t) => t.palette.mode === 'light' ? '#1E2229' : '#0D1117',
-                color: '#E6EDF3',
+                bgcolor: (t) => t.palette.mode === 'light' ? '#2a2a2a' : '#1c1c1c',
+                color: '#f9f9f7',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 fontSize: '0.78rem',
                 lineHeight: 1.5,
                 maxHeight: 220,
                 overflowY: 'auto',
                 border: '1px solid',
-                borderColor: (t) => t.palette.mode === 'light' ? '#3B4354' : '#1C2333',
+                borderColor: (t) => t.palette.mode === 'light' ? '#5a5d5c' : '#1c1c1c',
               }}>
                 <pre style={{ margin: 0 }}>
                   {JSON.stringify(selectedStage.sampleJson, null, 2)}
@@ -606,7 +567,7 @@ export default function PipelineExplorer() {
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
               Input: <strong>{selectedStage.inputArtifact}</strong>
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: selectedStage.accent, fontWeight: 800, fontSize: '0.78rem' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: selectedStage.accent, fontWeight: 500, fontSize: '0.78rem' }}>
               <span>Deterministic Transition</span>
               <ArrowRight size={14} />
             </Box>

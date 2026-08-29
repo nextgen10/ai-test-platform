@@ -10,6 +10,7 @@ interface PageHeaderProps {
     inlineSubtitle?: boolean;
 }
 
+/** Product page title: Light Frutiger, hierarchy from size — the UBS page voice. */
 export default function PageHeader({ title, subtitle, actions, inlineSubtitle }: PageHeaderProps) {
     return (
         <Box
@@ -19,27 +20,30 @@ export default function PageHeader({ title, subtitle, actions, inlineSubtitle }:
                 justifyContent: 'space-between',
                 flexDirection: { xs: 'column', sm: 'row' },
                 gap: 1.5,
-                mb: 2.5,
+                mb: 3,
+                pb: 2.5,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
             }}
         >
             {inlineSubtitle ? (
                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Typography variant="h5" fontWeight={700}>
+                    <Typography variant="h3" sx={{ fontWeight: 300, fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
                         {title}
                     </Typography>
                     {subtitle && (
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                            &bull; {subtitle}
+                        <Typography variant="body2" color="text.secondary">
+                            {subtitle}
                         </Typography>
                     )}
                 </Box>
             ) : (
                 <Box>
-                    <Typography variant="h5" fontWeight={700}>
+                    <Typography variant="h3" sx={{ fontWeight: 300, fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
                         {title}
                     </Typography>
                     {subtitle && (
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 720 }}>
                             {subtitle}
                         </Typography>
                     )}

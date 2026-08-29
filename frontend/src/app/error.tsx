@@ -28,9 +28,9 @@ export default function GlobalError({
                     gap: 3,
                 }}
             >
-                <AlertTriangle size={64} color="#D00000" />
+                <AlertTriangle size={64} color="#e60000" />
                 <Box>
-                    <Typography variant="h4" fontWeight={800} gutterBottom>
+                    <Typography variant="h4" fontWeight={500} gutterBottom>
                         Something went wrong!
                     </Typography>
                     <Typography color="text.secondary" sx={{ maxWidth: 400, mx: 'auto', mb: 3 }}>
@@ -45,7 +45,7 @@ export default function GlobalError({
                     color="primary"
                     startIcon={<RefreshCw size={18} />}
                     onClick={() => reset()}
-                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700, px: 3, py: 1 }}
+                    sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500, px: 3, py: 1 }}
                 >
                     Try Again
                 </Button>

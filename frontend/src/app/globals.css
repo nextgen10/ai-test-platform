@@ -1,109 +1,284 @@
 @import "tailwindcss";
 
-/* Design system tokens - MUI theme controls body via CssBaseline */
-:root {
-  --scrollbar-track: #f5f7fa;
-  --scrollbar-thumb: #c9d1dc;
-  --scrollbar-thumb-hover: #8c96a5;
+/* ==========================================================================
+   UBS Design System — global stylesheet
+   Token values mirror src/theme/index.ts, which is a port of the UBS "FIT"
+   design system. Keep the two in step.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Frutiger for UBS.
+
+   The face is licensed, so it is not vendored here. Drop the licensed
+   FrutigerforUBSWeb-{Lt,Md}.woff2 files into /public/fonts/ and these rules
+   pick them up; without them the browser falls through to Arial/Helvetica,
+   which is UBS's own declared fallback. Note the weight ranges: UBS maps
+   300–499 to Light and 500 to Medium, so there is deliberately no bold face.
+   -------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Frutiger";
+  src: url("/fonts/FrutigerforUBSWeb-Lt.woff2") format("woff2"),
+       url("/fonts/FrutigerforUBSWeb-Lt.woff") format("woff");
+  font-weight: 300 499;
+  font-style: normal;
+  font-display: swap;
 }
 
-/* Dark mode scrollbar */
+@font-face {
+  font-family: "Frutiger";
+  src: url("/fonts/FrutigerforUBSWeb-Md.woff2") format("woff2"),
+       url("/fonts/FrutigerforUBSWeb-Md.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --------------------------------------------------------------------------
+   Colour tokens — UBS FIT, light mode
+   -------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --ubs-font: "Frutiger", "Frutiger for UBS", "FrutigerforUBSWeb", Arial, Helvetica, sans-serif;
+  /* Retained alias: earlier code referenced --font-ubs-brand. */
+  --font-ubs-brand: var(--ubs-font);
+
+  /* Backgrounds */
+  --col-background-ui-10: #ffffff;
+  --col-background-ui-10-hovered: #f4f3ee;
+  --col-background-ui-20: #f9f9f7;
+  --col-background-ui-30: #f4f3ee;
+  --col-background-ui-40: #fbf9ee;
+  --col-background-ui-80: #404040;
+  --col-background-brand: #e60000;
+  --col-background-brand-hovered: #8a000a;
+  --col-background-primary: #1c1c1c;
+  --col-background-disabled: #cccabc;
+  --col-background-error: #da0000;
+  --col-background-warning: #e4a911;
+  --col-background-success: #cad67a;
+
+  /* Text */
+  --col-text-primary: #1c1c1c;
+  --col-text-subtle: #5a5d5c;
+  --col-text-readonly: #5a5d5c;
+  --col-text-disabled: #b8b3a2;
+  --col-text-inverted: #ffffff;
+  --col-text-highlight: #da0000;
+
+  /* Borders */
+  --col-border-primary: #1c1c1c;
+  --col-border-subtle: #5a5d5c;
+  --col-border-light: #8e8d83;
+  --col-border-illustrative: #cccabc;
+  --col-border-brand: #da0000;
+
+  /* Links & focus */
+  --col-link-text-brand: #da0000;
+  --col-link-text-brand-hovered: #8a000a;
+  --col-focus-ring: #0769a6;
+  --col-focus-gap: #ffffff;
+
+  /* Shape & motion */
+  --ubs-radius: 2px;
+  --ubs-easing: cubic-bezier(0.38, 0.19, 0.32, 0.95);
+  --ubs-duration: 0.2s;
+
+  /* Grid */
+  --ubs-grid-max-width: 1290px;
+
+  /* Scrollbar */
+  --scrollbar-track: var(--col-background-ui-30);
+  --scrollbar-thumb: #cccabc;
+  --scrollbar-thumb-hover: #8e8d83;
+}
+
+/* --------------------------------------------------------------------------
+   Colour tokens — UBS FIT, dark mode
+   -------------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --col-background-ui-10: #1c1c1c;
+  --col-background-ui-10-hovered: #2a2a2a;
+  --col-background-ui-20: #2a2a2a;
+  --col-background-ui-30: #2a2a2a;
+  --col-background-ui-40: #2a2a2a;
+  --col-background-ui-80: #cccabc;
+  --col-background-brand: #d83b31;
+  --col-background-brand-hovered: #ff8c70;
+  --col-background-primary: #f4f3ee;
+  --col-background-disabled: #5a5d5c;
+  --col-background-error: #e8696f;
+  --col-background-warning: #875f03;
+  --col-background-success: #cad67a;
+
+  --col-text-primary: #f9f9f7;
+  --col-text-subtle: #e0dfd7;
+  --col-text-readonly: #b8b3a2;
+  --col-text-disabled: #5a5d5c;
+  --col-text-inverted: #1c1c1c;
+  --col-text-highlight: #fe6f5d;
+
+  --col-border-primary: #f9f9f7;
+  --col-border-subtle: #e0dfd7;
+  --col-border-light: #b8b3a2;
+  --col-border-illustrative: #7a7870;
+  --col-border-brand: #d83b31;
+
+  --col-link-text-brand: #fe6f5d;
+  --col-link-text-brand-hovered: #ff8c70;
+  --col-focus-ring: #4ca5e1;
+  --col-focus-gap: #1c1c1c;
+
+  --scrollbar-track: #2a2a2a;
+  --scrollbar-thumb: #5a5d5c;
+  --scrollbar-thumb-hover: #7a7870;
+}
+
+/* Respect the OS preference until the app stamps an explicit choice. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --scrollbar-track: #161b22;
-    --scrollbar-thumb: #30363d;
-    --scrollbar-thumb-hover: #484f58;
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+
+    --col-background-ui-10: #1c1c1c;
+    --col-background-ui-10-hovered: #2a2a2a;
+    --col-background-ui-20: #2a2a2a;
+    --col-background-ui-30: #2a2a2a;
+    --col-background-ui-40: #2a2a2a;
+    --col-background-ui-80: #cccabc;
+    --col-background-brand: #d83b31;
+    --col-background-brand-hovered: #ff8c70;
+    --col-background-primary: #f4f3ee;
+    --col-background-disabled: #5a5d5c;
+    --col-background-error: #e8696f;
+
+    --col-text-primary: #f9f9f7;
+    --col-text-subtle: #e0dfd7;
+    --col-text-readonly: #b8b3a2;
+    --col-text-disabled: #5a5d5c;
+    --col-text-inverted: #1c1c1c;
+    --col-text-highlight: #fe6f5d;
+
+    --col-border-primary: #f9f9f7;
+    --col-border-subtle: #e0dfd7;
+    --col-border-light: #b8b3a2;
+    --col-border-illustrative: #7a7870;
+    --col-border-brand: #d83b31;
+
+    --col-link-text-brand: #fe6f5d;
+    --col-link-text-brand-hovered: #ff8c70;
+    --col-focus-ring: #4ca5e1;
+    --col-focus-gap: #1c1c1c;
+
+    --scrollbar-track: #2a2a2a;
+    --scrollbar-thumb: #5a5d5c;
+    --scrollbar-thumb-hover: #7a7870;
   }
 }
 
-/* Theme class override - when MUI theme mode is explicitly set */
-html[data-theme="dark"] {
-  --scrollbar-track: #161b22;
-  --scrollbar-thumb: #30363d;
-  --scrollbar-thumb-hover: #484f58;
-}
-
-html[data-theme="light"] {
-  --scrollbar-track: #f5f7fa;
-  --scrollbar-thumb: #c9d1dc;
-  --scrollbar-thumb-hover: #8c96a5;
-}
-
-html {
-  scrollbar-gutter: stable both-edges;
-}
-
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
 }
 
-/* UBS brand font */
-:root {
-  --font-ubs-brand: 'Audela', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+html {
+  scrollbar-gutter: stable both-edges;
 }
 
-/* Body: MUI CssBaseline sets background/color from theme. */
+/* MUI CssBaseline paints background/colour from the theme. */
 body {
-  font-family: 'Audela', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--ubs-font);
+  /* UBS type is Light by default; hierarchy comes from size, not weight. */
+  font-weight: 400;
   overflow-x: hidden;
   overflow-y: scroll;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* The UBS type system has no bold face — keep the browser from faking one. */
+strong,
+b {
+  font-weight: 500;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
+/* UBS focus is a blue ring with a clear gap, never the brand red. */
+:focus-visible {
+  outline: 2px solid var(--col-focus-ring);
+  outline-offset: 2px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 10px;
+a {
+  color: var(--col-link-text-brand);
+  text-underline-offset: 0.2em;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
+a:hover {
+  color: var(--col-link-text-brand-hovered);
 }
 
+/* --------------------------------------------------------------------------
+   Scrollbars
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar,
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
+::-webkit-scrollbar-track,
 .custom-scrollbar::-webkit-scrollbar-track {
   background: var(--scrollbar-track);
 }
 
+::-webkit-scrollbar-thumb,
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
-  border-radius: 4px;
+  border-radius: var(--ubs-radius);
 }
 
+::-webkit-scrollbar-thumb:hover,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
 
+/* --------------------------------------------------------------------------
+   Motion — UBS keeps it short and purposeful.
+   -------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--ubs-duration) var(--ubs-easing);
+}
+
 @keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(1.4); }
+}
 
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.5;
-    transform: scale(1.4);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-/* Allow text selection in inputs */
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
 input,
 textarea,
 select,
@@ -115,112 +290,7 @@ select,
   user-select: text !important;
 }
 
-/* Breathing Border Animation */
-@keyframes border-breathe {
-  0% {
-    border-color: rgba(249, 115, 22, 0.3);
-    box-shadow: 0 0 0 rgba(249, 115, 22, 0);
-  }
-
-  50% {
-    border-color: rgba(249, 115, 22, 1);
-    box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
-  }
-
-  100% {
-    border-color: rgba(249, 115, 22, 0.3);
-    box-shadow: 0 0 0 rgba(249, 115, 22, 0);
-  }
-}
-
-.animate-border-breathe {
-  animation: border-breathe 2s ease-in-out infinite;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-shimmer {
-  animation: shimmer 2.5s infinite;
-}
-
-@keyframes slideInUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideInLeft {
-  from {
-    transform: translateX(-20px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 10s linear infinite;
-}
-
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-strong {
-  background: rgba(22, 22, 30, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Ensure no injected border shadows or animated glows persist */
+/* Suppress injected border-glow hosts from dev tooling. */
 #preact-border-shadow-host,
 [id*="preact-border-shadow-host"],
 .animate-breathing {

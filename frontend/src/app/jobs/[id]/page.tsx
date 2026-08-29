@@ -191,21 +191,21 @@ function LiveJobSidePanel({
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'sticky', top: 80, minWidth: 0, width: '100%' }}>
             {/* 1. Job Status & Metrics Card */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Activity size={16} color={running ? theme.palette.primary.main : theme.palette.text.secondary} />
-                        <Typography variant="subtitle2" fontWeight={800} sx={{ fontSize: '0.9rem' }}>
+                        <Typography variant="subtitle2" fontWeight={500} sx={{ fontSize: '0.9rem' }}>
                             Job Status & Progress
                         </Typography>
                     </Box>
-                    <Chip label={job.status} color={STATUS_COLOR[job.status]} size="small" sx={{ fontWeight: 800, fontSize: '0.7rem' }} />
+                    <Chip label={job.status} color={STATUS_COLOR[job.status]} size="small" sx={{ fontWeight: 500, fontSize: '0.7rem' }} />
                 </Box>
 
                 <LinearProgress
                     variant={running && completedCount === 0 ? 'indeterminate' : 'determinate'}
                     value={(resolved / PHASES.length) * 100}
-                    sx={{ mb: 2, height: 6, borderRadius: 3 }}
+                    sx={{ mb: 2, height: 6, borderRadius: 2 }}
                 />
 
                 <Stack spacing={1.2} sx={{ mb: 2 }}>
@@ -242,7 +242,7 @@ function LiveJobSidePanel({
                                     sx={{
                                         flexGrow: 1,
                                         minWidth: 0,
-                                        fontWeight: state === 'running' ? 700 : 500,
+                                        fontWeight: state === 'running' ? 500 : 400,
                                         color: state === 'skipped' ? 'text.disabled' : state === 'pending' ? 'text.secondary' : 'text.primary',
                                         fontSize: '0.78rem',
                                         overflow: 'hidden',
@@ -280,23 +280,23 @@ function LiveJobSidePanel({
                 {/* Quick Meta Grid */}
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                     <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 700 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 500 }}>
                             Duration
                         </Typography>
-                        <Typography variant="body2" fontWeight={700} sx={{ mt: 0.25 }}>
+                        <Typography variant="body2" fontWeight={500} sx={{ mt: 0.25 }}>
                             {formatDuration(job.duration_ms)}
                         </Typography>
                     </Box>
                     <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 700 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 500 }}>
                             Test Cases
                         </Typography>
-                        <Typography variant="body2" fontWeight={700} sx={{ mt: 0.25 }}>
+                        <Typography variant="body2" fontWeight={500} sx={{ mt: 0.25 }}>
                             {job.summary?.total ?? '—'}
                         </Typography>
                     </Box>
                     <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 700 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 500 }}>
                             Started
                         </Typography>
                         <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.secondary', fontSize: '0.72rem' }}>
@@ -304,7 +304,7 @@ function LiveJobSidePanel({
                         </Typography>
                     </Box>
                     <Box>
-                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 700 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 500 }}>
                             Workflow
                         </Typography>
                         <Typography variant="caption" sx={{ display: 'block', mt: 0.25, color: 'text.secondary', fontSize: '0.72rem' }}>
@@ -320,7 +320,7 @@ function LiveJobSidePanel({
                     elevation={0}
                     sx={{
                         p: 2.5,
-                        borderRadius: 3,
+                        borderRadius: 2,
                         border: '1px solid',
                         borderColor: validation.valid ? 'divider' : 'error.main',
                         minWidth: 0,
@@ -330,7 +330,7 @@ function LiveJobSidePanel({
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <ShieldCheck size={16} color={validation.valid ? theme.palette.success.main : theme.palette.error.main} />
-                            <Typography variant="subtitle2" fontWeight={800} fontSize="0.88rem">
+                            <Typography variant="subtitle2" fontWeight={500} fontSize="0.88rem">
                                 Validation Gate
                             </Typography>
                         </Box>
@@ -338,19 +338,19 @@ function LiveJobSidePanel({
                             size="small"
                             label={validation.valid ? 'Passed all gates' : 'Failed'}
                             color={validation.valid ? 'success' : 'error'}
-                            sx={{ height: 22, fontSize: '0.68rem', fontWeight: 800 }}
+                            sx={{ height: 22, fontSize: '0.68rem', fontWeight: 500 }}
                         />
                     </Box>
 
                     {/* Errors list */}
                     {validation.errors && validation.errors.length > 0 && (
                         <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="error" fontWeight={800} sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
+                            <Typography variant="caption" color="error" fontWeight={500} sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
                                 FAILED CHECKS ({validation.errors.length})
                             </Typography>
                             {validation.errors.map((item, index) => (
-                                <Box key={index} sx={{ p: 1, mb: 0.75, borderRadius: 1.5, bgcolor: alpha(theme.palette.error.main, 0.08), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2) }}>
-                                    <Typography variant="caption" color="error" fontWeight={800} sx={{ display: 'block', fontSize: '0.72rem' }}>
+                                <Box key={index} sx={{ p: 1, mb: 0.75, borderRadius: 2, bgcolor: alpha(theme.palette.error.main, 0.08), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2) }}>
+                                    <Typography variant="caption" color="error" fontWeight={500} sx={{ display: 'block', fontSize: '0.72rem' }}>
                                         [{item.code}]
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.72rem', lineHeight: 1.35 }}>
@@ -364,12 +364,12 @@ function LiveJobSidePanel({
                     {/* Warnings list */}
                     {validation.warnings && validation.warnings.length > 0 && (
                         <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption" color="warning.main" fontWeight={800} sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
+                            <Typography variant="caption" color="warning.main" fontWeight={500} sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
                                 WARNINGS ({validation.warnings.length})
                             </Typography>
                             {validation.warnings.map((item, index) => (
-                                <Box key={index} sx={{ p: 1, mb: 0.75, borderRadius: 1.5, bgcolor: alpha(theme.palette.warning.main, 0.08), border: '1px solid', borderColor: alpha(theme.palette.warning.main, 0.2) }}>
-                                    <Typography variant="caption" color="warning.main" fontWeight={800} sx={{ display: 'block', fontSize: '0.72rem' }}>
+                                <Box key={index} sx={{ p: 1, mb: 0.75, borderRadius: 2, bgcolor: alpha(theme.palette.warning.main, 0.08), border: '1px solid', borderColor: alpha(theme.palette.warning.main, 0.2) }}>
+                                    <Typography variant="caption" color="warning.main" fontWeight={500} sx={{ display: 'block', fontSize: '0.72rem' }}>
                                         [{item.code}]
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.72rem', lineHeight: 1.35 }}>
@@ -391,8 +391,8 @@ function LiveJobSidePanel({
 
             {/* 3. Reproducibility & Provenance */}
             {(job.provenance || job.copilot_model || job.copilot_token_set) && (
-                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
-                    <Typography variant="subtitle2" fontWeight={700} fontSize="0.88rem" gutterBottom>
+                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
+                    <Typography variant="subtitle2" fontWeight={500} fontSize="0.88rem" gutterBottom>
                         Reproducibility & Provenance
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
@@ -414,7 +414,7 @@ function LiveJobSidePanel({
                                 color="warning"
                                 variant="outlined"
                                 label={`⚠️ Model Fallback: ${job.provenance.model_fallback.requested_model} ➔ ${job.provenance.model_fallback.effective_model}`}
-                                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700, borderColor: 'warning.main' }}
+                                sx={{ height: 22, fontSize: '0.7rem', fontWeight: 500, borderColor: 'warning.main' }}
                                 title={job.provenance.model_fallback.reason ?? 'Specified model not permitted on Copilot account; fell back to default model.'}
                             />
                         )}
@@ -430,17 +430,17 @@ function LiveJobSidePanel({
 
             {/* 4. Live Audit Trail Stream (Expanded View) */}
             {job.events && job.events.length > 0 && (
-                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
+                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                        <Typography variant="subtitle2" fontWeight={800} fontSize="0.92rem">
+                        <Typography variant="subtitle2" fontWeight={500} fontSize="0.92rem">
                             Audit Trail ({job.events.length})
                         </Typography>
-                        <Chip size="small" variant="outlined" label="Live Stream" color="info" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }} />
+                        <Chip size="small" variant="outlined" label="Live Stream" color="info" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 500 }} />
                     </Box>
                     <Box sx={{
                         p: 1.75,
-                        borderRadius: 2.5,
-                        bgcolor: isLight ? '#FAFBFC' : '#0D1117',
+                        borderRadius: 2,
+                        bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                         border: '1px solid',
                         borderColor: 'divider',
                         maxHeight: 520,
@@ -449,7 +449,7 @@ function LiveJobSidePanel({
                         {job.events.map((event, index) => (
                             <Box key={index} sx={{ py: 1.25, borderBottom: index < (job.events?.length ?? 0) - 1 ? '1px solid' : 'none', borderColor: 'divider' }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.35 }}>
-                                    <Typography variant="caption" sx={{ fontWeight: 800, fontSize: '0.8rem', color: 'primary.main' }}>
+                                    <Typography variant="caption" sx={{ fontWeight: 500, fontSize: '0.8rem', color: 'primary.main' }}>
                                         {event.event_type}
                                     </Typography>
                                     <Typography variant="caption" color="text.disabled" sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>
@@ -554,8 +554,8 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
                         transition: 'all 0.15s ease',
                     }}
                 >
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>TOTAL</Typography>
-                    <Typography variant="h5" fontWeight={700} sx={{ mt: 0.25 }}>{cases.length}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>TOTAL</Typography>
+                    <Typography variant="h5" fontWeight={500} sx={{ mt: 0.25 }}>{cases.length}</Typography>
                 </Paper>
                 {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
                     <Paper
@@ -573,10 +573,10 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
                             transition: 'all 0.15s ease',
                         }}
                     >
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
                             {label.toUpperCase()}
                         </Typography>
-                        <Typography variant="h5" fontWeight={700} color={byCategory[key] ? 'text.primary' : 'text.disabled'} sx={{ mt: 0.25 }}>
+                        <Typography variant="h5" fontWeight={500} color={byCategory[key] ? 'text.primary' : 'text.disabled'} sx={{ mt: 0.25 }}>
                             {byCategory[key] ?? 0}
                         </Typography>
                     </Paper>
@@ -585,7 +585,7 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
 
             {/* Action Bar with Excel Export Button */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight={800} color="text.secondary">
+                <Typography variant="subtitle2" fontWeight={500} color="text.secondary">
                     {selectedCategory ? `${CATEGORY_LABEL[selectedCategory]} Cases (${filteredCases.length})` : `All Test Cases (${cases.length})`}
                 </Typography>
                 <Button
@@ -594,23 +594,23 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
                     size="small"
                     startIcon={<FileSpreadsheet size={16} />}
                     onClick={() => exportTestCasesToExcel(jobId, suite)}
-                    sx={{ textTransform: 'none', fontWeight: 800, borderRadius: 2, px: 2, py: 0.75 }}
+                    sx={{ textTransform: 'none', fontWeight: 500, borderRadius: 2, px: 2, py: 0.75 }}
                 >
                     Export to Excel (.csv)
                 </Button>
             </Box>
 
             {/* Test Cases Table with Fixed Layout */}
-            <Paper elevation={0} sx={{ overflowX: 'auto', borderRadius: 2.5, border: '1px solid', borderColor: 'divider', width: '100%' }}>
+            <Paper elevation={0} sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid', borderColor: 'divider', width: '100%' }}>
                 <Table size="small" sx={{ width: '100%', tableLayout: 'fixed', minWidth: 680 }}>
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{ width: 44, p: 1 }} />
-                            <TableCell sx={{ width: 140, fontWeight: 700 }}>ID</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Title</TableCell>
-                            <TableCell sx={{ width: 125, fontWeight: 700 }}>Category</TableCell>
-                            <TableCell sx={{ width: 110, fontWeight: 700 }}>Priority</TableCell>
-                            <TableCell sx={{ width: 130, fontWeight: 700 }}>Requirement</TableCell>
+                            <TableCell sx={{ width: 140, fontWeight: 500 }}>ID</TableCell>
+                            <TableCell sx={{ fontWeight: 500 }}>Title</TableCell>
+                            <TableCell sx={{ width: 125, fontWeight: 500 }}>Category</TableCell>
+                            <TableCell sx={{ width: 110, fontWeight: 500 }}>Priority</TableCell>
+                            <TableCell sx={{ width: 130, fontWeight: 500 }}>Requirement</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -628,7 +628,7 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
                                                 {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                             </IconButton>
                                         </TableCell>
-                                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600 }}>
+                                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 500 }}>
                                             {testCase.id}
                                         </TableCell>
                                         <TableCell sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -655,7 +655,7 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
                                                 <Box sx={{ py: 2, px: 3, bgcolor: alpha(theme.palette.text.primary, 0.02) }}>
                                                     {testCase.preconditions && testCase.preconditions.length > 0 && (
                                                         <Box sx={{ mb: 1.5 }}>
-                                                            <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                                                            <Typography variant="caption" color="text.secondary" fontWeight={500}>
                                                                 PRECONDITIONS
                                                             </Typography>
                                                             <Box component="ul" sx={{ pl: 2.5, mt: 0.5, mb: 0 }}>
@@ -666,7 +666,7 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
                                                         </Box>
                                                     )}
 
-                                                    <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                                                    <Typography variant="caption" color="text.secondary" fontWeight={500}>
                                                         EXECUTION STEPS
                                                     </Typography>
                                                     <Box component="ol" sx={{ pl: 2.5, mt: 0.5, mb: 1.5 }}>
@@ -675,11 +675,11 @@ function ResultsTab({ suite, jobId }: { suite: TestSuite; jobId: string }) {
                                                         ))}
                                                     </Box>
 
-                                                    <Box sx={{ p: 1.25, borderRadius: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.06), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.2) }}>
-                                                        <Typography variant="caption" color="primary.main" fontWeight={800} sx={{ display: 'block', mb: 0.25 }}>
+                                                    <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: alpha(theme.palette.primary.main, 0.06), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.2) }}>
+                                                        <Typography variant="caption" color="primary.main" fontWeight={500} sx={{ display: 'block', mb: 0.25 }}>
                                                             EXPECTED OBSERVABLE RESULT
                                                         </Typography>
-                                                        <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                                                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.85rem' }}>
                                                             {testCase.expected_result}
                                                         </Typography>
                                                     </Box>
@@ -854,12 +854,12 @@ export default function JobDetailPage() {
                         size="small"
                         startIcon={<ChevronLeft size={16} />}
                         onClick={() => router.push('/jobs')}
-                        sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, px: 1.5, height: 36 }}
+                        sx={{ textTransform: 'none', fontWeight: 500, borderRadius: 2, px: 1.5, height: 36 }}
                     >
                         Back to jobs
                     </Button>
                     <Box sx={{ height: 20, width: '1px', bgcolor: 'divider', display: { xs: 'none', sm: 'block' } }} />
-                    <Typography variant="h5" fontWeight={800} sx={{ whiteSpace: 'nowrap' }}>
+                    <Typography variant="h5" fontWeight={500} sx={{ whiteSpace: 'nowrap' }}>
                         Job {job.id}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
@@ -874,7 +874,7 @@ export default function JobDetailPage() {
                         size="small"
                         startIcon={<RefreshCw size={15} />}
                         onClick={load}
-                        sx={{ textTransform: 'none', fontWeight: 600, height: 36, borderRadius: 2 }}
+                        sx={{ textTransform: 'none', fontWeight: 500, height: 36, borderRadius: 2 }}
                     >
                         Refresh
                     </Button>
@@ -892,7 +892,7 @@ export default function JobDetailPage() {
                                     setError(err instanceof Error ? err.message : 'Failed to cancel job');
                                 }
                             }}
-                            sx={{ textTransform: 'none', fontWeight: 600, height: 36, borderRadius: 2 }}
+                            sx={{ textTransform: 'none', fontWeight: 500, height: 36, borderRadius: 2 }}
                         >
                             Cancel
                         </Button>
@@ -919,7 +919,7 @@ export default function JobDetailPage() {
             }}>
                 {/* LEFT MAIN PANELS */}
                 <Box sx={{ minWidth: 0, width: '100%' }}>
-                    <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 2.5, overflow: 'hidden' }}>
+                    <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 2.5, overflow: 'hidden' }}>
                         <Tabs
                             value={availableTabs.findIndex(t => t.key === tabKey) !== -1 ? tabKey : false}
                             onChange={(_, value) => setTabKey(value)}
@@ -928,7 +928,7 @@ export default function JobDetailPage() {
                             sx={{
                                 px: 2,
                                 minHeight: 50,
-                                '& .MuiTab-root': { fontWeight: 700, fontSize: '0.88rem', textTransform: 'none', minHeight: 50 },
+                                '& .MuiTab-root': { fontWeight: 500, fontSize: '0.88rem', textTransform: 'none', minHeight: 50 },
                             }}
                         >
                             {availableTabs.map((t) => (
@@ -958,12 +958,12 @@ export default function JobDetailPage() {
                     )}
 
                     {tabKey === 'result_summary' && job.summary && (
-                        <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                            <Typography variant="h6" fontWeight={800} mb={2}>Result Summary</Typography>
+                        <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="h6" fontWeight={500} mb={2}>Result Summary</Typography>
                             <Box sx={{ display: 'grid', gap: 2 }}>
                                 {Object.entries(job.summary).map(([k, v]) => (
                                     <Box key={k}>
-                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 700 }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', fontWeight: 500 }}>
                                             {k.replace(/_/g, ' ')}
                                         </Typography>
                                         <Typography variant="body2" fontWeight={500}>
@@ -980,10 +980,10 @@ export default function JobDetailPage() {
                             elevation={0}
                             sx={{
                                 p: 2.5,
-                                borderRadius: 3,
+                                borderRadius: 2,
                                 border: '1px solid',
                                 borderColor: 'divider',
-                                bgcolor: theme.palette.mode === 'dark' ? '#0D1117' : '#1C1F24',
+                                bgcolor: theme.palette.mode === 'dark' ? '#1c1c1c' : '#1c1c1c',
                                 maxHeight: 560,
                                 overflow: 'auto',
                                 width: '100%',
@@ -997,7 +997,7 @@ export default function JobDetailPage() {
                                     m: 0,
                                     fontFamily: 'monospace',
                                     fontSize: '0.8rem',
-                                    color: '#E6EDF3',
+                                    color: '#f9f9f7',
                                     whiteSpace: 'pre-wrap',
                                     wordBreak: 'break-word',
                                 }}
@@ -1008,13 +1008,13 @@ export default function JobDetailPage() {
                     )}
 
                     {tabKey === 'artifacts' && (
-                        <Paper elevation={0} sx={{ overflowX: 'auto', borderRadius: 3, border: '1px solid', borderColor: 'divider', width: '100%', minWidth: 0 }}>
+                        <Paper elevation={0} sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid', borderColor: 'divider', width: '100%', minWidth: 0 }}>
                             <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 700 }}>Artifact Path</TableCell>
-                                        <TableCell align="right" sx={{ width: 120, fontWeight: 700 }}>Size</TableCell>
-                                        <TableCell align="right" sx={{ width: 100, fontWeight: 700 }}>Download</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Artifact Path</TableCell>
+                                        <TableCell align="right" sx={{ width: 120, fontWeight: 500 }}>Size</TableCell>
+                                        <TableCell align="right" sx={{ width: 100, fontWeight: 500 }}>Download</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>

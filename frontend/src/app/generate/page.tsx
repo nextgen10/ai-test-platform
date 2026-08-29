@@ -20,10 +20,10 @@ import {
 import { api, type ModelOption } from '@/lib/api';
 import { getSavedSettings, getSessionGithubToken } from '@/lib/settings';
 
-const RED = '#D00000';
-const GREEN = '#1F8A70';
+const RED = '#e60000';
+const GREEN = '#469a6c';
 /** Banner colour for an OCR result the backend could not really extract. */
-const AMBER = '#D9822B';
+const AMBER = '#af8626';
 
 const SAMPLES = [
     {
@@ -104,12 +104,12 @@ function FormattedSpecPreview({ content }: { content: string }) {
         if (tableHeaders.length > 0 || tableRows.length > 0) {
             elements.push(
                 <Box key={`table-${tableKey++}`} sx={{ my: 2, overflowX: 'auto' }}>
-                    <Table size="small" sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}>
+                    <Table size="small" sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
                         {tableHeaders.length > 0 && (
-                            <TableHead sx={{ bgcolor: isLight ? '#F1F5F9' : '#1A202C' }}>
+                            <TableHead sx={{ bgcolor: isLight ? '#f4f3ee' : '#1c1c1c' }}>
                                 <TableRow>
                                     {tableHeaders.map((h, i) => (
-                                        <TableCell key={i} sx={{ fontWeight: 700, fontSize: '0.8rem', py: 1 }}>
+                                        <TableCell key={i} sx={{ fontWeight: 500, fontSize: '0.8rem', py: 1 }}>
                                             {h.trim()}
                                         </TableCell>
                                     ))}
@@ -118,7 +118,7 @@ function FormattedSpecPreview({ content }: { content: string }) {
                         )}
                         <TableBody>
                             {tableRows.map((row, rIdx) => (
-                                <TableRow key={rIdx} sx={{ '&:nth-of-type(even)': { bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.02)' } }}>
+                                <TableRow key={rIdx} sx={{ '&:nth-of-type(even)': { bgcolor: isLight ? '#f9f9f7' : 'rgba(255,255,255,0.02)' } }}>
                                     {row.map((cell, cIdx) => (
                                         <TableCell key={cIdx} sx={{ fontSize: '0.8rem', py: 0.8 }}>
                                             {cell.trim()}
@@ -181,19 +181,19 @@ function FormattedSpecPreview({ content }: { content: string }) {
         // Headings
         if (trimmed.startsWith('# ')) {
             elements.push(
-                <Typography key={idx} variant="h6" fontWeight={800} sx={{ color: RED, mt: 2, mb: 1, letterSpacing: '-0.01em' }}>
+                <Typography key={idx} variant="h6" fontWeight={500} sx={{ color: RED, mt: 2, mb: 1, letterSpacing: 0 }}>
                     {trimmed.replace('# ', '')}
                 </Typography>
             );
         } else if (trimmed.startsWith('## ')) {
             elements.push(
-                <Typography key={idx} variant="subtitle1" fontWeight={700} sx={{ color: isLight ? '#0F172A' : '#F1F5F9', mt: 2, mb: 0.75, borderBottom: '1px solid', borderColor: 'divider', pb: 0.5 }}>
+                <Typography key={idx} variant="subtitle1" fontWeight={500} sx={{ color: isLight ? '#1c1c1c' : '#f4f3ee', mt: 2, mb: 0.75, borderBottom: '1px solid', borderColor: 'divider', pb: 0.5 }}>
                     {trimmed.replace('## ', '')}
                 </Typography>
             );
         } else if (trimmed.startsWith('### ')) {
             elements.push(
-                <Typography key={idx} variant="subtitle2" fontWeight={700} sx={{ color: 'text.secondary', mt: 1.5, mb: 0.5 }}>
+                <Typography key={idx} variant="subtitle2" fontWeight={500} sx={{ color: 'text.secondary', mt: 1.5, mb: 0.5 }}>
                     {trimmed.replace('### ', '')}
                 </Typography>
             );
@@ -215,7 +215,7 @@ function FormattedSpecPreview({ content }: { content: string }) {
             const itemText = match ? match[2] : trimmed;
             elements.push(
                 <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, my: 0.5, pl: 1 }}>
-                    <Typography variant="caption" fontWeight={800} sx={{ color: RED, minWidth: 16 }}>
+                    <Typography variant="caption" fontWeight={500} sx={{ color: RED, minWidth: 16 }}>
                         {num}.
                     </Typography>
                     <Typography variant="body2" sx={{ fontSize: '0.86rem', lineHeight: 1.6 }}>
@@ -249,7 +249,7 @@ function renderBoldText(text: string): React.ReactNode {
     return parts.map((part, idx) => {
         if (part.startsWith('**') && part.endsWith('**')) {
             return (
-                <strong key={idx} style={{ fontWeight: 700 }}>
+                <strong key={idx} style={{ fontWeight: 500 }}>
                     {part.slice(2, -2)}
                 </strong>
             );
@@ -452,11 +452,11 @@ export default function GeneratePage() {
             {/* Studio Compact Header */}
             <Box sx={{ mb: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, flexShrink: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <Box sx={{ p: 0.8, borderRadius: 1.5, bgcolor: RED, color: '#FFFFFF', display: 'flex' }}>
+                    <Box sx={{ p: 0.8, borderRadius: 2, bgcolor: RED, color: '#FFFFFF', display: 'flex' }}>
                         <Sparkles size={18} />
                     </Box>
                     <Box>
-                        <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.02em', fontSize: '1.25rem', lineHeight: 1.2 }}>
+                        <Typography variant="h5" fontWeight={500} sx={{ letterSpacing: 0, fontSize: '1.25rem', lineHeight: 1.2 }}>
                             Generate Test Cases
                         </Typography>
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.76rem' }}>
@@ -467,7 +467,7 @@ export default function GeneratePage() {
 
                 {/* Sample Template Buttons */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mr: 0.25, fontSize: '0.7rem' }}>
+                    <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mr: 0.25, fontSize: '0.7rem' }}>
                         Prefill:
                     </Typography>
                     {SAMPLES.map((s) => (
@@ -478,10 +478,10 @@ export default function GeneratePage() {
                             clickable
                             onClick={() => { setRequirement(s.content); setOcrMeta(null); setViewMode('editor'); }}
                             sx={{
-                                fontWeight: 600,
+                                fontWeight: 500,
                                 fontSize: '0.72rem',
                                 height: 26,
-                                borderRadius: 1.5,
+                                borderRadius: 2,
                                 bgcolor: isLight ? '#FFFFFF' : 'rgba(255,255,255,0.06)',
                                 border: '1px solid',
                                 borderColor: 'divider',
@@ -515,18 +515,18 @@ export default function GeneratePage() {
                     }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Box sx={{ p: 0.6, borderRadius: 1, bgcolor: bannerColor, color: '#FFFFFF', display: 'flex' }}>
+                        <Box sx={{ p: 0.6, borderRadius: 2, bgcolor: bannerColor, color: '#FFFFFF', display: 'flex' }}>
                             {ocrMeta.isFallback ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
                         </Box>
                         <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                <Typography variant="subtitle2" fontWeight={800} sx={{ fontSize: '0.82rem', color: bannerColor }}>
+                                <Typography variant="subtitle2" fontWeight={500} sx={{ fontSize: '0.82rem', color: bannerColor }}>
                                     {ocrMeta.isFallback ? 'OCR Extraction Unavailable — Placeholder Shown' : 'Document OCR Extracted'}
                                 </Typography>
                                 <Chip
                                     size="small"
                                     label={ocrMeta.filename}
-                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 600, bgcolor: alpha(bannerColor, 0.12), color: bannerColor }}
+                                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 500, bgcolor: alpha(bannerColor, 0.12), color: bannerColor }}
                                 />
                                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.74rem' }}>
                                     {ocrMeta.isFallback
@@ -547,8 +547,8 @@ export default function GeneratePage() {
                                 sx={{
                                     height: 26,
                                     fontSize: '0.72rem',
-                                    fontWeight: 700,
-                                    borderRadius: 1.5,
+                                    fontWeight: 500,
+                                    borderRadius: 2,
                                     borderColor: alpha(bannerColor, 0.4),
                                     color: bannerColor,
                                     textTransform: 'none',
@@ -581,13 +581,11 @@ export default function GeneratePage() {
                     flexGrow: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    borderRadius: 3,
-                    border: '1.5px solid',
+                    borderRadius: 2,
+                    border: '1px solid',
                     borderColor: isDragOver ? RED : 'divider',
-                    bgcolor: isLight ? '#FFFFFF' : '#141820',
-                    boxShadow: isLight
-                        ? '0 8px 24px -6px rgba(0,0,0,0.05)'
-                        : '0 8px 24px -6px rgba(0,0,0,0.4)',
+                    bgcolor: isLight ? '#FFFFFF' : '#1c1c1c',
+                    boxShadow: 'none',
                     overflow: 'hidden',
                     transition: 'border-color 0.2s ease',
                     minHeight: { xs: 380, md: 0 },
@@ -600,7 +598,7 @@ export default function GeneratePage() {
                         px: 2.5,
                         borderBottom: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: isLight ? '#FAFBFC' : '#10141B',
+                        bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -608,7 +606,7 @@ export default function GeneratePage() {
                     }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             Business Requirements & Acceptance Criteria
                         </Typography>
 
@@ -624,7 +622,7 @@ export default function GeneratePage() {
                                     px: 1.2,
                                     py: 0.2,
                                     fontSize: '0.72rem',
-                                    fontWeight: 700,
+                                    fontWeight: 500,
                                     textTransform: 'none',
                                     border: '1px solid',
                                     borderColor: 'divider',
@@ -669,7 +667,7 @@ export default function GeneratePage() {
                                 sx={{
                                     height: 28,
                                     fontSize: '0.72rem',
-                                    fontWeight: 700,
+                                    fontWeight: 500,
                                     bgcolor: alpha(RED, 0.08),
                                     color: RED,
                                     border: `1px solid ${alpha(RED, 0.2)}`,
@@ -685,9 +683,9 @@ export default function GeneratePage() {
                             startIcon={<ScanText size={13} />}
                             sx={{
                                 height: 28,
-                                borderRadius: 1.5,
+                                borderRadius: 2,
                                 fontSize: '0.75rem',
-                                fontWeight: 600,
+                                fontWeight: 500,
                                 textTransform: 'none',
                                 borderColor: 'divider',
                                 color: 'text.secondary',
@@ -788,7 +786,7 @@ export default function GeneratePage() {
                                     width: { xs: '100%', md: '45%' },
                                     borderRight: '1px solid',
                                     borderColor: 'divider',
-                                    bgcolor: isLight ? '#F8FAFC' : '#0B0F17',
+                                    bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                                     p: 2,
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -797,7 +795,7 @@ export default function GeneratePage() {
                                 }}
                             >
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mb: 1.5 }}>
-                                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                    <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                         Source Document Image
                                     </Typography>
                                     <Button
@@ -844,7 +842,7 @@ export default function GeneratePage() {
                         px: 2.5,
                         borderTop: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: isLight ? '#FAFBFC' : '#10141B',
+                        bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -860,7 +858,7 @@ export default function GeneratePage() {
                             icon={<Cpu size={13} color={RED} />}
                             label={activeModelName}
                             sx={{
-                                fontWeight: 700,
+                                fontWeight: 500,
                                 fontSize: '0.74rem',
                                 height: 26,
                                 bgcolor: alpha(RED, 0.08),
@@ -876,7 +874,7 @@ export default function GeneratePage() {
                                 icon={<ShieldCheck size={13} color={GREEN} />}
                                 label="Custom PAT Active"
                                 sx={{
-                                    fontWeight: 700,
+                                    fontWeight: 500,
                                     fontSize: '0.74rem',
                                     height: 26,
                                     bgcolor: alpha(GREEN, 0.08),
@@ -909,7 +907,7 @@ export default function GeneratePage() {
                         <Typography
                             variant="caption"
                             sx={{
-                                fontWeight: 600,
+                                fontWeight: 500,
                                 color: isValid ? 'text.secondary' : 'text.disabled',
                                 fontSize: '0.75rem',
                             }}
@@ -928,10 +926,6 @@ export default function GeneratePage() {
                                 height: 38,
                                 px: 3,
                                 fontSize: '0.88rem',
-                                fontWeight: 700,
-                                borderRadius: 2,
-                                boxShadow: '0 4px 12px rgba(208,0,0,0.3)',
-                                '&:hover': { boxShadow: '0 6px 18px rgba(208,0,0,0.45)' },
                             }}
                         >
                             {submitting ? 'Generating…' : 'Generate Test Cases'}
@@ -949,19 +943,19 @@ export default function GeneratePage() {
                     fullWidth
                 >
                     <DialogTitle component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
-                        <Typography component="span" variant="subtitle1" fontWeight={700}>
+                        <Typography component="span" variant="subtitle1" fontWeight={500}>
                             {ocrMeta.filename} — Source Document
                         </Typography>
                         <IconButton size="small" onClick={() => setImageModalOpen(false)}>
                             <X size={16} />
                         </IconButton>
                     </DialogTitle>
-                    <DialogContent sx={{ display: 'flex', justifyContent: 'center', p: 2, bgcolor: '#0D1117' }}>
+                    <DialogContent sx={{ display: 'flex', justifyContent: 'center', p: 2, bgcolor: '#1c1c1c' }}>
                         <Box
                             component="img"
                             src={ocrMeta.dataUrl}
                             alt={ocrMeta.filename}
-                            sx={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: 1 }}
+                            sx={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: 2 }}
                         />
                     </DialogContent>
                     <DialogActions sx={{ px: 2.5, py: 1.5 }}>

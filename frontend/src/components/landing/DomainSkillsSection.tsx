@@ -6,9 +6,6 @@ import {
   Typography,
   Paper,
   Grid,
-  Chip,
-  alpha,
-  useTheme,
   Button,
 } from '@mui/material';
 import {
@@ -17,18 +14,19 @@ import {
   KeyRound,
   FileText,
   ArrowRight,
-  Sparkles,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import SectionHeader from './SectionHeader';
+import { CardHead, MetaTag } from './Tags';
 
-const RED = '#D00000';
-const GREEN = '#1F8A70';
-const AMBER = '#D9822B';
-const BLUE = '#2D6CDF';
+const RED = '#e60000';
+const GREEN = '#469a6c';
+const AMBER = '#af8626';
+const BLUE = '#00759e';
 
 const DOMAINS = [
   {
-    icon: <Landmark size={24} />,
+    icon: <Landmark size={22} />,
     title: 'Payments & Settlement',
     accent: GREEN,
     rulesCount: '40+ Protocol Rules',
@@ -36,7 +34,7 @@ const DOMAINS = [
     description: 'Generates specialized test suites for multi-currency routing, ledger immutability, sanctions screening, and modulus-97 IBAN checksum validations.',
   },
   {
-    icon: <TrendingUp size={24} />,
+    icon: <TrendingUp size={22} />,
     title: 'Trading & Markets',
     accent: BLUE,
     rulesCount: '60+ FIX Validation Checks',
@@ -44,7 +42,7 @@ const DOMAINS = [
     description: 'Enforces sub-millisecond execution rules, TimeInForce (IOC/FOK/DAY) constraints, pre-trade credit checks, and algorithmic trade reconciliation.',
   },
   {
-    icon: <KeyRound size={24} />,
+    icon: <KeyRound size={22} />,
     title: 'Security & Identity',
     accent: RED,
     rulesCount: '35+ Zero-Trust Rules',
@@ -52,7 +50,7 @@ const DOMAINS = [
     description: 'Tests cryptographic challenge-response handshakes, adaptive step-up authorization, session replay prevention, and brute-force lockout thresholds.',
   },
   {
-    icon: <FileText size={24} />,
+    icon: <FileText size={22} />,
     title: 'Regulatory & Risk',
     accent: AMBER,
     rulesCount: '50+ Compliance Controls',
@@ -61,55 +59,27 @@ const DOMAINS = [
   },
 ];
 
-export default function DomainSkillsSection() {
-  const theme = useTheme();
-  const isLight = theme.palette.mode === 'light';
+export default function DomainSkillsSection({ index = '06' }: { index?: string }) {
   const router = useRouter();
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        gap: 2,
-        mb: 5
-      }}>
-        <Box sx={{ maxWidth: 660 }}>
-          <Box sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 1.75,
-            py: 0.5,
-            mb: 1.25,
-            borderRadius: 4,
-            bgcolor: alpha(RED, isLight ? 0.08 : 0.15),
-            border: `1px solid ${alpha(RED, 0.25)}`,
-          }}>
-            <Sparkles size={14} color={RED} />
-            <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.08em', fontSize: '0.72rem' }}>
-              ENTERPRISE DOMAIN INTELLIGENCE
-            </Typography>
-          </Box>
-          <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
-            Pre-Trained Domain Skills
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
-            The Agent HUB Platform agent chain integrates deep financial and regulatory protocols to synthesize tests with real-world institutional knowledge.
-          </Typography>
-        </Box>
-
-        <Button
-          variant="outlined"
-          onClick={() => router.push('/skills')}
-          endIcon={<ArrowRight size={16} />}
-          sx={{ fontWeight: 700, borderRadius: 2, px: 2.5, py: 1 }}
-        >
-          Explore All Domain Skills
-        </Button>
-      </Box>
+      <SectionHeader
+        index={index}
+        eyebrow="Skills in the registry"
+        title="Domain knowledge as files"
+        lede="SKILL.md bundles travel with the workflow. Onboard another domain the same way you onboard an agent — no platform change."
+        action={
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => router.push('/skills')}
+            endIcon={<ArrowRight size={16} />}
+          >
+            Explore all domain skills
+          </Button>
+        }
+      />
 
       <Grid container spacing={3}>
         {DOMAINS.map((domain) => (
@@ -118,53 +88,26 @@ export default function DomainSkillsSection() {
               elevation={0}
               sx={{
                 p: 3,
-                borderRadius: 3.5,
+                borderRadius: 2,
                 border: '1px solid',
                 borderColor: 'divider',
+                borderTop: `2px solid ${domain.accent}`,
                 bgcolor: 'background.paper',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
                 transition: 'all 0.25s ease',
-                boxShadow: isLight
-                  ? '0 10px 28px -10px rgba(0,0,0,0.05)'
-                  : '0 10px 28px -10px rgba(0,0,0,0.4)',
+                boxShadow: 'none',
                 '&:hover': {
-                  borderColor: domain.accent,
-                  transform: 'translateY(-4px)',
-                  boxShadow: `0 12px 32px ${alpha(domain.accent, 0.16)}`
+                  bgcolor: 'var(--col-background-ui-10-hovered)',
                 }
               }}
             >
               <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: domain.accent,
-                    bgcolor: alpha(domain.accent, isLight ? 0.12 : 0.2),
-                  }}>
-                    {domain.icon}
-                  </Box>
-                  <Chip
-                    label={domain.rulesCount}
-                    size="small"
-                    sx={{
-                      fontSize: '0.66rem',
-                      fontWeight: 800,
-                      bgcolor: alpha(domain.accent, 0.12),
-                      color: domain.accent,
-                      border: `1px solid ${alpha(domain.accent, 0.25)}`,
-                    }}
-                  />
-                </Box>
+                <CardHead accent={domain.accent} icon={domain.icon} tag={domain.rulesCount} />
 
-                <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, fontSize: '1.1rem' }}>
+                <Typography variant="h6" sx={{ fontWeight: 500, mb: 1, fontSize: '1.1rem' }}>
                   {domain.title}
                 </Typography>
 
@@ -175,17 +118,7 @@ export default function DomainSkillsSection() {
 
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
                 {domain.standards.map((std) => (
-                  <Chip
-                    key={std}
-                    label={std}
-                    size="small"
-                    sx={{
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      bgcolor: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
-                      color: 'text.secondary',
-                    }}
-                  />
+                  <MetaTag key={std}>{std}</MetaTag>
                 ))}
               </Box>
             </Paper>

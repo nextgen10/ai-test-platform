@@ -108,7 +108,7 @@ export default function SettingsPage() {
                     severity="success"
                     variant="filled"
                     icon={<CheckCircle2 size={20} />}
-                    sx={{ width: '100%', boxShadow: 3 }}
+                    sx={{ width: '100%', boxShadow: 'none' }}
                 >
                     Preferences saved. New runs will use the <strong>{settings.generationEngine.toUpperCase()}</strong> engine.
                 </Alert>
@@ -119,7 +119,7 @@ export default function SettingsPage() {
                 <Paper
                     sx={{
                         p: 3.5,
-                        borderRadius: 3,
+                        borderRadius: 2,
                         border: '2px solid',
                         borderColor: settings.generationEngine === 'copilot' ? 'primary.main' : 'divider',
                         transition: 'border-color 0.2s',
@@ -131,7 +131,7 @@ export default function SettingsPage() {
                                 <Zap size={22} />
                             </Box>
                             <Box>
-                                <Typography variant="h6" fontWeight={800} fontSize="1.15rem">
+                                <Typography variant="h6" fontWeight={500} fontSize="1.15rem">
                                     Generation Engine
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -142,7 +142,7 @@ export default function SettingsPage() {
                         <Chip
                             label={settings.generationEngine === 'copilot' ? 'Live Copilot CLI' : 'Deterministic Mock'}
                             color={settings.generationEngine === 'copilot' ? 'primary' : 'default'}
-                            sx={{ fontWeight: 800, fontSize: '0.76rem', height: 26 }}
+                            sx={{ fontWeight: 500, fontSize: '0.76rem', height: 26 }}
                         />
                     </Box>
 
@@ -159,12 +159,12 @@ export default function SettingsPage() {
                                 onClick={() => setSettingsState((prev) => ({ ...prev, generationEngine: 'copilot' }))}
                                 sx={{
                                     p: 2.5,
-                                    borderRadius: 2.5,
+                                    borderRadius: 2,
                                     cursor: 'pointer',
                                     border: '2px solid',
                                     borderColor: settings.generationEngine === 'copilot' ? 'primary.main' : 'divider',
                                     bgcolor: settings.generationEngine === 'copilot'
-                                        ? (isLight ? '#FFF5F5' : alpha(theme.palette.primary.main, 0.08))
+                                        ? (isLight ? '#fbeaea' : alpha(theme.palette.primary.main, 0.08))
                                         : 'transparent',
                                     transition: 'all 0.2s',
                                     '&:hover': { borderColor: 'primary.main' },
@@ -177,7 +177,7 @@ export default function SettingsPage() {
                                         sx={{ p: 0.5, mt: 0.25 }}
                                     />
                                     <Box>
-                                        <Typography variant="subtitle1" fontWeight={800} sx={{ color: 'text.primary' }}>
+                                        <Typography variant="subtitle1" fontWeight={500} sx={{ color: 'text.primary' }}>
                                             GitHub Copilot CLI Engine
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mt: 0.5, lineHeight: 1.5 }}>
@@ -188,7 +188,7 @@ export default function SettingsPage() {
                                             color="primary"
                                             variant="outlined"
                                             label="Production Mode"
-                                            sx={{ mt: 1.25, height: 20, fontSize: '0.68rem', fontWeight: 700 }}
+                                            sx={{ mt: 1.25, height: 20, fontSize: '0.68rem', fontWeight: 500 }}
                                         />
                                     </Box>
                                 </Box>
@@ -200,12 +200,12 @@ export default function SettingsPage() {
                                 onClick={() => setSettingsState((prev) => ({ ...prev, generationEngine: 'mock' }))}
                                 sx={{
                                     p: 2.5,
-                                    borderRadius: 2.5,
+                                    borderRadius: 2,
                                     cursor: 'pointer',
                                     border: '2px solid',
                                     borderColor: settings.generationEngine === 'mock' ? 'info.main' : 'divider',
                                     bgcolor: settings.generationEngine === 'mock'
-                                        ? (isLight ? '#F0F9FF' : alpha(theme.palette.info.main, 0.08))
+                                        ? (isLight ? '#f9f9f7' : alpha(theme.palette.info.main, 0.08))
                                         : 'transparent',
                                     transition: 'all 0.2s',
                                     '&:hover': { borderColor: 'info.main' },
@@ -218,7 +218,7 @@ export default function SettingsPage() {
                                         sx={{ p: 0.5, mt: 0.25, color: 'info.main', '&.Mui-checked': { color: 'info.main' } }}
                                     />
                                     <Box>
-                                        <Typography variant="subtitle1" fontWeight={800} sx={{ color: 'text.primary' }}>
+                                        <Typography variant="subtitle1" fontWeight={500} sx={{ color: 'text.primary' }}>
                                             Mock Engine (Simulation)
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mt: 0.5, lineHeight: 1.5 }}>
@@ -229,7 +229,7 @@ export default function SettingsPage() {
                                             color="info"
                                             variant="outlined"
                                             label="Zero Token Consumption"
-                                            sx={{ mt: 1.25, height: 20, fontSize: '0.68rem', fontWeight: 700 }}
+                                            sx={{ mt: 1.25, height: 20, fontSize: '0.68rem', fontWeight: 500 }}
                                         />
                                     </Box>
                                 </Box>
@@ -240,13 +240,13 @@ export default function SettingsPage() {
 
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
                     {/* 2. AI Model Selection Card */}
-                    <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3 }}>
+                    <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex' }}>
+                            <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex' }}>
                                 <Cpu size={20} />
                             </Box>
                             <Box>
-                                <Typography variant="h6" fontWeight={700} fontSize="1.05rem">
+                                <Typography variant="h6" fontWeight={500} fontSize="1.05rem">
                                     Default AI Model
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -292,7 +292,7 @@ export default function SettingsPage() {
                         <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed', mt: 'auto' }}>
                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                    <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         Saved Model Status
                                     </Typography>
                                     <Chip
@@ -303,7 +303,7 @@ export default function SettingsPage() {
                                         sx={{ height: 20, fontSize: '0.7rem' }}
                                     />
                                 </Box>
-                                <Typography variant="subtitle1" fontWeight={700} color="primary.main">
+                                <Typography variant="subtitle1" fontWeight={500} color="primary.main">
                                     {(selectedModelObj?.name ?? settings.copilotModel) || 'Default (Platform Setting)'}
                                 </Typography>
                                 {selectedModelObj && (
@@ -316,13 +316,13 @@ export default function SettingsPage() {
                     </Paper>
 
                     {/* 3. GitHub Personal Access Token (PAT) Card */}
-                    <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 3 }}>
+                    <Paper sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                            <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'info.main', color: 'info.contrastText', display: 'flex' }}>
+                            <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'info.main', color: 'info.contrastText', display: 'flex' }}>
                                 <KeyRound size={20} />
                             </Box>
                             <Box>
-                                <Typography variant="h6" fontWeight={700} fontSize="1.05rem">
+                                <Typography variant="h6" fontWeight={500} fontSize="1.05rem">
                                     GitHub Personal Access Token (PAT)
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -368,7 +368,7 @@ export default function SettingsPage() {
                         <Card variant="outlined" sx={{ bgcolor: 'action.hover', borderStyle: 'dashed', mt: 'auto' }}>
                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                    <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         PAT Status
                                     </Typography>
                                     {token ? (
@@ -400,13 +400,13 @@ export default function SettingsPage() {
                 </Box>
 
                 {/* 4. Execution Environment Status */}
-                <Paper sx={{ p: 3, borderRadius: 3 }}>
+                <Paper sx={{ p: 3, borderRadius: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                        <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: 'secondary.main', color: 'secondary.contrastText', display: 'flex' }}>
+                        <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'secondary.main', color: 'secondary.contrastText', display: 'flex' }}>
                             <Server size={20} />
                         </Box>
                         <Box>
-                            <Typography variant="h6" fontWeight={700} fontSize="1.05rem">
+                            <Typography variant="h6" fontWeight={500} fontSize="1.05rem">
                                 Runtime Environment Status
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
@@ -422,7 +422,7 @@ export default function SettingsPage() {
                             <Typography variant="caption" color="text.secondary">
                                 Executor
                             </Typography>
-                            <Typography variant="subtitle1" fontWeight={700} sx={{ textTransform: 'capitalize' }}>
+                            <Typography variant="subtitle1" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
                                 {platform?.executor ?? (loading ? '—' : 'Unknown')}
                             </Typography>
                         </Box>
@@ -430,7 +430,7 @@ export default function SettingsPage() {
                             <Typography variant="caption" color="text.secondary">
                                 Platform default engine
                             </Typography>
-                            <Typography variant="subtitle1" fontWeight={700} sx={{ textTransform: 'uppercase', color: 'primary.main' }}>
+                            <Typography variant="subtitle1" fontWeight={500} sx={{ textTransform: 'uppercase', color: 'primary.main' }}>
                                 {platform?.engine ?? (loading ? '—' : 'Unknown')}
                             </Typography>
                         </Box>
@@ -484,7 +484,7 @@ export default function SettingsPage() {
                     startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <Save size={18} />}
                     onClick={handleSave}
                     disabled={saving}
-                    sx={{ px: 4, fontWeight: 700, borderRadius: 2 }}
+                    sx={{ px: 4, fontWeight: 500, borderRadius: 2 }}
                 >
                     {saving ? 'Saving...' : 'Save Settings'}
                 </Button>

@@ -245,7 +245,7 @@ export default function AutomationPage() {
                             </span>
                         </Tooltip>
                         <Button variant="contained" startIcon={<Plus size={16} />} onClick={openCreate}
-                            sx={{ fontWeight: 700, borderRadius: 2 }}>
+                            sx={{ fontWeight: 500, borderRadius: 2 }}>
                             New schedule
                         </Button>
                     </Box>
@@ -272,14 +272,14 @@ export default function AutomationPage() {
                     { label: 'Schedules', value: schedules.filter((s) => s.enabled).length, icon: <Clock size={16} /> },
                 ].map((tile) => (
                     <Grid size={{ xs: 6, md: 3 }} key={tile.label}>
-                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2.5 }}>
+                        <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary', mb: 0.5 }}>
                                 {tile.icon}
-                                <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                <Typography variant="caption" sx={{ fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                     {tile.label}
                                 </Typography>
                             </Box>
-                            <Typography variant="h5" sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>
+                            <Typography variant="h5" sx={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
                                 {loading && tile.value === undefined ? <Skeleton width={40} /> : (tile.value ?? '—')}
                             </Typography>
                         </Paper>
@@ -287,12 +287,12 @@ export default function AutomationPage() {
                 ))}
             </Grid>
 
-            <Paper variant="outlined" sx={{ mt: 3, borderRadius: 2.5, overflow: 'hidden' }}>
+            <Paper variant="outlined" sx={{ mt: 3, borderRadius: 2, overflow: 'hidden' }}>
                 <Tabs
                     value={tab}
                     onChange={(_, v: TabKey) => setTab(v)}
                     sx={{ px: 1, borderBottom: '1px solid', borderColor: 'divider',
-                        '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: '0.86rem' } }}
+                        '& .MuiTab-root': { textTransform: 'none', fontWeight: 500, fontSize: '0.86rem' } }}
                 >
                     <Tab value="schedules" label={`Schedules (${schedules.length})`} icon={<Clock size={15} />} iconPosition="start" />
                     <Tab value="webhooks" label={`Webhooks (${deliveries.length})`} icon={<Webhook size={15} />} iconPosition="start" />
@@ -306,7 +306,7 @@ export default function AutomationPage() {
                             <Box sx={{ p: 3 }}><Skeleton height={120} /></Box>
                         ) : schedules.length === 0 ? (
                             <Box sx={{ p: 6, textAlign: 'center' }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
                                     No schedules yet
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
@@ -320,19 +320,19 @@ export default function AutomationPage() {
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
-                                        <TableCell sx={{ fontWeight: 700 }}>Workflow</TableCell>
-                                        <TableCell sx={{ fontWeight: 700 }}>When</TableCell>
-                                        <TableCell sx={{ fontWeight: 700 }}>Next run</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 700 }}>Runs</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Name</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Workflow</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>When</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Next run</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 500 }}>Runs</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 500 }}>Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {schedules.map((schedule) => (
                                         <TableRow key={schedule.id} hover sx={{ opacity: schedule.enabled ? 1 : 0.55 }}>
                                             <TableCell>
-                                                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                                     {schedule.name}
                                                 </Typography>
                                                 {!schedule.enabled && (
@@ -400,7 +400,7 @@ export default function AutomationPage() {
                     <Box sx={{ overflowX: 'auto' }}>
                         {deliveries.length === 0 ? (
                             <Box sx={{ p: 6, textAlign: 'center' }}>
-                                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
                                     No deliveries yet
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -413,12 +413,12 @@ export default function AutomationPage() {
                             <Table size="small">
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                                        <TableCell sx={{ fontWeight: 700 }}>Job</TableCell>
-                                        <TableCell sx={{ fontWeight: 700 }}>Endpoint</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 700 }}>Attempts</TableCell>
-                                        <TableCell sx={{ fontWeight: 700 }}>Last result</TableCell>
-                                        <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Status</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Job</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Endpoint</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 500 }}>Attempts</TableCell>
+                                        <TableCell sx={{ fontWeight: 500 }}>Last result</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 500 }}>Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -478,8 +478,8 @@ export default function AutomationPage() {
                                 ['Retry budget', `${queue.max_attempts} attempt(s)`],
                             ].map(([label, value]) => (
                                 <Grid size={{ xs: 12, sm: 6 }} key={label}>
-                                    <Box sx={{ p: 2, borderRadius: 2, bgcolor: isLight ? '#f8fafc' : alpha(theme.palette.common.white, 0.03) }}>
-                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700 }}>
+                                    <Box sx={{ p: 2, borderRadius: 2, bgcolor: isLight ? '#f9f9f7' : alpha(theme.palette.common.white, 0.03) }}>
+                                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                                             {label}
                                         </Typography>
                                         <Typography variant="body2" sx={{ fontFamily: 'monospace', mt: 0.25 }}>
@@ -495,13 +495,13 @@ export default function AutomationPage() {
 
             {/* ------------------------------------------------------- editor */}
             <Dialog open={editorOpen} onClose={() => setEditorOpen(false)} maxWidth="md" fullWidth
-                PaperProps={{ sx: { borderRadius: 2.5 } }}>
-                <DialogTitle sx={{ fontWeight: 800 }}>
+                PaperProps={{ sx: { borderRadius: 2 } }}>
+                <DialogTitle sx={{ fontWeight: 500 }}>
                     {editingId ? 'Edit schedule' : 'New schedule'}
                 </DialogTitle>
                 <DialogContent sx={{ pt: 2 }}>
                     {editorError && (
-                        <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>{editorError}</Alert>
+                        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{editorError}</Alert>
                     )}
 
                     <Grid container spacing={2}>
@@ -531,10 +531,10 @@ export default function AutomationPage() {
                         </Grid>
                         <Grid size={{ xs: 12, sm: 7 }}>
                             <Box sx={{ p: 1.5, borderRadius: 2, height: '100%',
-                                bgcolor: isLight ? '#f8fafc' : alpha(theme.palette.common.white, 0.03) }}>
+                                bgcolor: isLight ? '#f9f9f7' : alpha(theme.palette.common.white, 0.03) }}>
                                 {preview ? (
                                     <>
-                                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                             {preview.description}
                                         </Typography>
                                         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
@@ -588,14 +588,14 @@ export default function AutomationPage() {
                     <Button onClick={() => setEditorOpen(false)} color="inherit">Cancel</Button>
                     <Button variant="contained" onClick={save} disabled={saving || !preview}
                         startIcon={saving ? <CircularProgress size={15} color="inherit" /> : undefined}
-                        sx={{ fontWeight: 700 }}>
+                        sx={{ fontWeight: 500 }}>
                         {saving ? 'Saving…' : editingId ? 'Save changes' : 'Create schedule'}
                     </Button>
                 </DialogActions>
             </Dialog>
 
             <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
-                <DialogTitle sx={{ fontWeight: 800 }}>Delete this schedule?</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 500 }}>Delete this schedule?</DialogTitle>
                 <DialogContent>
                     <DialogContentText sx={{ fontSize: '0.9rem' }}>
                         <strong>{deleteTarget?.name}</strong> will stop running. Jobs it already created are

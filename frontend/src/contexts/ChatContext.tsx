@@ -122,21 +122,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hubApi.catalog().then(setCatalog).catch(() => setCatalog(null));
     }, []);
 
-    const syncSessionUrl = useCallback(
-        (sessionId: string | null) => {
-            // From here the console owns the URL. Without this flag the restore
-            // effect below would treat a session we just created or opened as a
-            // cold load, refetch it, and wipe an in-flight stream.
-            if (sessionId) restoredSession.current = true;
+    const syncSessionUrl = useCallback((sessionId: string | null) => {
+        // From here the console owns the URL. Without this flag the restore
+        // effect below would treat a session we just created or opened as a
+        // cold load, refetch it, and wipe an in-flight stream.
+        if (sessionId) restoredSession.current = true;
 
-            const params = new URLSearchParams();
-            if (sessionId) params.set('session', sessionId);
-            const qs = params.toString();
-            const next = qs ? `/chat?${qs}` : '/chat';
-            router.replace(next, { scroll: false });
-        },
-        [router],
-    );
+        const params = new URLSearchParams();
+        if (sessionId) params.set('session', sessionId);
+        const qs = params.toString();
+        const next = qs ? `/chat?${qs}` : '/chat';
+        // replaceState, not router.replace: a Next navigation remounts the
+        // useSearchParams Suspense boundary, which unmounts the console
+        // (spinner) and kills the in-flight stream on first send.
+        if (typeof window !== 'undefined') {
+            const current = window.location.pathname + window.location.search;
+            if (current !== next) {
+                window.history.replaceState(window.history.state, '', next);
+            }
+        }
+    }, []);
 
     const applyOpenedSession = useCallback((session: ChatSession) => {
         setActiveSessionId(session.id);
@@ -367,11 +372,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
+            // Leave the empty catalog before the session round-trip so the
+            // transcript pane does not collapse and remount on first send.
+            setIsStreaming(true);
+            setStreamingContent('');
+            streamedRef.current = '';
+
             let sessionId = activeSessionId;
             if (!sessionId) {
                 try {
                     sessionId = (await openSession(content.slice(0, 80), config)).id;
                 } catch (e) {
+                    setIsStreaming(false);
                     setError(e instanceof Error ? e.message : 'Could not start a new session');
                     return;
                 }
@@ -392,9 +404,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return [...prev, userMsg];
             });
             setMessageTotal((prev) => prev + 1);
-            setIsStreaming(true);
-            setStreamingContent('');
-            streamedRef.current = '';
 
             const commit = (stopped: boolean, extra?: { duration_ms?: number; agent_id?: string; model?: string }) => {
                 const text = streamedRef.current;

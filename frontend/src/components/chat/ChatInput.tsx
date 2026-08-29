@@ -101,7 +101,8 @@ export const ChatInput: React.FC = () => {
         p: { xs: 1.5, sm: 2 },
         borderTop: '1px solid',
         borderColor: isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)',
-        bgcolor: isLight ? '#ffffff' : '#0d1117',
+        bgcolor: isLight ? '#ffffff' : '#1c1c1c',
+        flexShrink: 0,
       }}
     >
       {showSuggestions && quickPrompts.length > 0 && (
@@ -120,7 +121,7 @@ export const ChatInput: React.FC = () => {
           <Typography
             variant="caption"
             sx={{
-              fontWeight: 700,
+              fontWeight: 500,
               fontSize: '0.72rem',
               color: 'text.secondary',
               textTransform: 'uppercase',
@@ -162,7 +163,7 @@ export const ChatInput: React.FC = () => {
           borderRadius: 2,
           border: '1px solid',
           borderColor: isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          bgcolor: isLight ? '#fcfcfc' : '#161b22',
+          bgcolor: isLight ? '#f9f9f7' : '#2a2a2a',
           overflow: 'hidden',
           transition: 'border-color 0.2s',
           '&:focus-within': {
@@ -204,7 +205,7 @@ export const ChatInput: React.FC = () => {
             py: 0.75,
             borderTop: '1px solid',
             borderColor: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
-            bgcolor: isLight ? '#f8fafc' : '#11161d',
+            bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
           }}
         >
           <Typography
@@ -233,9 +234,9 @@ export const ChatInput: React.FC = () => {
               startIcon={<Square size={13} fill="currentColor" />}
               onClick={stopStreaming}
               sx={{
-                borderRadius: 1.5,
+                borderRadius: 2,
                 textTransform: 'none',
-                fontWeight: 600,
+                fontWeight: 500,
                 fontSize: '0.8rem',
                 py: 0.5,
                 px: 1.5,
@@ -252,9 +253,9 @@ export const ChatInput: React.FC = () => {
               disabled={!canSend}
               onClick={handleSend}
               sx={{
-                borderRadius: 1.5,
+                borderRadius: 2,
                 textTransform: 'none',
-                fontWeight: 700,
+                fontWeight: 500,
                 fontSize: '0.82rem',
                 py: 0.5,
                 px: 2,

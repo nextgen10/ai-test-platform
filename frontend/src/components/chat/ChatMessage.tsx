@@ -78,8 +78,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(function ChatM
           height: 32,
           bgcolor: isUser
             ? isLight
-              ? '#1e293b'
-              : '#334155'
+              ? '#2a2a2a'
+              : '#404040'
             : theme.palette.primary.main,
           color: '#ffffff',
           flexShrink: 0,
@@ -108,9 +108,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(function ChatM
             <Typography
               variant="subtitle2"
               sx={{
-                fontWeight: 700,
+                fontWeight: 500,
                 fontSize: '0.88rem',
-                color: isLight ? '#0f172a' : '#f8fafc',
+                color: isLight ? '#1c1c1c' : '#f9f9f7',
               }}
             >
               {isUser ? 'You' : displayAgent(message.agent_id)}
@@ -128,8 +128,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(function ChatM
                   height: 20,
                   fontSize: '0.72rem',
                   fontWeight: 500,
-                  bgcolor: isLight ? '#e2e8f0' : '#1e293b',
-                  color: isLight ? '#475569' : '#94a3b8',
+                  bgcolor: isLight ? '#e0dfd7' : '#2a2a2a',
+                  color: isLight ? '#404040' : '#8e8d83',
                 }}
               />
             )}
@@ -154,14 +154,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(function ChatM
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <Tooltip title={copied ? 'Copied' : 'Copy message'}>
               <IconButton size="small" onClick={handleCopy} sx={{ p: 0.5 }}>
-                {copied ? <Check size={14} color="#2da44e" /> : <Copy size={14} />}
+                {copied ? <Check size={14} color="#469a6c" /> : <Copy size={14} />}
               </IconButton>
             </Tooltip>
           </Box>
         </Box>
 
         {/* Message body */}
-        <Box sx={{ color: isLight ? '#1e293b' : '#e2e8f0', fontSize: '0.9rem' }}>
+        <Box sx={{ color: isLight ? '#2a2a2a' : '#e0dfd7', fontSize: '0.9rem' }}>
           <MarkdownRenderer content={message.content} />
           {isStreaming && <StreamingCursor />}
         </Box>

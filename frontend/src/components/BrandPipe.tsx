@@ -2,17 +2,15 @@
 
 import { Box } from '@mui/material';
 
-/**
- * Vertical pipe separator between UBS logo and app title.
- */
+/** Vertical hairline between the UBS logo and the product name. */
 export const BrandPipe = () => (
     <Box
         component="span"
         sx={{
-            width: '1.5px',
-            minWidth: '1.5px',
-            height: 20,
-            bgcolor: '#8C96A5',
+            width: '1px',
+            minWidth: '1px',
+            height: 22,
+            bgcolor: 'var(--col-border-illustrative)',
             flexShrink: 0,
             display: 'inline-block',
             alignSelf: 'center',

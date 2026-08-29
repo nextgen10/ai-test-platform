@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-    Box, Button, Container, Typography, useTheme, useMediaQuery, alpha,
+    Box, Button, Typography, useTheme, useMediaQuery,
     IconButton, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Divider,
-    Menu, MenuItem, Chip,
+    Menu, MenuItem,
 } from '@mui/material';
 import {
     Menu as MenuIcon, X, ChevronDown, FlaskConical, Bot, FileSearch, Layers, Sparkles,
@@ -12,7 +12,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { UbsLogoFull } from './UbsLogoFull';
 import { BrandPipe } from './BrandPipe';
-import AnimatedQualarisWord from './AnimatedQualarisWord';
+import ProductName from './ProductName';
+import { getAccents } from '@/theme';
 import { type UseCaseItem } from '@/config/nav';
 
 export interface NavItem {
@@ -31,19 +32,19 @@ export interface UnifiedNavBarProps {
     centerContent?: React.ReactNode;
     alignLinks?: 'center' | 'right';
     compact?: boolean;
+    /** Hide the product wordmark; UBS logo remains. Landing page only. */
+    showProductName?: boolean;
+    /** Pin the bar to the viewport so page content scrolls underneath. */
+    pinned?: boolean;
 }
 
-const USE_CASE_ICONS: Record<string, React.ReactNode> = {
-    'flask-conical': <FlaskConical size={18} color="#D00000" />,
-    'file-search': <FileSearch size={18} color="#10B981" />,
-    'bot': <Bot size={18} color="#3B82F6" />,
-    'layers': <Layers size={18} color="#F59E0B" />,
-};
-
 /**
- * Unified Brand Logo + Pipe + Platform Name component.
+ * UBS logo, optional hairline pipe and Agent (red) HUB (body).
  */
-export const UnifiedBrand: React.FC<{ onClick?: () => void }> = ({ onClick }) => {
+export const UnifiedBrand: React.FC<{ onClick?: () => void; showProductName?: boolean }> = ({
+    onClick,
+    showProductName = true,
+}) => {
     const theme = useTheme();
     const isLight = theme.palette.mode === 'light';
 
@@ -74,28 +75,20 @@ export const UnifiedBrand: React.FC<{ onClick?: () => void }> = ({ onClick }) =>
                     wordmarkColor={isLight ? theme.palette.primary.main : '#FFFFFF'}
                 />
             </Box>
-            <BrandPipe />
-            <Typography
-                variant="h6"
-                component="div"
-                sx={{
-                    fontWeight: 800,
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    lineHeight: 1,
-                }}
-            >
-                <AnimatedQualarisWord sx={{ fontSize: { xs: '0.95rem', md: '1.05rem' } }} />
-            </Typography>
+            {showProductName && (
+                <>
+                    <BrandPipe />
+                    <ProductName variant="nav" />
+                </>
+            )}
         </Box>
     );
 };
 
 /**
- * Agent HUB unified navigation bar.
- * Separates Core Platform navigation links from Bespoke Use Cases.
+ * Agent HUB navigation. Solid surface, hairline, text links — the ubs.com header,
+
+ * not a frosted SaaS bar.
  */
 export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
     items = [],
@@ -105,11 +98,20 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
     centerContent,
     alignLinks = 'center',
     compact: compactProp,
+    showProductName = true,
+    pinned = false,
 }) => {
     const router = useRouter();
     const compact = compactProp ?? items.length > 6;
     const theme = useTheme();
-    const isLight = theme.palette.mode === 'light';
+    const accents = getAccents(theme.palette.mode);
+
+    const USE_CASE_ICONS: Record<string, React.ReactNode> = {
+        'flask-conical': <FlaskConical size={16} color={accents.brand} />,
+        'file-search': <FileSearch size={16} color={accents.green} />,
+        'bot': <Bot size={16} color={accents.teal} />,
+        'layers': <Layers size={16} color={accents.gold} />,
+    };
 
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [useCasesAnchorEl, setUseCasesAnchorEl] = useState<null | HTMLElement>(null);
@@ -133,143 +135,94 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
         router.push(path);
     };
 
+    const customUis = useCases.filter((uc) => uc.hasCustomUi);
+    const consoleWorkflows = useCases.filter((uc) => !uc.hasCustomUi);
+
+    const renderUseCaseItem = (uc: UseCaseItem) => (
+        <MenuItem
+            key={uc.id}
+            onClick={() => handleSelectUseCase(uc.path)}
+            sx={{
+                borderRadius: 2,
+                py: 1.25,
+                px: 1.5,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: 0.5,
+                whiteSpace: 'normal',
+                '&:hover': { bgcolor: 'action.hover' },
+            }}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {USE_CASE_ICONS[uc.icon || ''] || <Sparkles size={16} color={theme.palette.primary.main} />}
+                    <Typography variant="subtitle2" sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
+                        {uc.label}
+                    </Typography>
+                </Box>
+            </Box>
+            <Typography
+                variant="caption"
+                sx={{
+                    color: 'text.secondary',
+                    fontSize: '0.75rem',
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                }}
+            >
+                {uc.description}
+            </Typography>
+        </MenuItem>
+    );
+
+    const navButtonSx = (active?: boolean) => ({
+        px: compact ? 1.25 : 1.5,
+        py: 0.75,
+        minHeight: 40,
+        borderRadius: 0,
+        fontSize: '0.875rem',
+        fontWeight: 400,
+        minWidth: 'auto',
+        whiteSpace: 'nowrap',
+        textTransform: 'none' as const,
+        color: active ? 'text.primary' : 'text.secondary',
+        bgcolor: 'transparent',
+        boxShadow: 'none',
+        borderBottom: '2px solid',
+        borderColor: active ? 'primary.main' : 'transparent',
+        '&:hover': {
+            color: 'text.primary',
+            bgcolor: 'transparent',
+            borderColor: active ? 'primary.main' : 'divider',
+        },
+    });
+
     const renderNavButtons = () => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {/* Core Platform Links */}
+        <Box sx={{ display: 'flex', alignItems: 'stretch', gap: 0.25 }}>
             {items.map((item) => (
                 <Button
                     key={item.id}
                     onClick={item.onClick}
-                    startIcon={compact ? undefined : item.icon}
                     variant="text"
-                    sx={{
-                        px: compact ? 1.25 : 1.5,
-                        py: 0.75,
-                        borderRadius: 1,
-                        fontSize: compact ? '0.78rem' : '0.84rem',
-                        minWidth: 'auto',
-                        whiteSpace: 'nowrap',
-                        textTransform: 'none',
-                        color: item.active ? 'primary.main' : 'text.secondary',
-                        bgcolor: item.active ? (isLight ? '#FFE5E5' : alpha(theme.palette.primary.main, 0.12)) : 'transparent',
-                        fontWeight: item.active ? 700 : 600,
-                        '&:hover': {
-                            color: 'text.primary',
-                            bgcolor: item.active
-                                ? (isLight ? '#FFE5E5' : alpha(theme.palette.primary.main, 0.12))
-                                : 'action.hover',
-                        },
-                    }}
+                    sx={navButtonSx(item.active)}
                 >
                     {item.label}
                 </Button>
             ))}
 
-            {/* Bespoke Use Cases Dropdown Trigger */}
             {useCases && useCases.length > 0 && (
-                <>
-                    <Button
-                        onClick={handleOpenUseCases}
-                        endIcon={<ChevronDown size={14} style={{ transform: isUseCasesOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}
-                        variant="outlined"
-                        size="small"
-                        sx={{
-                            ml: 0.5,
-                            px: 1.5,
-                            py: 0.65,
-                            borderRadius: 1.5,
-                            fontSize: '0.82rem',
-                            fontWeight: 700,
-                            textTransform: 'none',
-                            borderColor: isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)',
-                            color: isLight ? '#1e293b' : '#e2e8f0',
-                            bgcolor: isLight ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)',
-                            '&:hover': {
-                                borderColor: 'primary.main',
-                                bgcolor: alpha(theme.palette.primary.main, 0.05),
-                            },
-                        }}
-                    >
-                        Use Cases
-                    </Button>
-
-                    <Menu
-                        anchorEl={useCasesAnchorEl}
-                        open={isUseCasesOpen}
-                        onClose={handleCloseUseCases}
-                        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                        PaperProps={{
-                            elevation: 0,
-                            sx: {
-                                mt: 1,
-                                width: 340,
-                                p: 1,
-                                borderRadius: 3,
-                                border: '1px solid',
-                                borderColor: isLight ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.08)',
-                                bgcolor: isLight ? 'rgba(255,255,255,0.75)' : 'rgba(18,22,29,0.75)',
-                                backdropFilter: 'blur(24px)',
-                                boxShadow: isLight ? '0 12px 40px -12px rgba(0,0,0,0.15)' : '0 12px 40px -12px rgba(0,0,0,0.6)',
-                            },
-                        }}
-                    >
-                        <Box sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider', mb: 0.5 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Bespoke Use Cases & Custom UIs
-                            </Typography>
-                        </Box>
-
-                        {useCases.map((uc) => (
-                            <MenuItem
-                                key={uc.id}
-                                onClick={() => handleSelectUseCase(uc.path)}
-                                sx={{
-                                    borderRadius: 1.5,
-                                    py: 1.25,
-                                    px: 1.5,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'flex-start',
-                                    gap: 0.5,
-                                    whiteSpace: 'normal',
-                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.06) },
-                                }}
-                            >
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {USE_CASE_ICONS[uc.icon || ''] || <Sparkles size={16} color={theme.palette.primary.main} />}
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.88rem' }}>
-                                        {uc.label}
-                                    </Typography>
-                                  </Box>
-                                  {uc.badge && (
-                                    <Chip
-                                      label={uc.badge}
-                                      size="small"
-                                      color={uc.hasCustomUi ? 'primary' : 'default'}
-                                      sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700 }}
-                                    />
-                                  )}
-                                </Box>
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.76rem', lineHeight: 1.4 }}>
-                                    {uc.description}
-                                </Typography>
-                            </MenuItem>
-                        ))}
-
-                        <Divider sx={{ my: 1 }} />
-                        <MenuItem
-                            onClick={() => handleSelectUseCase('/use-cases')}
-                            sx={{ borderRadius: 1.5, py: 0.75, fontSize: '0.8rem', fontWeight: 600, color: 'primary.main' }}
-                        >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Layers size={14} />
-                                <span>Browse All Use Cases &rarr;</span>
-                            </Box>
-                        </MenuItem>
-                    </Menu>
-                </>
+                <Button
+                    onClick={handleOpenUseCases}
+                    endIcon={<ChevronDown size={14} style={{ transform: isUseCasesOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />}
+                    variant="text"
+                    sx={navButtonSx(isUseCasesOpen)}
+                >
+                    Use Cases
+                </Button>
             )}
         </Box>
     );
@@ -279,35 +232,36 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
             <Box
                 component="header"
                 sx={{
-                    position: 'sticky',
+                    position: pinned ? 'fixed' : 'sticky',
                     top: 0,
+                    left: 0,
+                    right: 0,
                     zIndex: 1200,
                     width: '100%',
-                    bgcolor: (t) => t.palette.mode === 'light' ? 'rgba(255,255,255,0.75)' : 'rgba(18,22,29,0.75)',
-                    backdropFilter: 'blur(24px)',
+                    bgcolor: 'background.paper',
                     borderBottom: '1px solid',
-                    borderColor: (t) => t.palette.mode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
-                    boxShadow: (t) => t.palette.mode === 'light' ? '0 4px 30px rgba(0,0,0,0.03)' : '0 4px 30px rgba(0,0,0,0.3)',
+                    borderColor: 'divider',
                 }}
             >
-                <Container
-                    maxWidth="xl"
+                <Box
                     sx={{
-                        height: 60,
+                        height: { xs: 52, md: 60 },
                         display: 'flex',
-                        alignItems: 'center',
+                        alignItems: 'stretch',
                         justifyContent: 'space-between',
                         gap: 1.5,
-                        px: { xs: 2, sm: 3, md: 4 },
+                        px: { xs: 2, md: 3 },
+                        width: '100%',
+                        maxWidth: '100%',
                         position: 'relative',
+                        overflow: 'hidden',
+                        flexShrink: 0,
                     }}
                 >
-                    {/* Brand */}
                     <Box sx={{ display: 'flex', alignItems: 'center', zIndex: 1, minWidth: 0, flexShrink: 0 }}>
-                        <UnifiedBrand onClick={onLogoClick} />
+                        <UnifiedBrand onClick={onLogoClick} showProductName={showProductName} />
                     </Box>
 
-                    {/* Center links (if alignLinks is 'center') */}
                     {alignLinks === 'center' && (
                         <Box
                             sx={{
@@ -315,20 +269,19 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                                 position: 'absolute',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                alignItems: 'center',
-                                gap: 0.5,
+                                alignItems: 'stretch',
                                 minWidth: 0,
                                 maxWidth: '64vw',
+                                height: '100%',
                             }}
                         >
                             {centerContent || renderNavButtons()}
                         </Box>
                     )}
 
-                    {/* Right side */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, flexShrink: 0, zIndex: 1 }}>
                         {alignLinks === 'right' && (
-                            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
+                            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'stretch', height: '100%' }}>
                                 {centerContent || renderNavButtons()}
                             </Box>
                         )}
@@ -343,30 +296,100 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                             </IconButton>
                         )}
                     </Box>
-                </Container>
+                </Box>
             </Box>
+            {pinned && (
+                <Box aria-hidden sx={{ height: { xs: 52, md: 60 }, flexShrink: 0 }} />
+            )}
 
-            {/* Mobile Drawer */}
+            <Menu
+                anchorEl={useCasesAnchorEl}
+                open={isUseCasesOpen}
+                onClose={handleCloseUseCases}
+                disableScrollLock
+                disableAutoFocus
+                disableEnforceFocus
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                slotProps={{
+                    paper: {
+                        elevation: 0,
+                        sx: {
+                            mt: 0,
+                            width: 360,
+                            maxHeight: 'min(480px, calc(100vh - 72px))',
+                            p: 0.5,
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: 'background.paper',
+                            boxShadow: (t) => t.palette.mode === 'light'
+                                ? '0 2px 6px rgba(0,0,0,0.06)'
+                                : 'none',
+                        },
+                    },
+                }}
+            >
+                {[
+                    ...(customUis.length > 0
+                        ? [
+                            <Box key="custom-uis-label" sx={{ px: 1.5, py: 1.25 }}>
+                                <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+                                    Custom UIs
+                                </Typography>
+                            </Box>,
+                            ...customUis.map(renderUseCaseItem),
+                        ]
+                        : []),
+                    ...(consoleWorkflows.length > 0
+                        ? [
+                            <Divider key="console-divider" sx={{ my: 0.5 }} />,
+                            <Box key="console-label" sx={{ px: 1.5, py: 1.25 }}>
+                                <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+                                    Agent Console
+                                </Typography>
+                            </Box>,
+                            ...consoleWorkflows.map(renderUseCaseItem),
+                        ]
+                        : []),
+                    <Divider key="browse-divider" sx={{ my: 0.5 }} />,
+                    <MenuItem
+                        key="browse-all"
+                        onClick={() => handleSelectUseCase('/use-cases')}
+                        sx={{ borderRadius: 2, py: 1, fontSize: '0.8125rem', fontWeight: 500, color: 'primary.main' }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Layers size={14} />
+                            <span>Browse all use cases</span>
+                        </Box>
+                    </MenuItem>,
+                ]}
+            </Menu>
+
             {(items.length > 0 || (useCases && useCases.length > 0)) && (
                 <Drawer
                     anchor="right"
                     open={drawerOpen}
                     onClose={() => setDrawerOpen(false)}
                     PaperProps={{
-                        sx: { width: 300, p: 2, bgcolor: 'background.paper' },
+                        sx: { width: 300, p: 2, bgcolor: 'background.paper', borderRadius: 0 },
                     }}
                 >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                            Agent HUB
-                        </Typography>
+                        {showProductName ? (
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                                <ProductName variant="nav" />
+                            </Typography>
+                        ) : (
+                            <UnifiedBrand showProductName={false} />
+                        )}
                         <IconButton size="small" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>
                             <X size={18} />
                         </IconButton>
                     </Box>
                     <Divider sx={{ mb: 1 }} />
                     <List sx={{ px: 0, py: 0 }}>
-                        <Typography variant="caption" sx={{ px: 1, fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
+                        <Typography variant="overline" sx={{ px: 1, color: 'text.secondary' }}>
                             Platform
                         </Typography>
                         {items.map((item) => (
@@ -377,45 +400,76 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                                     setDrawerOpen(false);
                                 }}
                                 sx={{
-                                    borderRadius: 1.5,
+                                    borderRadius: 2,
                                     mb: 0.5,
-                                    bgcolor: item.active ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
-                                    color: item.active ? 'primary.main' : 'text.primary',
-                                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.06) },
+                                    bgcolor: item.active ? 'action.selected' : 'transparent',
+                                    color: item.active ? 'text.primary' : 'text.primary',
+                                    borderLeft: '2px solid',
+                                    borderColor: item.active ? 'primary.main' : 'transparent',
+                                    '&:hover': { bgcolor: 'action.hover' },
                                 }}
                             >
                                 {item.icon && <ListItemIcon sx={{ minWidth: 32, color: 'inherit' }}>{item.icon}</ListItemIcon>}
                                 <ListItemText
                                     primary={item.label}
-                                    primaryTypographyProps={{ fontWeight: item.active ? 700 : 600, fontSize: '0.9rem' }}
+                                    primaryTypographyProps={{ fontWeight: item.active ? 500 : 400, fontSize: '0.9rem' }}
                                 />
                             </ListItemButton>
                         ))}
 
-                        <Divider sx={{ my: 1.5 }} />
-                        <Typography variant="caption" sx={{ px: 1, fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
-                            Bespoke Use Cases
-                        </Typography>
-                        {useCases.map((uc) => (
-                            <ListItemButton
-                                key={uc.id}
-                                onClick={() => {
-                                    router.push(uc.path);
-                                    setDrawerOpen(false);
-                                }}
-                                sx={{ borderRadius: 1.5, mb: 0.5 }}
-                            >
-                                <ListItemIcon sx={{ minWidth: 32 }}>
-                                    {USE_CASE_ICONS[uc.icon || ''] || <Sparkles size={16} color={theme.palette.primary.main} />}
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={uc.label}
-                                    secondary={uc.badge}
-                                    primaryTypographyProps={{ fontWeight: 700, fontSize: '0.86rem' }}
-                                    secondaryTypographyProps={{ fontSize: '0.72rem' }}
-                                />
-                            </ListItemButton>
-                        ))}
+                        {customUis.length > 0 && (
+                            <>
+                                <Divider sx={{ my: 1.5 }} />
+                                <Typography variant="overline" sx={{ px: 1, color: 'text.secondary' }}>
+                                    Custom UIs
+                                </Typography>
+                                {customUis.map((uc) => (
+                                    <ListItemButton
+                                        key={uc.id}
+                                        onClick={() => {
+                                            router.push(uc.path);
+                                            setDrawerOpen(false);
+                                        }}
+                                        sx={{ borderRadius: 2, mb: 0.5 }}
+                                    >
+                                        <ListItemIcon sx={{ minWidth: 32 }}>
+                                            {USE_CASE_ICONS[uc.icon || ''] || <Sparkles size={16} color={theme.palette.primary.main} />}
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={uc.label}
+                                            primaryTypographyProps={{ fontWeight: 500, fontSize: '0.86rem' }}
+                                        />
+                                    </ListItemButton>
+                                ))}
+                            </>
+                        )}
+
+                        {consoleWorkflows.length > 0 && (
+                            <>
+                                <Divider sx={{ my: 1.5 }} />
+                                <Typography variant="overline" sx={{ px: 1, color: 'text.secondary' }}>
+                                    Agent Console
+                                </Typography>
+                                {consoleWorkflows.map((uc) => (
+                                    <ListItemButton
+                                        key={uc.id}
+                                        onClick={() => {
+                                            router.push(uc.path);
+                                            setDrawerOpen(false);
+                                        }}
+                                        sx={{ borderRadius: 2, mb: 0.5 }}
+                                    >
+                                        <ListItemIcon sx={{ minWidth: 32 }}>
+                                            {USE_CASE_ICONS[uc.icon || ''] || <Sparkles size={16} color={theme.palette.primary.main} />}
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={uc.label}
+                                            primaryTypographyProps={{ fontWeight: 500, fontSize: '0.86rem' }}
+                                        />
+                                    </ListItemButton>
+                                ))}
+                            </>
+                        )}
                     </List>
                 </Drawer>
             )}

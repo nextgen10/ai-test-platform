@@ -66,13 +66,13 @@ export default function UseCasesPage() {
         <Grid container spacing={3} sx={{ mt: 1 }}>
           {[0, 1, 2].map((i) => (
             <Grid size={{ xs: 12, md: 6 }} key={i}>
-              <Skeleton variant="rounded" height={230} sx={{ borderRadius: 3 }} />
+              <Skeleton variant="rounded" height={230} sx={{ borderRadius: 2 }} />
             </Grid>
           ))}
         </Grid>
       ) : workflows.length === 0 ? (
-        <Paper variant="outlined" sx={{ mt: 3, p: 6, textAlign: 'center', borderRadius: 3, borderStyle: 'dashed' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+        <Paper variant="outlined" sx={{ mt: 3, p: 6, textAlign: 'center', borderRadius: 2, borderStyle: 'dashed' }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
             No workflows registered yet
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
@@ -93,25 +93,24 @@ export default function UseCasesPage() {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  borderRadius: 3,
+                  borderRadius: 2,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    borderColor: 'primary.main',
-                    boxShadow: `0 6px 18px ${alpha(theme.palette.primary.main, 0.12)}`,
+                    bgcolor: 'var(--col-background-ui-10-hovered)',
                   },
                 }}
               >
                 <CardContent sx={{ flex: 1, p: 3 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
                     <WorkflowIcon size={18} color={theme.palette.primary.main} />
-                    <Typography variant="h6" sx={{ fontWeight: 800, fontSize: '1.05rem' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1.05rem' }}>
                       {wf.name}
                     </Typography>
                     {wf.has_custom_ui && (
-                      <Chip label="Custom UI" size="small" color="primary" sx={{ fontWeight: 700, height: 20, fontSize: '0.68rem' }} />
+                      <Chip label="Custom UI" size="small" color="primary" sx={{ fontWeight: 500, height: 20, fontSize: '0.68rem' }} />
                     )}
                     {wf.available === false && (
-                      <Chip label="Unavailable" size="small" color="warning" sx={{ fontWeight: 700, height: 20, fontSize: '0.68rem' }} />
+                      <Chip label="Unavailable" size="small" color="warning" sx={{ fontWeight: 500, height: 20, fontSize: '0.68rem' }} />
                     )}
                   </Box>
 
@@ -120,12 +119,12 @@ export default function UseCasesPage() {
                   </Typography>
 
                   {wf.available === false && wf.unavailable_reason && (
-                    <Alert severity="warning" icon={<AlertTriangle size={16} />} sx={{ mb: 2, py: 0.25, fontSize: '0.78rem', borderRadius: 1.5 }}>
+                    <Alert severity="warning" icon={<AlertTriangle size={16} />} sx={{ mb: 2, py: 0.25, fontSize: '0.78rem', borderRadius: 2 }}>
                       {wf.unavailable_reason}
                     </Alert>
                   )}
 
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.75 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 0.75 }}>
                     {wf.agents.length} stage{wf.agents.length === 1 ? '' : 's'}
                     {wf.approval_gate ? ' · pauses for your approval' : ''}
                   </Typography>
@@ -143,7 +142,7 @@ export default function UseCasesPage() {
                       variant="contained"
                       startIcon={<ExternalLink size={16} />}
                       onClick={() => router.push(wf.custom_ui_route!)}
-                      sx={{ fontWeight: 700, borderRadius: 2 }}
+                      sx={{ fontWeight: 500, borderRadius: 2 }}
                     >
                       Open {wf.name}
                     </Button>
@@ -154,7 +153,7 @@ export default function UseCasesPage() {
                       disabled={wf.available === false}
                       startIcon={<Play size={16} />}
                       onClick={() => router.push(`/chat?workflow=${encodeURIComponent(wf.id)}`)}
-                      sx={{ fontWeight: 700, borderRadius: 2 }}
+                      sx={{ fontWeight: 500, borderRadius: 2 }}
                     >
                       Run in the Agent Console
                     </Button>

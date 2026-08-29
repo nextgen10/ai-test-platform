@@ -22,7 +22,7 @@ const UBS_KEYS_PATH =
 
 export const UbsLogoFull: React.FC<UbsLogoFullProps> = ({
     height = 26,
-    keysColor = '#1C1F24',
+    keysColor = '#1c1c1c',
     wordmarkColor = '#E60000',
     className,
     style,

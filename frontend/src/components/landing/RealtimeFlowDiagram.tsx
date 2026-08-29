@@ -1,111 +1,24 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Paper, alpha, useTheme, Chip, Stack } from '@mui/material';
-import { ShieldCheck, RefreshCw, Cpu } from 'lucide-react';
+import { Box, alpha, useTheme } from '@mui/material';
 
-const AMBER = '#D9822B';
-const GREEN = '#1F8A70';
-const RED = '#D00000';
-const BLUE = '#2D6CDF';
+const AMBER = '#af8626';
+const GREEN = '#469a6c';
+const RED = '#e60000';
+const BLUE = '#00759e';
 
 export default function RealtimeFlowDiagram() {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
 
-  // Colors
-  const bgColor = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(18,22,29,0.85)';
-  const cardBg = isLight ? '#FAFBFC' : '#1A202C';
-  const cardBorder = isLight ? '#E2E8F0' : '#2D3748';
-  const textColor = isLight ? '#1A202C' : '#F7FAFC';
-  const mutedColor = isLight ? '#718096' : '#A0AEC0';
+  const cardBg = isLight ? '#f9f9f7' : '#1c1c1c';
+  const cardBorder = isLight ? '#e0dfd7' : '#404040';
+  const textColor = isLight ? '#1c1c1c' : '#f9f9f7';
+  const mutedColor = isLight ? '#8e8d83' : '#b8b3a2';
 
   return (
-    <Box sx={{ width: '100%', my: { xs: 3, md: 4 } }}>
-      {/* Full-width container with sleek border and subtle shadow */}
-      <Paper
-        elevation={0}
-        sx={{
-          width: '100%',
-          p: { xs: 2.5, sm: 3.5, md: 4.5 },
-          borderRadius: 4,
-          bgcolor: bgColor,
-          backdropFilter: 'blur(16px)',
-          border: '1px solid',
-          borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)',
-          boxShadow: isLight
-            ? '0 20px 40px -15px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)'
-            : '0 20px 40px -15px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
-        {/* Ambient Top Glow Line */}
-        <Box sx={{
-          position: 'absolute',
-          top: 0,
-          left: '10%',
-          right: '10%',
-          height: '2px',
-          background: `linear-gradient(90deg, transparent, ${RED}, ${BLUE}, ${GREEN}, transparent)`,
-          opacity: 0.8,
-        }} />
-
-        {/* Header tag */}
-        <Box sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 2,
-          mb: 3,
-          pb: 2.5,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                bgcolor: RED,
-                boxShadow: `0 0 12px ${RED}`,
-                animation: 'pulse 1.5s infinite',
-              }}
-            />
-            <Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, letterSpacing: '0.06em', color: 'text.primary', fontSize: '0.82rem' }}>
-                DETERMINISTIC MULTI-AGENT STATE MACHINE PIPELINE
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500, fontSize: '0.74rem' }}>
-                End-to-end execution lifecycle with strict schema validation, independent review, and in-place healing
-              </Typography>
-            </Box>
-          </Box>
-
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-            <Chip
-              icon={<Cpu size={13} color={AMBER} />}
-              label="5 Specialized Agents"
-              size="small"
-              sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: alpha(AMBER, isLight ? 0.1 : 0.18), color: AMBER, border: `1px solid ${alpha(AMBER, 0.25)}` }}
-            />
-            <Chip
-              icon={<ShieldCheck size={13} color={GREEN} />}
-              label="1 Pre-Flight Gate"
-              size="small"
-              sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: alpha(GREEN, isLight ? 0.1 : 0.18), color: GREEN, border: `1px solid ${alpha(GREEN, 0.25)}` }}
-            />
-            <Chip
-              icon={<RefreshCw size={13} color={BLUE} />}
-              label="In-Place Healing"
-              size="small"
-              sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: alpha(BLUE, isLight ? 0.1 : 0.18), color: BLUE, border: `1px solid ${alpha(BLUE, 0.25)}` }}
-            />
-          </Stack>
-        </Box>
-
+    <Box sx={{ width: '100%' }}>
         {/* The Animated SVG Flow Diagram - Wide 1440 x 550 Canvas */}
         <Box
           component="svg"
@@ -166,8 +79,8 @@ export default function RealtimeFlowDiagram() {
           </circle>
 
           {/* Path 2b: Approval Gate REJECT branch (UPWARDS to avoid overlap) */}
-          <path d="M 720 70 L 720 46" fill="none" stroke="#EF4444" strokeWidth="2.2" strokeDasharray="4 4" markerEnd="url(#arrow-red)" />
-          <circle r="4" fill="#EF4444">
+          <path d="M 720 70 L 720 46" fill="none" stroke="#da0000" strokeWidth="2.2" strokeDasharray="4 4" markerEnd="url(#arrow-red)" />
+          <circle r="4" fill="#da0000">
             <animateMotion path="M 720 70 L 720 46" dur="1.2s" repeatCount="indefinite" />
           </circle>
 
@@ -254,15 +167,15 @@ export default function RealtimeFlowDiagram() {
           <g transform="translate(40, 70)">
             <rect width="160" height="76" rx="10" fill={cardBg} stroke={cardBorder} strokeWidth="1.5" />
             <rect width="160" height="4" rx="2" fill={mutedColor} />
-            <text x="80" y="28" fill={mutedColor} fontSize="10" fontWeight="800" textAnchor="middle">INPUT</text>
-            <text x="80" y="46" fill={textColor} fontSize="12" fontWeight="700" textAnchor="middle">requirement.md</text>
+            <text x="80" y="28" fill={mutedColor} fontSize="10" fontWeight="500" textAnchor="middle">INPUT</text>
+            <text x="80" y="46" fill={textColor} fontSize="12" fontWeight="500" textAnchor="middle">requirement.md</text>
             <text x="80" y="62" fill={mutedColor} fontSize="9.5" textAnchor="middle">Business Spec</text>
           </g>
 
           {/* ARTIFACT 1 LABEL (Centered in 110px gap [200, 310]) */}
           <g transform="translate(220, 88)">
-            <rect width="70" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(AMBER, 0.4)} strokeWidth="1" />
-            <text x="35" y="12" fill={AMBER} fontSize="8.5" fontFamily="monospace" fontWeight="700" textAnchor="middle">raw spec</text>
+            <rect width="70" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(AMBER, 0.4)} strokeWidth="1" />
+            <text x="35" y="12" fill={AMBER} fontSize="8.5" fontFamily="monospace" fontWeight="500" textAnchor="middle">raw spec</text>
           </g>
 
           {/* ROW 1: NODE 1 - Requirement Analyst */}
@@ -270,16 +183,16 @@ export default function RealtimeFlowDiagram() {
             <rect width="200" height="76" rx="10" fill={cardBg} stroke={AMBER} strokeWidth="1.8" />
             <rect width="200" height="4" rx="2" fill={AMBER} />
             <circle cx="28" cy="28" r="11" fill={alpha(AMBER, 0.15)} />
-            <text x="28" y="32" fill={AMBER} fontSize="11" fontWeight="800" textAnchor="middle">1</text>
-            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="700">Analyst Agent</text>
-            <text x="50" y="47" fill={AMBER} fontSize="9.5" fontWeight="600">8 INVEST Criteria</text>
+            <text x="28" y="32" fill={AMBER} fontSize="11" fontWeight="500" textAnchor="middle">1</text>
+            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="500">Analyst Agent</text>
+            <text x="50" y="47" fill={AMBER} fontSize="9.5" fontWeight="500">8 INVEST Criteria</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">Scores clarity & feasibility</text>
           </g>
 
           {/* ARTIFACT 2 LABEL (Centered in 110px gap [510, 620]) */}
           <g transform="translate(525, 88)">
-            <rect width="80" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(GREEN, 0.4)} strokeWidth="1" />
-            <text x="40" y="12" fill={GREEN} fontSize="8" fontFamily="monospace" fontWeight="700" textAnchor="middle">quality.json</text>
+            <rect width="80" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(GREEN, 0.4)} strokeWidth="1" />
+            <text x="40" y="12" fill={GREEN} fontSize="8" fontFamily="monospace" fontWeight="500" textAnchor="middle">quality.json</text>
           </g>
 
           {/* ROW 1: NODE 2 - Human Approval Gate */}
@@ -287,22 +200,22 @@ export default function RealtimeFlowDiagram() {
             <rect width="200" height="76" rx="10" fill={cardBg} stroke={GREEN} strokeWidth="1.8" />
             <rect width="200" height="4" rx="2" fill={GREEN} />
             <polygon points="28,17 38,28 28,39 18,28" fill={alpha(GREEN, 0.15)} stroke={GREEN} strokeWidth="1.2" />
-            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="700">Approval Gate</text>
-            <text x="50" y="47" fill={GREEN} fontSize="9.5" fontWeight="600">Human-in-the-Loop</text>
+            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="500">Approval Gate</text>
+            <text x="50" y="47" fill={GREEN} fontSize="9.5" fontWeight="500">Human-in-the-Loop</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">AWAITING_APPROVAL</text>
           </g>
 
           {/* REJECT TERMINATION BOX (Cleanly situated UPWARDS at y=10) */}
           <g transform="translate(630, 10)">
-            <rect width="180" height="34" rx="7" fill={isLight ? '#FEF2F2' : '#2C0B0E'} stroke="#EF4444" strokeWidth="1.2" strokeDasharray="3 3" />
-            <text x="90" y="18" fill="#EF4444" fontSize="10.5" fontWeight="700" textAnchor="middle">Rejected ➔ Run Halt</text>
+            <rect width="180" height="34" rx="7" fill={isLight ? '#fbeaea' : '#2a2a2a'} stroke="#da0000" strokeWidth="1.2" strokeDasharray="3 3" />
+            <text x="90" y="18" fill="#da0000" fontSize="10.5" fontWeight="500" textAnchor="middle">Rejected ➔ Run Halt</text>
             <text x="90" y="28" fill={mutedColor} fontSize="8" textAnchor="middle">Reason Logged &bull; No Tokens Wasted</text>
           </g>
 
           {/* ARTIFACT 3 LABEL (Centered in 110px gap [820, 930]) */}
           <g transform="translate(840, 88)">
-            <rect width="70" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(RED, 0.4)} strokeWidth="1" />
-            <text x="35" y="12" fill={RED} fontSize="8" fontFamily="monospace" fontWeight="700" textAnchor="middle">approved</text>
+            <rect width="70" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(RED, 0.4)} strokeWidth="1" />
+            <text x="35" y="12" fill={RED} fontSize="8" fontFamily="monospace" fontWeight="500" textAnchor="middle">approved</text>
           </g>
 
           {/* ROW 1: NODE 3 - Test Designer */}
@@ -310,23 +223,23 @@ export default function RealtimeFlowDiagram() {
             <rect width="200" height="76" rx="10" fill={cardBg} stroke={RED} strokeWidth="1.8" />
             <rect width="200" height="4" rx="2" fill={RED} />
             <circle cx="28" cy="28" r="11" fill={alpha(RED, 0.15)} />
-            <text x="28" y="32" fill={RED} fontSize="11" fontWeight="800" textAnchor="middle">2</text>
-            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="700">Test Designer</text>
-            <text x="50" y="47" fill={RED} fontSize="9.5" fontWeight="600">5-Category Matrix</text>
+            <text x="28" y="32" fill={RED} fontSize="11" fontWeight="500" textAnchor="middle">2</text>
+            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="500">Test Designer</text>
+            <text x="50" y="47" fill={RED} fontSize="9.5" fontWeight="500">5-Category Matrix</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">Functional to Data</text>
           </g>
 
           {/* DESIGN JSON ARTIFACT */}
           <g transform="translate(1190, 178)">
-            <rect width="76" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(RED, 0.4)} strokeWidth="1" />
-            <text x="38" y="12" fill={RED} fontSize="8" fontFamily="monospace" fontWeight="700" textAnchor="middle">design.json</text>
+            <rect width="76" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(RED, 0.4)} strokeWidth="1" />
+            <text x="38" y="12" fill={RED} fontSize="8" fontFamily="monospace" fontWeight="500" textAnchor="middle">design.json</text>
           </g>
 
 
           {/* ================= ROW 2 (Right to Left) ================= */}
 
           {/* RETRY LOOP LABEL */}
-          <text x="875" y="168" fill={AMBER} fontSize="9.5" fontWeight="700" textAnchor="middle">
+          <text x="875" y="168" fill={AMBER} fontSize="9.5" fontWeight="500" textAnchor="middle">
             ↺ Schema Retry Loop (max 2)
           </text>
 
@@ -335,16 +248,16 @@ export default function RealtimeFlowDiagram() {
             <rect width="200" height="76" rx="10" fill={cardBg} stroke={RED} strokeWidth="1.8" />
             <rect width="200" height="4" rx="2" fill={RED} />
             <circle cx="28" cy="28" r="11" fill={alpha(RED, 0.15)} />
-            <text x="28" y="32" fill={RED} fontSize="11" fontWeight="800" textAnchor="middle">3</text>
-            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="700">Test Generator</text>
-            <text x="50" y="47" fill={RED} fontSize="9.5" fontWeight="600">Actionable Steps</text>
+            <text x="28" y="32" fill={RED} fontSize="11" fontWeight="500" textAnchor="middle">3</text>
+            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="500">Test Generator</text>
+            <text x="50" y="47" fill={RED} fontSize="9.5" fontWeight="500">Actionable Steps</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">Synthesizes TC Specs</text>
           </g>
 
           {/* ARTIFACT 4 LABEL (Centered in 110px gap [820, 930]) */}
           <g transform="translate(840, 248)">
-            <rect width="70" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(RED, 0.4)} strokeWidth="1" />
-            <text x="35" y="12" fill={RED} fontSize="7.8" fontFamily="monospace" fontWeight="700" textAnchor="middle">draft.json</text>
+            <rect width="70" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(RED, 0.4)} strokeWidth="1" />
+            <text x="35" y="12" fill={RED} fontSize="7.8" fontFamily="monospace" fontWeight="500" textAnchor="middle">draft.json</text>
           </g>
 
           {/* ROW 2: NODE 5 - Test Reviewer */}
@@ -352,16 +265,16 @@ export default function RealtimeFlowDiagram() {
             <rect width="200" height="76" rx="10" fill={cardBg} stroke={RED} strokeWidth="1.8" />
             <rect width="200" height="4" rx="2" fill={RED} />
             <circle cx="28" cy="28" r="11" fill={alpha(RED, 0.15)} />
-            <text x="28" y="32" fill={RED} fontSize="11" fontWeight="800" textAnchor="middle">4</text>
-            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="700">Test Reviewer</text>
-            <text x="50" y="47" fill={RED} fontSize="9.5" fontWeight="600">Independent Critic</text>
+            <text x="28" y="32" fill={RED} fontSize="11" fontWeight="500" textAnchor="middle">4</text>
+            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="500">Test Reviewer</text>
+            <text x="50" y="47" fill={RED} fontSize="9.5" fontWeight="500">Independent Critic</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">Validates JSON Schema</text>
           </g>
 
           {/* ARTIFACT 5 LABEL (Centered in 110px gap [510, 620]) */}
           <g transform="translate(530, 248)">
-            <rect width="70" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(BLUE, 0.4)} strokeWidth="1" />
-            <text x="35" y="12" fill={BLUE} fontSize="7.8" fontFamily="monospace" fontWeight="700" textAnchor="middle">cases.json</text>
+            <rect width="70" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(BLUE, 0.4)} strokeWidth="1" />
+            <text x="35" y="12" fill={BLUE} fontSize="7.8" fontFamily="monospace" fontWeight="500" textAnchor="middle">cases.json</text>
           </g>
 
           {/* ROW 2: NODE 6 - Test Evaluator */}
@@ -369,16 +282,16 @@ export default function RealtimeFlowDiagram() {
             <rect width="200" height="76" rx="10" fill={cardBg} stroke={BLUE} strokeWidth="1.8" />
             <rect width="200" height="4" rx="2" fill={BLUE} />
             <circle cx="28" cy="28" r="11" fill={alpha(BLUE, 0.15)} />
-            <text x="28" y="32" fill={BLUE} fontSize="11" fontWeight="800" textAnchor="middle">5</text>
-            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="700">Test Evaluator</text>
-            <text x="50" y="47" fill={BLUE} fontSize="9.5" fontWeight="600">5-D RQS Scoring</text>
+            <text x="28" y="32" fill={BLUE} fontSize="11" fontWeight="500" textAnchor="middle">5</text>
+            <text x="50" y="32" fill={textColor} fontSize="13" fontWeight="500">Test Evaluator</text>
+            <text x="50" y="47" fill={BLUE} fontSize="9.5" fontWeight="500">5-D RQS Scoring</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">Evaluates suite quality</text>
           </g>
 
           {/* EVALUATION JSON ARTIFACT */}
           <g transform="translate(180, 338)">
-            <rect width="84" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(GREEN, 0.4)} strokeWidth="1" />
-            <text x="42" y="12" fill={GREEN} fontSize="7.5" fontFamily="monospace" fontWeight="700" textAnchor="middle">evaluation.json</text>
+            <rect width="84" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(GREEN, 0.4)} strokeWidth="1" />
+            <text x="42" y="12" fill={GREEN} fontSize="7.5" fontFamily="monospace" fontWeight="500" textAnchor="middle">evaluation.json</text>
           </g>
 
 
@@ -386,19 +299,19 @@ export default function RealtimeFlowDiagram() {
 
           {/* ROW 3: NODE 7 - Validated Test Suite */}
           <g transform="translate(310, 390)">
-            <rect width="310" height="76" rx="10" fill={isLight ? '#F0FDF4' : '#0B2317'} stroke={GREEN} strokeWidth="2" />
+            <rect width="310" height="76" rx="10" fill={isLight ? '#f4f3ee' : '#2a2a2a'} stroke={GREEN} strokeWidth="2" />
             <rect width="310" height="4" rx="2" fill={GREEN} />
             <circle cx="28" cy="28" r="11" fill={GREEN} />
             <path d="M 23 28 L 27 32 L 34 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" />
-            <text x="52" y="32" fill={textColor} fontSize="13.5" fontWeight="700">Validated Test Suite</text>
-            <text x="52" y="47" fill={GREEN} fontSize="10" fontWeight="600">Production Ready Suite</text>
+            <text x="52" y="32" fill={textColor} fontSize="13.5" fontWeight="500">Validated Test Suite</text>
+            <text x="52" y="47" fill={GREEN} fontSize="10" fontWeight="500">Production Ready Suite</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">Strict schema &bull; 100% Traceability</text>
           </g>
 
           {/* ARTIFACT 6 LABEL (Centered in 120px gap [620, 740]) */}
           <g transform="translate(640, 418)">
-            <rect width="80" height="18" rx="4" fill={isLight ? '#F1F5F9' : '#0F172A'} stroke={alpha(BLUE, 0.4)} strokeWidth="1" />
-            <text x="40" y="12" fill={BLUE} fontSize="7.8" fontFamily="monospace" fontWeight="700" textAnchor="middle">on reprocess</text>
+            <rect width="80" height="18" rx="4" fill={isLight ? '#f4f3ee' : '#1c1c1c'} stroke={alpha(BLUE, 0.4)} strokeWidth="1" />
+            <text x="40" y="12" fill={BLUE} fontSize="7.8" fontFamily="monospace" fontWeight="500" textAnchor="middle">on reprocess</text>
           </g>
 
           {/* ROW 3: NODE 8 - Gap Closer */}
@@ -406,18 +319,17 @@ export default function RealtimeFlowDiagram() {
             <rect width="310" height="76" rx="10" fill={cardBg} stroke={BLUE} strokeWidth="1.8" strokeDasharray="4 3" />
             <rect width="310" height="4" rx="2" fill={BLUE} />
             <circle cx="28" cy="28" r="11" fill={alpha(BLUE, 0.15)} />
-            <text x="28" y="33" fill={BLUE} fontSize="12" fontWeight="800" textAnchor="middle">↺</text>
-            <text x="52" y="32" fill={BLUE} fontSize="13.5" fontWeight="700">Gap Closer (Reprocess)</text>
+            <text x="28" y="33" fill={BLUE} fontSize="12" fontWeight="500" textAnchor="middle">↺</text>
+            <text x="52" y="32" fill={BLUE} fontSize="13.5" fontWeight="500">Gap Closer (Reprocess)</text>
             <text x="52" y="47" fill={mutedColor} fontSize="9.5">Non-destructive healing</text>
             <text x="20" y="65" fill={mutedColor} fontSize="9.5">Amends suite in-place without wiping</text>
           </g>
 
           {/* REPROCESS LOOP LABEL */}
-          <text x="680" y="534" fill={BLUE} fontSize="9.5" fontWeight="700" textAnchor="middle">
+          <text x="680" y="534" fill={BLUE} fontSize="9.5" fontWeight="500" textAnchor="middle">
             ↺ In-Place Delta Reprocess (Preserves Passing Cases)
           </text>
         </Box>
-      </Paper>
     </Box>
   );
 }

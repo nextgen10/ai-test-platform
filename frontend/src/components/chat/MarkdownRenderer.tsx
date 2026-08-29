@@ -109,11 +109,11 @@ const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> 
     <Box
       sx={{
         my: 1.5,
-        borderRadius: 1.5,
+        borderRadius: 2,
         overflow: 'hidden',
         border: '1px solid',
         borderColor: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)',
-        bgcolor: isLight ? '#f6f8fa' : '#0d1117',
+        bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
       }}
     >
       <Box
@@ -123,7 +123,7 @@ const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> 
           justifyContent: 'space-between',
           px: 1.5,
           py: 0.5,
-          bgcolor: isLight ? '#eaeef2' : '#161b22',
+          bgcolor: isLight ? '#e0dfd7' : '#2a2a2a',
           borderBottom: '1px solid',
           borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
         }}
@@ -132,9 +132,9 @@ const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> 
           variant="caption"
           sx={{
             fontFamily: 'monospace',
-            fontWeight: 600,
+            fontWeight: 500,
             fontSize: '0.75rem',
-            color: isLight ? '#57606a' : '#8b949e',
+            color: isLight ? '#5a5d5c' : '#b8b3a2',
             textTransform: 'lowercase',
           }}
         >
@@ -142,7 +142,7 @@ const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> 
         </Typography>
         <Tooltip title={copied ? 'Copied!' : 'Copy Code'}>
           <IconButton size="small" onClick={handleCopy} sx={{ p: 0.5 }}>
-            {copied ? <Check size={14} color="#2da44e" /> : <Copy size={14} />}
+            {copied ? <Check size={14} color="#469a6c" /> : <Copy size={14} />}
           </IconButton>
         </Tooltip>
       </Box>
@@ -155,7 +155,7 @@ const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> 
           fontSize: '0.82rem',
           fontFamily: 'SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace',
           lineHeight: 1.5,
-          color: isLight ? '#24292f' : '#e6edf3',
+          color: isLight ? '#1c1c1c' : '#f9f9f7',
         }}
       >
         <code>{code}</code>
@@ -198,7 +198,7 @@ function renderTextBlocks(text: string, isLight: boolean) {
         <Typography
           key={`h3-${i}`}
           variant="subtitle1"
-          sx={{ fontWeight: 700, mt: 1.5, mb: 0.5, color: isLight ? '#1a1f2c' : '#f0f6fc' }}
+          sx={{ fontWeight: 500, mt: 1.5, mb: 0.5, color: isLight ? '#1c1c1c' : '#f9f9f7' }}
         >
           {renderInline(line.slice(4))}
         </Typography>
@@ -208,7 +208,7 @@ function renderTextBlocks(text: string, isLight: boolean) {
         <Typography
           key={`h2-${i}`}
           variant="h6"
-          sx={{ fontWeight: 700, fontSize: '1.05rem', mt: 2, mb: 0.75, color: isLight ? '#1a1f2c' : '#f0f6fc' }}
+          sx={{ fontWeight: 500, fontSize: '1.05rem', mt: 2, mb: 0.75, color: isLight ? '#1c1c1c' : '#f9f9f7' }}
         >
           {renderInline(line.slice(3))}
         </Typography>
@@ -218,7 +218,7 @@ function renderTextBlocks(text: string, isLight: boolean) {
         <Typography
           key={`h1-${i}`}
           variant="h5"
-          sx={{ fontWeight: 800, fontSize: '1.25rem', mt: 2.5, mb: 1, color: isLight ? '#1a1f2c' : '#f0f6fc' }}
+          sx={{ fontWeight: 500, fontSize: '1.25rem', mt: 2.5, mb: 1, color: isLight ? '#1c1c1c' : '#f9f9f7' }}
         >
           {renderInline(line.slice(2))}
         </Typography>
@@ -243,7 +243,7 @@ function renderTextBlocks(text: string, isLight: boolean) {
               width: 5,
               height: 5,
               borderRadius: '50%',
-              bgcolor: isLight ? '#57606a' : '#8b949e',
+              bgcolor: isLight ? '#5a5d5c' : '#b8b3a2',
               mt: '8px',
               flexShrink: 0,
             }}
@@ -271,7 +271,7 @@ function renderTextBlocks(text: string, isLight: boolean) {
             <Typography
               variant="body2"
               component="span"
-              sx={{ fontWeight: 700, color: 'primary.main', fontSize: '0.85rem', minWidth: 16 }}
+              sx={{ fontWeight: 500, color: 'primary.main', fontSize: '0.85rem', minWidth: 16 }}
             >
               {match[1]}.
             </Typography>
@@ -303,7 +303,7 @@ function renderTextBlocks(text: string, isLight: boolean) {
             my: 0.75,
             fontSize: '0.88rem',
             lineHeight: 1.6,
-            color: isLight ? '#24292f' : '#e6edf3',
+            color: isLight ? '#1c1c1c' : '#f9f9f7',
           }}
         >
           {renderInline(line)}
@@ -348,12 +348,12 @@ function renderInline(text: string): React.ReactNode {
           sx={{
             px: 0.6,
             py: 0.2,
-            borderRadius: 1,
+            borderRadius: 2,
             fontSize: '0.82rem',
             fontFamily: 'SFMono-Regular, Consolas, monospace',
             bgcolor: (t) =>
               t.palette.mode === 'light' ? 'rgba(175,184,193,0.2)' : 'rgba(110,118,129,0.4)',
-            color: (t) => (t.palette.mode === 'light' ? '#cf222e' : '#ff7b72'),
+            color: (t) => (t.palette.mode === 'light' ? '#da0000' : '#fe6f5d'),
           }}
         >
           {token.slice(1, -1)}
@@ -378,7 +378,7 @@ function renderInline(text: string): React.ReactNode {
     }
     if (token.startsWith('**') && token.endsWith('**')) {
       return (
-        <Box key={idx} component="strong" sx={{ fontWeight: 700 }}>
+        <Box key={idx} component="strong" sx={{ fontWeight: 500 }}>
           {token.slice(2, -2)}
         </Box>
       );
@@ -414,26 +414,26 @@ const MarkdownTable: React.FC<{ lines: string[]; isLight: boolean }> = ({ lines,
       elevation={0}
       sx={{
         my: 1.5,
-        borderRadius: 1.5,
+        borderRadius: 2,
         border: '1px solid',
         borderColor: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)',
-        bgcolor: isLight ? '#ffffff' : '#161b22',
+        bgcolor: isLight ? '#ffffff' : '#2a2a2a',
         overflow: 'hidden',
       }}
     >
       <Table size="small">
-        <TableHead sx={{ bgcolor: isLight ? '#f6f8fa' : '#21262d' }}>
+        <TableHead sx={{ bgcolor: isLight ? '#f9f9f7' : '#2a2a2a' }}>
           <TableRow>
             {headers.map((h, idx) => (
               <TableCell
                 key={idx}
                 sx={{
-                  fontWeight: 700,
+                  fontWeight: 500,
                   fontSize: '0.8rem',
                   py: 0.75,
                   borderBottom: '1px solid',
                   borderColor: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)',
-                  color: isLight ? '#24292f' : '#f0f6fc',
+                  color: isLight ? '#1c1c1c' : '#f9f9f7',
                 }}
               >
                 {renderInline(h)}

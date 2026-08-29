@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
-import { Snackbar, Alert, useTheme, alpha } from '@mui/material';
+import { Snackbar, Alert, useTheme } from '@mui/material';
 import { CheckCircle2, AlertTriangle, Info, AlertCircle } from 'lucide-react';
+import { getAccents, getTokens } from '@/theme';
 
 type Severity = 'success' | 'error' | 'warning' | 'info';
 
@@ -20,13 +21,6 @@ const ICON_MAP: Record<Severity, React.ReactElement> = {
     info: <Info size={18} />,
 };
 
-const COLOR_MAP: Record<Severity, string> = {
-    success: '#1F8A70',
-    error: '#C23030',
-    warning: '#D9822B',
-    info: '#2D6CDF',
-};
-
 export default function UBSSnackbar({
     open,
     message,
@@ -35,8 +29,15 @@ export default function UBSSnackbar({
     autoHideDuration = 4000,
 }: UBSSnackbarProps) {
     const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
-    const color = COLOR_MAP[severity];
+    const accents = getAccents(theme.palette.mode);
+    const tokens = getTokens(theme.palette.mode);
+    const color: Record<Severity, string> = {
+        success: accents.green,
+        error: tokens.error,
+        warning: accents.gold,
+        info: accents.teal,
+    };
+    const tone = color[severity];
 
     return (
         <Snackbar
@@ -53,14 +54,14 @@ export default function UBSSnackbar({
                     width: '100%',
                     minWidth: 320,
                     borderRadius: 2,
-                    fontWeight: 700,
-                    backdropFilter: 'blur(12px)',
-                    bgcolor: alpha(color, isDark ? 0.14 : 0.07),
-                    color,
-                    border: `1px solid ${alpha(color, isDark ? 0.3 : 0.22)}`,
-                    '.MuiAlert-icon': { color },
-                    '.MuiAlert-action .MuiIconButton-root': { color: alpha(color, 0.7) },
-                    boxShadow: `0 4px 24px ${alpha(color, isDark ? 0.18 : 0.1)}`,
+                    fontWeight: 400,
+                    bgcolor: 'background.paper',
+                    color: 'text.primary',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderLeft: `3px solid ${tone}`,
+                    boxShadow: 'none',
+                    '.MuiAlert-icon': { color: tone },
                 }}
             >
                 {message}

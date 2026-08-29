@@ -353,9 +353,9 @@ export default function WorkflowBuilderPage() {
                 <Grid size={{ xs: 12, md: 7 }}>
                     <Paper
                         elevation={0}
-                        sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}
+                        sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
                     >
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
                             What should the new workflow do?
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -365,7 +365,7 @@ export default function WorkflowBuilderPage() {
                         </Typography>
 
                         <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 2 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', alignSelf: 'center', mr: 0.5 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', alignSelf: 'center', mr: 0.5 }}>
                                 Start from:
                             </Typography>
                             {EXAMPLES.map((example) => (
@@ -378,7 +378,7 @@ export default function WorkflowBuilderPage() {
                                     disabled={running || starting}
                                     onClick={() => setBrief(example.text)}
                                     icon={<Sparkles size={13} />}
-                                    sx={{ fontWeight: 600, fontSize: '0.74rem' }}
+                                    sx={{ fontWeight: 500, fontSize: '0.74rem' }}
                                 />
                             ))}
                         </Box>
@@ -396,7 +396,7 @@ export default function WorkflowBuilderPage() {
                             sx={{ mb: 2 }}
                         />
 
-                        {(running || starting) && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
+                        {(running || starting) && <LinearProgress sx={{ mb: 2, borderRadius: 2 }} />}
 
                         <Box sx={{ display: 'flex', gap: 1.5 }}>
                             <Button
@@ -412,7 +412,7 @@ export default function WorkflowBuilderPage() {
                                     running || starting || unavailable || brief.trim().length < 20
                                 }
                                 onClick={start}
-                                sx={{ fontWeight: 800, py: 1.25, borderRadius: 2 }}
+                                sx={{ fontWeight: 500, py: 1.25, borderRadius: 2 }}
                             >
                                 {starting ? 'Starting…' : running ? 'Building…' : 'Design this workflow'}
                             </Button>
@@ -422,7 +422,7 @@ export default function WorkflowBuilderPage() {
                                     size="large"
                                     startIcon={<RotateCcw size={16} />}
                                     onClick={reset}
-                                    sx={{ fontWeight: 700, borderRadius: 2, whiteSpace: 'nowrap' }}
+                                    sx={{ fontWeight: 500, borderRadius: 2, whiteSpace: 'nowrap' }}
                                 >
                                     Start over
                                 </Button>
@@ -437,15 +437,15 @@ export default function WorkflowBuilderPage() {
                         elevation={0}
                         sx={{
                             p: 3,
-                            borderRadius: 3,
+                            borderRadius: 2,
                             border: '1px solid',
                             borderColor: 'divider',
                             height: '100%',
-                            bgcolor: isLight ? '#f8fafc' : '#11161d',
+                            bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                         }}
                     >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                                 The build pipeline
                             </Typography>
                             {job && (
@@ -453,7 +453,7 @@ export default function WorkflowBuilderPage() {
                                     size="small"
                                     label={job.status}
                                     color={finished ? 'success' : failed ? 'error' : 'primary'}
-                                    sx={{ fontWeight: 700, fontSize: '0.68rem' }}
+                                    sx={{ fontWeight: 500, fontSize: '0.68rem' }}
                                 />
                             )}
                         </Box>
@@ -482,7 +482,7 @@ export default function WorkflowBuilderPage() {
                                             </Box>
                                             <Box sx={{ minWidth: 0, flex: 1 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                                                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
                                                         {index + 1}. {agent.stage}
                                                     </Typography>
                                                     {record?.duration_ms != null && (
@@ -514,11 +514,11 @@ export default function WorkflowBuilderPage() {
             {generated && (
                 <Paper
                     elevation={0}
-                    sx={{ mt: 3, p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}
+                    sx={{ mt: 3, p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 1 }}>
                         <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
                                 {files.length > 0
                                     ? `${files.length} file${files.length === 1 ? '' : 's'} ready to install`
                                     : 'The builder produced a document'}
@@ -536,7 +536,7 @@ export default function WorkflowBuilderPage() {
                                 variant="outlined"
                                 startIcon={<Download size={15} />}
                                 href={api.artifactUrl(job!.id, PRIMARY_ARTIFACT)}
-                                sx={{ fontWeight: 700, borderRadius: 2, whiteSpace: 'nowrap' }}
+                                sx={{ fontWeight: 500, borderRadius: 2, whiteSpace: 'nowrap' }}
                             >
                                 Download
                             </Button>
@@ -544,7 +544,7 @@ export default function WorkflowBuilderPage() {
                                 size="small"
                                 variant="text"
                                 onClick={() => setShowRaw((v) => !v)}
-                                sx={{ fontWeight: 700, textTransform: 'none' }}
+                                sx={{ fontWeight: 500, textTransform: 'none' }}
                             >
                                 {showRaw ? 'Hide raw document' : 'Show raw document'}
                             </Button>
@@ -558,7 +558,7 @@ export default function WorkflowBuilderPage() {
                                     }
                                     disabled={installingAll || allInstalled}
                                     onClick={installAll}
-                                    sx={{ fontWeight: 800, borderRadius: 2, whiteSpace: 'nowrap' }}
+                                    sx={{ fontWeight: 500, borderRadius: 2, whiteSpace: 'nowrap' }}
                                 >
                                     {allInstalled
                                         ? 'All installed'
@@ -580,7 +580,7 @@ export default function WorkflowBuilderPage() {
                                         size="small"
                                         endIcon={<ExternalLink size={14} />}
                                         onClick={() => router.push(`/chat?workflow=${encodeURIComponent(newWorkflowId)}`)}
-                                        sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}
+                                        sx={{ fontWeight: 500, whiteSpace: 'nowrap' }}
                                     >
                                         Run it
                                     </Button>
@@ -622,11 +622,11 @@ export default function WorkflowBuilderPage() {
                                             label={file.kind}
                                             size="small"
                                             color={file.kind === 'workflow' ? 'primary' : 'default'}
-                                            sx={{ fontWeight: 700, fontSize: '0.68rem', minWidth: 72 }}
+                                            sx={{ fontWeight: 500, fontSize: '0.68rem', minWidth: 72 }}
                                         />
                                         <Typography
                                             variant="body2"
-                                            sx={{ fontFamily: 'monospace', fontWeight: 600, flex: 1, minWidth: 200 }}
+                                            sx={{ fontFamily: 'monospace', fontWeight: 500, flex: 1, minWidth: 200 }}
                                         >
                                             {file.path}
                                         </Typography>
@@ -635,14 +635,14 @@ export default function WorkflowBuilderPage() {
                                             <Chip
                                                 size="small" color="success" icon={<Check size={13} />}
                                                 label={state.replaced ? 'Replaced' : 'Created'}
-                                                sx={{ fontWeight: 700, fontSize: '0.68rem' }}
+                                                sx={{ fontWeight: 500, fontSize: '0.68rem' }}
                                             />
                                         )}
                                         {state.phase === 'exists' && (
                                             <Button
                                                 size="small" variant="outlined" color="warning"
                                                 onClick={() => installOne(file, true)}
-                                                sx={{ fontWeight: 700, textTransform: 'none' }}
+                                                sx={{ fontWeight: 500, textTransform: 'none' }}
                                             >
                                                 Already exists — replace it
                                             </Button>
@@ -654,7 +654,7 @@ export default function WorkflowBuilderPage() {
                                                 startIcon={<PackagePlus size={14} />}
                                                 disabled={installingAll}
                                                 onClick={() => installOne(file)}
-                                                sx={{ fontWeight: 700, textTransform: 'none' }}
+                                                sx={{ fontWeight: 500, textTransform: 'none' }}
                                             >
                                                 Create
                                             </Button>
@@ -675,7 +675,7 @@ export default function WorkflowBuilderPage() {
                                     </Box>
 
                                     {state.phase === 'error' && (
-                                        <Alert severity="error" sx={{ mx: 1.75, mb: 1.75, borderRadius: 1.5, fontSize: '0.8rem' }}>
+                                        <Alert severity="error" sx={{ mx: 1.75, mb: 1.75, borderRadius: 2, fontSize: '0.8rem' }}>
                                             {state.message}
                                         </Alert>
                                     )}
@@ -705,7 +705,7 @@ export default function WorkflowBuilderPage() {
 
                     <Collapse in={showRaw} unmountOnExit>
                         <Box sx={{ mt: 2.5, pt: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 1 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 1 }}>
                                 {PRIMARY_ARTIFACT}
                             </Typography>
                             <MarkdownRenderer content={generated} />
@@ -718,7 +718,7 @@ export default function WorkflowBuilderPage() {
                                 size="small"
                                 startIcon={<Layers size={14} />}
                                 onClick={() => router.push('/registry?tab=workflows')}
-                                sx={{ textTransform: 'none', fontWeight: 700 }}
+                                sx={{ textTransform: 'none', fontWeight: 500 }}
                             >
                                 Open the Registry
                             </Button>
@@ -726,7 +726,7 @@ export default function WorkflowBuilderPage() {
                                 size="small"
                                 startIcon={<ExternalLink size={14} />}
                                 onClick={() => router.push('/use-cases')}
-                                sx={{ textTransform: 'none', fontWeight: 700 }}
+                                sx={{ textTransform: 'none', fontWeight: 500 }}
                             >
                                 See all use cases
                             </Button>

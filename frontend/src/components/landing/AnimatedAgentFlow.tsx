@@ -20,10 +20,10 @@ import {
   UserCheck,
 } from 'lucide-react';
 
-const AMBER = '#D9822B';
-const GREEN = '#1F8A70';
-const RED = '#D00000';
-const BLUE = '#2D6CDF';
+const AMBER = '#af8626';
+const GREEN = '#469a6c';
+const RED = '#e60000';
+const BLUE = '#00759e';
 
 export interface FlowNode {
   id: string;
@@ -43,7 +43,7 @@ const FLOW_NODES: FlowNode[] = [
     step: '0',
     name: 'Requirement Input',
     role: 'Raw business requirement specification',
-    accent: '#5B6472',
+    accent: '#5a5d5c',
     kind: 'input',
     artifactOut: 'requirement.md',
     artifactDesc: 'Source requirement document',
@@ -159,10 +159,10 @@ export default function AnimatedAgentFlow() {
         mb: 3
       }}>
         <Box>
-          <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '0.08em' }}>
+          <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 500, letterSpacing: '0.08em' }}>
             DETERMINISTIC RUN ARCHITECTURE
           </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 700, mt: 0.25 }}>
+          <Typography variant="h4" sx={{ fontWeight: 500, mt: 0.25 }}>
             Animated Agent Transaction Flow
           </Typography>
         </Box>
@@ -172,7 +172,7 @@ export default function AnimatedAgentFlow() {
             size="small"
             label={isPlaying ? "Live Transaction Flow Active" : "Animation Paused"}
             sx={{
-              fontWeight: 700,
+              fontWeight: 500,
               bgcolor: isPlaying ? alpha(GREEN, 0.12) : alpha(theme.palette.text.primary, 0.08),
               color: isPlaying ? GREEN : 'text.secondary',
               border: '1px solid',
@@ -184,7 +184,7 @@ export default function AnimatedAgentFlow() {
             variant="outlined"
             onClick={() => setIsPlaying(!isPlaying)}
             startIcon={isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            sx={{ borderRadius: 2, fontWeight: 600 }}
+            sx={{ borderRadius: 2, fontWeight: 500 }}
           >
             {isPlaying ? 'Pause' : 'Auto-Play'}
           </Button>
@@ -199,7 +199,7 @@ export default function AnimatedAgentFlow() {
             elevation={0}
             sx={{
               p: { xs: 2.5, md: 3.5 },
-              borderRadius: 3.5,
+              borderRadius: 2,
               border: '1px solid',
               borderColor: 'divider',
               bgcolor: 'background.paper',
@@ -226,7 +226,7 @@ export default function AnimatedAgentFlow() {
                       }}
                       sx={{
                         p: 2,
-                        borderRadius: 2.5,
+                        borderRadius: 2,
                         border: '1.5px solid',
                         borderColor: isSelected
                           ? node.accent
@@ -266,7 +266,7 @@ export default function AnimatedAgentFlow() {
                             justifyContent: 'center',
                             bgcolor: alpha(node.accent, isActiveTransaction || isSelected ? 1 : 0.12),
                             color: isActiveTransaction || isSelected ? '#FFF' : node.accent,
-                            fontWeight: 800,
+                            fontWeight: 500,
                             fontSize: '0.85rem',
                             boxShadow: isActiveTransaction ? `0 0 12px ${node.accent}` : 'none',
                             transition: 'all 0.3s ease'
@@ -276,21 +276,21 @@ export default function AnimatedAgentFlow() {
 
                           <Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.92rem' }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 500, fontSize: '0.92rem' }}>
                                 {node.name}
                               </Typography>
                               {node.kind === 'gate' && (
                                 <Chip
                                   label="Human-in-the-Loop Gate"
                                   size="small"
-                                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700, bgcolor: alpha(GREEN, 0.15), color: GREEN }}
+                                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 500, bgcolor: alpha(GREEN, 0.15), color: GREEN }}
                                 />
                               )}
                               {isLoopNode && (
                                 <Chip
                                   label="On Reprocess"
                                   size="small"
-                                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 700, bgcolor: alpha(BLUE, 0.15), color: BLUE }}
+                                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 500, bgcolor: alpha(BLUE, 0.15), color: BLUE }}
                                 />
                               )}
                             </Box>
@@ -308,10 +308,10 @@ export default function AnimatedAgentFlow() {
                               sx={{
                                 fontFamily: 'ui-monospace, monospace',
                                 fontSize: '0.72rem',
-                                fontWeight: 700,
+                                fontWeight: 500,
                                 px: 1,
                                 py: 0.3,
-                                borderRadius: 1,
+                                borderRadius: 2,
                                 bgcolor: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
                                 color: isSelected || isActiveTransaction ? node.accent : 'text.secondary',
                                 border: '1px solid',
@@ -365,7 +365,7 @@ export default function AnimatedAgentFlow() {
             elevation={0}
             sx={{
               p: { xs: 3, md: 3.5 },
-              borderRadius: 3.5,
+              borderRadius: 2,
               border: '1.5px solid',
               borderColor: inspectedNode.accent,
               bgcolor: 'background.paper',
@@ -393,21 +393,21 @@ export default function AnimatedAgentFlow() {
                   label={inspectedNode.kind === 'gate' ? "APPROVAL GATE" : `AGENT STAGE ${inspectedNode.step}`}
                   size="small"
                   sx={{
-                    fontWeight: 800,
+                    fontWeight: 500,
                     fontSize: '0.7rem',
                     bgcolor: alpha(inspectedNode.accent, 0.15),
                     color: inspectedNode.accent
                   }}
                 />
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
                   Click any stage to inspect
                 </Typography>
               </Box>
 
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 500, mb: 1 }}>
                 {inspectedNode.name}
               </Typography>
-              <Typography variant="subtitle2" sx={{ color: inspectedNode.accent, fontWeight: 600, mb: 2.5 }}>
+              <Typography variant="subtitle2" sx={{ color: inspectedNode.accent, fontWeight: 500, mb: 2.5 }}>
                 {inspectedNode.role}
               </Typography>
 
@@ -420,15 +420,15 @@ export default function AnimatedAgentFlow() {
                 <Box sx={{
                   p: 2,
                   borderRadius: 2,
-                  bgcolor: isLight ? '#F5F7FA' : '#161B22',
+                  bgcolor: isLight ? '#f4f3ee' : '#2a2a2a',
                   border: '1px solid',
                   borderColor: 'divider',
                   mb: 3
                 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 0.5 }}>
                     HANDED-OFF ARTIFACT:
                   </Typography>
-                  <Typography variant="subtitle2" sx={{ fontFamily: 'ui-monospace, monospace', fontWeight: 700, color: 'text.primary' }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'ui-monospace, monospace', fontWeight: 500, color: 'text.primary' }}>
                     {inspectedNode.artifactOut}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -440,25 +440,25 @@ export default function AnimatedAgentFlow() {
 
             {/* Key Execution Guarantees */}
             <Box sx={{ pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.04em', display: 'block', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', letterSpacing: '0.04em', display: 'block', mb: 1 }}>
                 GUARANTEED EXECUTION RULES:
               </Typography>
               <Stack spacing={1}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <CheckCircle2 size={15} color={GREEN} />
-                  <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
                     JSON Schema conformance strictly verified
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <CheckCircle2 size={15} color={GREEN} />
-                  <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
                     Independent critic review with bounded retries
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <CheckCircle2 size={15} color={GREEN} />
-                  <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 500 }}>
                     Deterministic audit trail for compliance
                   </Typography>
                 </Box>

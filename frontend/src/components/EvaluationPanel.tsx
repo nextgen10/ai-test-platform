@@ -94,15 +94,15 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, width: '100%', minWidth: 0 }}>
             {/* 1. Headline Score Card */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 3, border: '1px solid', borderColor: alpha(color, 0.4), minWidth: 0 }}>
+            <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: alpha(color, 0.4), minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 1.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 800, fontSize: '0.82rem' }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500, fontSize: '0.82rem' }}>
                             SUITE QUALITY (5-D EVALUATION)
                         </Typography>
                         <Typography
                             variant="h4"
-                            sx={{ fontWeight: 800, color, lineHeight: 1, whiteSpace: 'nowrap' }}
+                            sx={{ fontWeight: 500, color, lineHeight: 1, whiteSpace: 'nowrap' }}
                         >
                             {RATING_LABEL[rating]}
                         </Typography>
@@ -110,10 +110,10 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
                             size="small"
                             label={`${scorePct}%`}
                             color={RATING_COLOR[rating]}
-                            sx={{ fontWeight: 800, fontSize: '0.82rem', height: 24 }}
+                            sx={{ fontWeight: 500, fontSize: '0.82rem', height: 24 }}
                         />
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.74rem' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.74rem' }}>
                         Scale: Bad = 1 &bull; Avg = 2 &bull; Good = 3 &bull; Very Good = 4
                     </Typography>
                 </Box>
@@ -121,7 +121,7 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
                     variant="determinate"
                     value={scorePct}
                     color={RATING_COLOR[rating]}
-                    sx={{ height: 7, borderRadius: 3.5 }}
+                    sx={{ height: 7, borderRadius: 2 }}
                 />
             </Paper>
 
@@ -131,17 +131,17 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
                     elevation={0}
                     sx={{
                         p: 2,
-                        borderRadius: 3,
+                        borderRadius: 2,
                         border: '2px solid',
                         borderColor: 'primary.main',
                         bgcolor: alpha(theme.palette.primary.main, 0.05),
-                        boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.1)}`,
+                        boxShadow: 'none',
                     }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                             <RotateCcw size={20} color={theme.palette.primary.main} />
-                            <Typography variant="subtitle1" fontWeight={800} sx={{ fontSize: '0.94rem' }}>
+                            <Typography variant="subtitle1" fontWeight={500} sx={{ fontSize: '0.94rem' }}>
                                 Reprocess Test Suite with Gap Closer?
                             </Typography>
                         </Box>
@@ -151,7 +151,7 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
                             disabled={busy}
                             startIcon={busy ? <CircularProgress size={16} color="inherit" /> : <RotateCcw size={16} />}
                             onClick={handleReprocess}
-                            sx={{ fontWeight: 800, textTransform: 'none', px: 2.5 }}
+                            sx={{ fontWeight: 500, textTransform: 'none', px: 2.5 }}
                         >
                             {busy ? 'Reprocessing Suite…' : 'Reprocess & Close Gaps'}
                         </Button>
@@ -166,14 +166,14 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
             {/* 3. Flagged Gaps Banner */}
             {gaps.length > 0 && (
                 <Alert severity="warning" icon={<AlertTriangle size={18} />} sx={{ borderRadius: 2 }}>
-                    <Typography variant="body2" fontWeight={700} gutterBottom>
+                    <Typography variant="body2" fontWeight={500} gutterBottom>
                         Identified Coverage Gaps ({gaps.length})
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 1 }}>
                         {gaps.map((gap, index) => (
                             <Box key={index} sx={{ display: 'flex', gap: 1.25, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                                <Chip size="small" label={gap.severity} color={SEVERITY_COLOR[gap.severity]} sx={{ height: 20, fontSize: '0.68rem', textTransform: 'uppercase', fontWeight: 700 }} />
-                                <Chip size="small" label={gap.area} variant="outlined" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 600 }} />
+                                <Chip size="small" label={gap.severity} color={SEVERITY_COLOR[gap.severity]} sx={{ height: 20, fontSize: '0.68rem', textTransform: 'uppercase', fontWeight: 500 }} />
+                                <Chip size="small" label={gap.area} variant="outlined" sx={{ height: 20, fontSize: '0.68rem', fontWeight: 500 }} />
                                 <Typography variant="caption" color="text.secondary" sx={{ flexGrow: 1, fontSize: '0.8rem', lineHeight: 1.4 }}>
                                     {gap.detail}
                                 </Typography>
@@ -184,13 +184,13 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
             )}
 
             {/* 4. Detailed Dimensions Breakdown Table */}
-            <Paper elevation={0} sx={{ overflowX: 'auto', borderRadius: 2.5, border: '1px solid', borderColor: 'divider', width: '100%' }}>
+            <Paper elevation={0} sx={{ overflowX: 'auto', borderRadius: 2, border: '1px solid', borderColor: 'divider', width: '100%' }}>
                 <Table size="small" sx={{ width: '100%', tableLayout: 'fixed', minWidth: 680 }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ width: 180, fontWeight: 700 }}>Dimension</TableCell>
-                            <TableCell sx={{ width: 140, fontWeight: 700 }}>Rating</TableCell>
-                            <TableCell sx={{ fontWeight: 700 }}>Assessment & Mathematical Rationale</TableCell>
+                            <TableCell sx={{ width: 180, fontWeight: 500 }}>Dimension</TableCell>
+                            <TableCell sx={{ width: 140, fontWeight: 500 }}>Rating</TableCell>
+                            <TableCell sx={{ fontWeight: 500 }}>Assessment & Mathematical Rationale</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -199,8 +199,8 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
 
                             return (
                                 <TableRow key={dim.id} hover>
-                                    <TableCell sx={{ fontWeight: 600 }}>
-                                        <Typography variant="body2" fontWeight={700} sx={{ fontSize: '0.84rem' }}>
+                                    <TableCell sx={{ fontWeight: 500 }}>
+                                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.84rem' }}>
                                             {dim.name ?? dim.id}
                                         </Typography>
                                     </TableCell>
@@ -210,7 +210,7 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
                                             label={RATING_LABEL[dimRating]}
                                             color={RATING_COLOR[dimRating]}
                                             variant={dimRating === 'very_good' ? 'filled' : 'outlined'}
-                                            sx={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
+                                            sx={{ height: 22, fontSize: '0.72rem', fontWeight: 500 }}
                                         />
                                     </TableCell>
                                     <TableCell sx={{ color: 'text.secondary', fontSize: '0.82rem', lineHeight: 1.5 }}>
@@ -225,22 +225,22 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
 
             {/* 5. Actionable Remediation Recommendations */}
             {recommendations.length > 0 && (
-                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2.5, border: '1px solid', borderColor: 'divider' }}>
+                <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
                         <Lightbulb size={16} color={theme.palette.info.main} />
-                        <Typography variant="subtitle2" fontWeight={700}>
+                        <Typography variant="subtitle2" fontWeight={500}>
                             Remediation Recommendations ({recommendations.length})
                         </Typography>
                     </Box>
                     <Stack spacing={1}>
                         {recommendations.map((rec, index) => (
-                            <Box key={index} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', p: 1, borderRadius: 1.5, bgcolor: isLight ? '#FAFBFC' : 'rgba(255,255,255,0.02)' }}>
+                            <Box key={index} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start', p: 1, borderRadius: 2, bgcolor: isLight ? '#f9f9f7' : 'rgba(255,255,255,0.02)' }}>
                                 <Chip
                                     size="small"
                                     label={ACTION_LABEL[rec.action] ?? rec.action}
                                     variant="outlined"
                                     color="info"
-                                    sx={{ height: 22, fontSize: '0.7rem', fontWeight: 700 }}
+                                    sx={{ height: 22, fontSize: '0.7rem', fontWeight: 500 }}
                                 />
                                 <Box sx={{ flexGrow: 1 }}>
                                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem' }}>

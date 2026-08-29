@@ -11,13 +11,13 @@ export default function ThemeToggle() {
     const colorMode = useContext(ThemeContext);
 
     return (
-        <Tooltip title={theme.palette.mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+        <Tooltip title={theme.palette.mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
             <IconButton
                 onClick={colorMode.toggleColorMode}
                 color="inherit"
                 aria-label={theme.palette.mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-                {theme.palette.mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+                {theme.palette.mode === 'dark' ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
             </IconButton>
         </Tooltip>
     );

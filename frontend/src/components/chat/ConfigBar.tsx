@@ -82,16 +82,24 @@ export const ConfigBar: React.FC = () => {
 
   const selectSx = {
     fontSize: '0.82rem',
-    borderRadius: 1.5,
-    bgcolor: isLight ? '#ffffff' : '#161b22',
+    borderRadius: 2,
+    bgcolor: isLight ? '#ffffff' : '#2a2a2a',
+    '& .MuiSelect-select': {
+      display: 'flex',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
   };
+
+  const workflowName = (id: string) =>
+    catalog?.workflows.find((w) => w.id === id)?.name ?? id;
 
   return (
     <Box
       sx={{
         borderBottom: '1px solid',
         borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
-        bgcolor: isLight ? '#f8fafc' : '#0d1117',
+        bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
         px: { xs: 1.5, sm: 2.5 },
         py: 1,
       }}
@@ -137,7 +145,14 @@ export const ConfigBar: React.FC = () => {
         </FormControl>
 
         {/* Workflow */}
-        <FormControl size="small" sx={{ minWidth: { xs: 130, sm: 260 } }}>
+        <FormControl
+          size="small"
+          sx={{
+            minWidth: { xs: 140, sm: 220 },
+            width: { xs: '100%', sm: 260 },
+            maxWidth: { xs: '100%', sm: 280 },
+          }}
+        >
           <InputLabel id="workflow-select-label" sx={{ fontSize: '0.82rem' }}>
             Workflow
           </InputLabel>
@@ -145,24 +160,50 @@ export const ConfigBar: React.FC = () => {
             labelId="workflow-select-label"
             value={config.workflowId || ''}
             label="Workflow"
+            fullWidth
             // Selecting a workflow selects it. A workflow that also ships a
             // bespoke page used to hijack this and navigate there, which left
             // the console unable to run half the registry — the one thing it
             // exists to do. The bespoke page is offered as a link below instead.
             onChange={(e) => updateConfig({ workflowId: e.target.value || null })}
+            renderValue={(value) => {
+              if (!value) return '';
+              return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, pr: 1 }}>
+                  <Box sx={{ display: 'flex', flexShrink: 0 }}>
+                    <WorkflowIcon size={14} color="#00759e" />
+                  </Box>
+                  <Typography component="span" noWrap sx={{ fontSize: '0.82rem', lineHeight: 1.3 }}>
+                    {workflowName(String(value))}
+                  </Typography>
+                </Box>
+              );
+            }}
+            MenuProps={{
+              slotProps: {
+                paper: {
+                  sx: {
+                    minWidth: 280,
+                    maxWidth: 'min(420px, calc(100vw - 24px))',
+                  },
+                },
+              },
+            }}
             sx={selectSx}
           >
             <MenuItem value="">
               <em>None — chat with the agent</em>
             </MenuItem>
             {(catalog?.workflows ?? []).map((wf) => (
-              <MenuItem key={wf.id} value={wf.id} disabled={wf.available === false}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <WorkflowIcon size={14} color="#3b82f6" />
+              <MenuItem key={wf.id} value={wf.id} disabled={wf.available === false} sx={{ alignItems: 'flex-start', whiteSpace: 'normal' }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0, width: '100%' }}>
+                  <Box sx={{ mt: 0.35, flexShrink: 0 }}>
+                    <WorkflowIcon size={14} color="#00759e" />
+                  </Box>
                   <ListItemText
                     primary={wf.name}
                     secondary={wf.available === false ? 'Unavailable' : undefined}
-                    primaryTypographyProps={{ fontSize: '0.85rem' }}
+                    primaryTypographyProps={{ fontSize: '0.85rem', sx: { whiteSpace: 'normal', wordBreak: 'break-word' } }}
                     secondaryTypographyProps={{ fontSize: '0.7rem' }}
                   />
                 </Box>
@@ -226,7 +267,7 @@ export const ConfigBar: React.FC = () => {
               <Chip
                 label="Mock"
                 size="small"
-                sx={{ fontSize: '0.68rem', height: 22, fontWeight: 700 }}
+                sx={{ fontSize: '0.68rem', height: 22, fontWeight: 500 }}
               />
             </Tooltip>
           )}
@@ -315,7 +356,7 @@ export const ConfigBar: React.FC = () => {
               {catalog?.skills.map((sk) => (
                 <MenuItem key={sk.id} value={sk.id}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Layers size={14} color="#10b981" />
+                    <Layers size={14} color="#469a6c" />
                     <span>{sk.name}</span>
                   </Box>
                 </MenuItem>
@@ -341,7 +382,7 @@ export const ConfigBar: React.FC = () => {
               {catalog?.prompts.map((pr) => (
                 <MenuItem key={pr.id} value={pr.id}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FileCode2 size={14} color="#f59e0b" />
+                    <FileCode2 size={14} color="#e4a911" />
                     <span>{pr.name}</span>
                   </Box>
                 </MenuItem>
@@ -374,7 +415,7 @@ export const ConfigBar: React.FC = () => {
                 minWidth: 240,
                 '& input': { fontSize: '0.82rem' },
                 '& label': { fontSize: '0.82rem' },
-                bgcolor: isLight ? '#ffffff' : '#161b22',
+                bgcolor: isLight ? '#ffffff' : '#2a2a2a',
               }}
             />
           )}

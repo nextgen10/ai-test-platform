@@ -1,35 +1,32 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Container,
   Typography,
-  Paper,
   Grid,
   Button,
   useTheme,
-  Chip,
-  Card,
-  alpha,
 } from '@mui/material';
 import {
   ArrowRight,
+  Layers,
+  Terminal,
   BookOpen,
   Users,
   HelpCircle,
-  FlaskConical,
-  FileSearch,
-  Layers,
-  Terminal,
-  Sparkles,
-  ExternalLink,
   GitBranch,
+  ExternalLink,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import ThemeToggle from '@/components/ThemeToggle';
 import { UnifiedNavBar, UnifiedBrand } from '@/components/UnifiedNavBar';
+import ProductName from '@/components/ProductName';
+import HubPlatformFlow from '@/components/landing/HubPlatformFlow';
+import ConsolePreview from '@/components/landing/ConsolePreview';
+import PipelineStrip from '@/components/landing/PipelineStrip';
 import RealtimeFlowDiagram from '@/components/landing/RealtimeFlowDiagram';
 import ComparisonSection from '@/components/landing/ComparisonSection';
 import FeatureBentoGrid from '@/components/landing/FeatureBentoGrid';
@@ -39,52 +36,191 @@ import InteractiveSimulator from '@/components/landing/InteractiveSimulator';
 import TechnicalFAQ from '@/components/landing/TechnicalFAQ';
 import { mapWorkflowsToUseCases, type UseCaseItem } from '@/config/nav';
 import { hubApi } from '@/lib/hub-api';
-import { colors } from '@/theme';
-
-const RED = colors.primary.main;
-const GREEN = colors.success;
+import { getAccents } from '@/theme';
+import AnimatedSection from '@/components/landing/AnimatedSection';
+import SectionHeader from '@/components/landing/SectionHeader';
 
 const TEAM_MEMBERS = [
   {
     name: 'Surendran Madhavan',
     role: 'Executive Sponsor / Program Dir.',
     department: 'Executive Leadership & Strategy',
-    image: 'https://ui-avatars.com/api/?name=Surendran+Madhavan&background=0D8ABC&color=fff&size=256',
-    specialty: 'Strategic Vision & Business Alignment',
-    bio: 'Provides the strategic vision, executive oversight, and secures the budget for the initiative to ensure alignment with broader organizational goals at Cognizant.',
+    tone: '#1C1C1C',
+    bio: 'Provides the strategic vision, executive oversight, and secures the budget for the initiative to ensure alignment with broader organizational goals.',
   },
   {
     name: 'Inderpalsingh Gill',
     role: 'Principal Engineering Manager',
     department: 'Technical Leadership & Delivery',
-    image: 'https://ui-avatars.com/api/?name=Inderpalsingh+Gill&background=1F8A70&color=fff&size=256',
-    specialty: 'Delivery Lifecycle & Enterprise Compliance',
+    tone: '#5A5D5C',
     bio: 'Oversees the delivery lifecycle, removes blockers, and ensures the platform meets enterprise compliance and delivery standards.',
   },
   {
     name: 'Karthik Kolli',
     role: 'Lead AI Product Owner',
     department: 'Product & Quality Strategy',
-    image: 'https://ui-avatars.com/api/?name=Karthik+Kolli&background=F59E0B&color=fff&size=256',
-    specialty: 'Testing Standards & Agentic Workflows',
-    bio: 'Drives the functional requirements, sets testing standards, and prioritizes the roadmap for new Agentic workflows to ensure generated tests meet QA benchmarks.',
+    tone: '#AF8626',
+    bio: 'Drives the functional requirements, sets testing standards, and prioritizes the roadmap for new agentic workflows to ensure generated tests meet QA benchmarks.',
   },
   {
     name: 'Aniket Kalyan Marwadi',
     role: 'Lead AI Architect & Principal Creator',
     department: 'Core Architecture & System Design',
-    image: 'https://ui-avatars.com/api/?name=Aniket+Marwadi&background=D00000&color=fff&size=256',
-    specialty: 'Multi-Agent Orchestration & Frontend Systems',
-    bio: 'The mastermind, architect, and sole developer of the entire solution. Responsible for the end-to-end technical execution and design of the platform.',
+    tone: '#E60000',
+    bio: 'Architect and principal creator of the platform. Responsible for end-to-end technical execution, multi-agent orchestration, and the product UI.',
   },
 ];
+
+/**
+ * Platform figures. UBS renders numerals large and Light, with a quiet label
+ * underneath -- the number carries the page, not a bold weight.
+ */
+const FIGURES = [
+  { value: '4', label: 'Registry artifact types', note: 'Agents, workflows, skills, and prompts — as files' },
+  { value: '2', label: 'Ways to run', note: 'Agent Console, or a dedicated Custom UI' },
+  { value: '0', label: 'Migrations to onboard', note: 'Drop a file. It is live.' },
+  { value: '1', label: 'Job per run', note: 'Isolated execution, artifacts, and an audit trail' },
+];
+
+/** Shown if the registry has not answered yet, so the two Custom UIs stay peers. */
+const FALLBACK_CUSTOM_UIS: UseCaseItem[] = [
+  {
+    id: 'test-case-generation',
+    label: 'Test Design & Evaluation',
+    path: '/generate',
+    description:
+      'Transform unstructured requirements into verified, requirement-traced test suites. INVEST gate, coverage matrix, 5-D evaluation, in-place healing.',
+    badge: 'Custom UI',
+    icon: 'flask-conical',
+    hasCustomUi: true,
+    available: true,
+  },
+  {
+    id: 'workflow-builder',
+    label: 'Workflow Builder',
+    path: '/use-cases/workflow-builder',
+    description:
+      'Describe a workflow in English. Four agents design, critique, write, and review — then you install it live, with nothing redeployed.',
+    badge: 'Custom UI',
+    icon: 'layers',
+    hasCustomUi: true,
+    available: true,
+  },
+];
+
+const CUSTOM_UI_AGENTS: Record<string, string[]> = {
+  'test-case-generation': [
+    'Requirement Analyst',
+    'Test Designer',
+    'Test Generator',
+    'Test Reviewer',
+    'Test Evaluator',
+  ],
+  'workflow-builder': [
+    'Workflow Architect',
+    'Architecture Reviewer',
+    'Agent Writer',
+    'Agent Code Reviewer',
+  ],
+};
+
+/** First letter of the first and last name -- "Aniket Kalyan Marwadi" -> "AM". */
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+const sectionPad = {
+  py: { xs: 7, md: 10 },
+} as const;
+
+const stoneBand = {
+  ...sectionPad,
+  bgcolor: 'var(--col-background-ui-30)',
+  borderTop: '1px solid',
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+} as const;
+
+const gutter = { px: { xs: 2, sm: 3, md: 4 } } as const;
+
+/** An editorial panel: accent hairline on top, no icon chrome. */
+function Panel({
+  accent,
+  children,
+  sx,
+}: {
+  accent: string;
+  children: React.ReactNode;
+  sx?: object;
+}) {
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderTop: `2px solid ${accent}`,
+        borderRadius: 2,
+        p: { xs: 3, md: 4 },
+        transition: 'background-color 0.2s cubic-bezier(0.38, 0.19, 0.32, 0.95), transform 0.2s cubic-bezier(0.38, 0.19, 0.32, 0.95), box-shadow 0.2s cubic-bezier(0.38, 0.19, 0.32, 0.95)',
+        '&:hover': {
+          bgcolor: 'var(--col-background-ui-10-hovered)',
+          transform: 'translateY(-3px)',
+          boxShadow: '0 10px 28px rgba(28, 28, 28, 0.1)',
+        },
+        ...sx,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
 
 export default function AgentHubLanding() {
   const router = useRouter();
   const theme = useTheme();
+  const accents = getAccents(theme.palette.mode);
   const isLight = theme.palette.mode === 'light';
+  const hero = isLight
+    ? {
+        bg: '#FFFFFF',
+        color: '#1C1C1C',
+        eyebrow: '#5A5D5C',
+        lede: '#5A5D5C',
+        ticker: '#5A5D5C',
+        figure: '#1C1C1C',
+        figureMuted: '#5A5D5C',
+        hairline: 'rgba(28, 28, 28, 0.10)',
+        grid: 'linear-gradient(rgba(28,28,28,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(28,28,28,0.06) 1px, transparent 1px)',
+        mask: 'radial-gradient(ellipse 80% 70% at 70% 40%, #000 30%, transparent 75%)',
+        glow: 'radial-gradient(ellipse 55% 50% at 78% 38%, rgba(230,0,0,0.04), transparent 68%)',
+        outlineColor: '#1C1C1C',
+        outlineBorder: '#8E8D83',
+        outlineHoverBorder: '#1C1C1C',
+        outlineHoverBg: 'rgba(28,28,28,0.04)',
+      }
+    : {
+        bg: '#1c1c1c',
+        color: '#f9f9f7',
+        eyebrow: '#b8b3a2',
+        lede: '#cccabc',
+        ticker: '#8e8d83',
+        figure: '#f9f9f7',
+        figureMuted: '#b8b3a2',
+        hairline: 'rgba(204, 202, 188, 0.18)',
+        grid: 'linear-gradient(rgba(249,249,247,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(249,249,247,0.045) 1px, transparent 1px)',
+        mask: 'radial-gradient(ellipse 80% 70% at 70% 40%, #000 30%, transparent 75%)',
+        glow: 'radial-gradient(ellipse 55% 50% at 78% 38%, rgba(230,0,0,0.14), transparent 68%)',
+        outlineColor: '#f9f9f7',
+        outlineBorder: '#8e8d83',
+        outlineHoverBorder: '#f9f9f7',
+        outlineHoverBg: 'rgba(249,249,247,0.04)',
+      };
 
-  // The nav's use-case menu mirrors the registry rather than a hardcoded list.
   const [useCases, setUseCases] = useState<UseCaseItem[]>([]);
   useEffect(() => {
     hubApi
@@ -93,770 +229,578 @@ export default function AgentHubLanding() {
       .catch(() => setUseCases([]));
   }, []);
 
+  const customUis = useMemo(() => {
+    const fromRegistry = useCases.filter((uc) => uc.hasCustomUi);
+    return fromRegistry.length > 0 ? fromRegistry : FALLBACK_CUSTOM_UIS;
+  }, [useCases]);
+
+  const consoleWorkflows = useMemo(
+    () => useCases.filter((uc) => !uc.hasCustomUi),
+    [useCases],
+  );
+
   const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const navLinks = [
-    { id: 'use-cases', label: 'Use Cases', icon: <Layers size={15} />, onClick: () => scrollToSection('use-cases') },
-    { id: 'simulator', label: 'Playground', icon: <Sparkles size={15} />, onClick: () => scrollToSection('simulator') },
-    { id: 'pipeline', label: 'Architecture', icon: <GitBranch size={15} />, onClick: () => scrollToSection('pipeline') },
-    { id: 'team', label: 'Our Team', icon: <Users size={15} />, onClick: () => scrollToSection('team') },
+    ...(useCases.length === 0
+      ? [{ id: 'use-cases', label: 'Use Cases', icon: <Layers size={15} />, onClick: () => scrollToSection('use-cases') }]
+      : []),
+    { id: 'platform', label: 'Platform', icon: <GitBranch size={15} />, onClick: () => scrollToSection('platform') },
+    { id: 'team', label: 'Team', icon: <Users size={15} />, onClick: () => scrollToSection('team') },
     { id: 'docs', label: 'Docs', icon: <BookOpen size={15} />, onClick: () => router.push('/docs') },
     { id: 'faq', label: 'FAQs', icon: <HelpCircle size={15} />, onClick: () => scrollToSection('faq') },
   ];
 
   return (
-    <Box sx={{
-      minHeight: '100vh',
-      bgcolor: 'background.default',
-      color: 'text.primary',
-      overflowX: 'hidden',
-    }}>
-      {/* Top Navigation Ribbon with Use Cases Menu */}
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary', overflowX: 'hidden' }}>
       <UnifiedNavBar
         items={navLinks}
         useCases={useCases}
         alignLinks="right"
+        showProductName={false}
+        pinned
         onLogoClick={() => router.push('/')}
         actions={<ThemeToggle />}
       />
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  HERO SECTION — Agent HUB Platform Overview                      */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box sx={{
-        pt: { xs: 7, md: 10 },
-        pb: { xs: 6, md: 9 },
-        position: 'relative',
-        bgcolor: isLight ? colors.background.secondary : 'background.default',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        textAlign: 'center',
-      }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 }, position: 'relative', zIndex: 1 }}>
-          <Box sx={{ maxWidth: 960, mx: 'auto' }}>
-            <Box sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1.25,
-              px: 2,
-              py: 0.65,
-              mb: 3,
-              borderRadius: '2px',
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'background.paper',
-            }}>
-              <Box sx={{
-                width: 6, height: 18, bgcolor: 'primary.main', flexShrink: 0,
-              }} />
-              <Typography variant="caption" sx={{
-                fontWeight: 500, color: 'text.secondary',
-                fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-              }}>
-                Enterprise multi-agent platform
-              </Typography>
-            </Box>
-
-            <Typography variant="h1" sx={{
-              mb: 2.5,
-              fontWeight: 300,
-              letterSpacing: 0,
-              color: 'text.primary',
-              fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' },
-              lineHeight: 1.2,
-            }}>
-              <Box component="span" sx={{ color: 'text.primary' }}>
-                Agent HUB
-              </Box>
-              {' '}Platform
-            </Typography>
-
-            <Typography variant="body1" sx={{
-              color: 'text.secondary',
-              fontSize: { xs: '1rem', sm: '1.125rem' },
-              fontWeight: 300,
-              lineHeight: 1.5,
-              maxWidth: 820,
-              mx: 'auto',
-              mb: 4.5,
-            }}>
-              The unified enterprise control plane for onboarding, orchestrating, and running autonomous multi-agent workflows. Trigger agents and skills through a universal <strong>Agent Console</strong>, or launch specialized <strong>Custom UIs</strong> for mission-critical use cases like Test Design & Evaluation.
-            </Typography>
-
-            <Box sx={{
-              display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center',
-              gap: 2, mb: 5,
-            }}>
-              <Button
-                variant="contained"
-                color="primary"
-                size="large"
-                onClick={() => router.push('/chat')}
-                startIcon={<Terminal size={18} />}
-              >
-                Open Agent Console
-                <ArrowRight size={16} style={{ marginLeft: 6 }} />
-              </Button>
-
-              <Button
-                variant="outlined"
-                color="inherit"
-                size="large"
-                onClick={() => router.push('/generate')}
-                startIcon={<FlaskConical size={18} color={RED} />}
-                sx={{
-                  borderColor: 'divider',
-                  '&:hover': {
-                    borderColor: 'text.primary',
-                    bgcolor: 'action.hover',
-                  },
-                }}
-              >
-                Test Design & Evaluation UI
-              </Button>
-
-              <Button
-                variant="text"
-                color="inherit"
-                size="large"
-                onClick={() => scrollToSection('use-cases')}
-                startIcon={<Layers size={18} />}
-                sx={{
-                  height: 52, px: 2.5, fontSize: '0.92rem', fontWeight: 500,
-                  borderRadius: 2.5, color: 'text.secondary',
-                  '&:hover': { color: 'text.primary' },
-                }}
-              >
-                Explore Use Cases
-              </Button>
-            </Box>
-
-            {/* Architecture Metrics Strip */}
-            <Grid container spacing={2} sx={{ maxWidth: 900, mx: 'auto', mb: 3 }}>
-              {[
-                { title: 'Agent Console', subtitle: 'Universal Interface', tag: 'Streaming SSE' },
-                { title: 'Custom UI Option', subtitle: 'Test Design & Eval', tag: 'INVEST & 5-D Gate' },
-                { title: 'Agent Registry', subtitle: 'Declarative Files', tag: 'Zero-DB Migrations' },
-                { title: 'Model Freedom', subtitle: 'Claude · GPT · o1', tag: 'Model-Agnostic' },
-              ].map((metric) => (
-                <Grid key={metric.subtitle} size={{ xs: 6, sm: 3 }}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 1.75, borderRadius: 2.5, border: '1px solid', borderColor: 'divider',
-                      bgcolor: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.03)',
-                      backdropFilter: 'blur(8px)', textAlign: 'center',
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ fontWeight: 500, color: 'text.primary', fontSize: '1.05rem', lineHeight: 1.1 }}>
-                      {metric.title}
-                    </Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mt: 0.25, fontSize: '0.74rem' }}>
-                      {metric.subtitle}
-                    </Typography>
-                    <Chip
-                      label={metric.tag}
-                      size="small"
-                      sx={{
-                        mt: 0.75, height: 16, fontSize: '0.62rem', fontWeight: 500,
-                        bgcolor: isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
-                        color: 'text.secondary',
-                      }}
-                    />
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-
-          {/* Centerpiece Interactive Flow Graphic */}
-          <RealtimeFlowDiagram />
-        </Container>
-      </Box>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  FEATURED USE CASES & CONTROL PLANES SECTION                     */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box id="use-cases" sx={{
-        py: { xs: 8, md: 11 },
-        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        scrollMarginTop: '70px',
-      }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <Box sx={{ textAlign: 'center', maxWidth: 840, mx: 'auto', mb: 6 }}>
-            <Box sx={{
-              display: 'inline-flex', alignItems: 'center', gap: 1,
-              px: 1.75, py: 0.5, mb: 1.5, borderRadius: 3,
-              bgcolor: isLight ? 'rgba(230,0,0,0.06)' : 'rgba(230,0,0,0.12)',
-              color: 'primary.main',
-            }}>
-              <Layers size={14} />
-              <Typography variant="caption" sx={{ fontWeight: 500, letterSpacing: '0.04em' }}>
-                ENTERPRISE USE CASES & CONTROL PLANES
-              </Typography>
-            </Box>
-            <Typography variant="h3" sx={{ fontWeight: 500, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.5rem' }, letterSpacing: '-0.02em' }}>
-              One Platform. Flexible Interaction Modes.
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
-              Onboard any multi-agent workflow. Trigger flows directly through the interactive Agent Console, or launch dedicated Custom UIs built specifically for complex use cases.
-            </Typography>
-          </Box>
-
-          <Grid container spacing={3}>
-            {/* Card 1: Test Design & Evaluation (Flagship Custom UI) */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                variant="outlined"
-                sx={{
-                  height: '100%', display: 'flex', flexDirection: 'column',
-                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3.5 },
-                  position: 'relative', overflow: 'hidden',
-                  transition: 'all 0.25s ease',
-                  border: '2px solid', borderColor: isLight ? 'rgba(230,0,0,0.2)' : 'rgba(230,0,0,0.3)',
-                  boxShadow: isLight ? '0 12px 32px -10px rgba(230,0,0,0.1)' : '0 12px 32px -10px rgba(230,0,0,0.25)',
-                  '&:hover': {
-                    borderColor: 'primary.main', transform: 'translateY(-4px)',
-                    boxShadow: isLight ? '0 20px 40px -12px rgba(230,0,0,0.2)' : '0 20px 40px -12px rgba(230,0,0,0.4)',
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                      p: 1.25, borderRadius: 2,
-                      bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main',
-                    }}>
-                      <FlaskConical size={24} />
-                    </Box>
-                    <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 500, fontSize: '1.25rem' }}>
-                        Test Design & Evaluation
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                        Dedicated Custom UI Use Case
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Chip label="Custom UI" size="small" color="primary" sx={{ fontWeight: 500, fontSize: '0.72rem', height: 24 }} />
-                </Box>
-
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.6, mb: 2.5, flex: 1 }}>
-                  Transform unstructured business requirements into fully verified, requirement-traced test suites. Features an 8-dimension INVEST quality gate, human approval checkpoint, 5-D test suite evaluation (85% standard), in-place delta healing, and one-click Excel (.csv) export.
-                </Typography>
-
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Multi-Agent Pipeline:
+      {/* ---- Hero: follows the active theme. Light gets a paper stage + charcoal grid. ---- */}
+      <Box
+        sx={{
+          position: 'relative',
+          color: hero.color,
+          bgcolor: hero.bg,
+          overflow: 'hidden',
+          borderBottom: '1px solid',
+          borderColor: hero.hairline,
+          transition: 'background-color 0.2s cubic-bezier(0.38, 0.19, 0.32, 0.95), color 0.2s cubic-bezier(0.38, 0.19, 0.32, 0.95)',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            backgroundImage: hero.grid,
+            backgroundSize: '56px 56px',
+            maskImage: hero.mask,
+            pointerEvents: 'none',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
+            background: hero.glow,
+            pointerEvents: 'none',
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 3,
+            bgcolor: 'primary.main',
+            display: { xs: 'none', md: 'block' },
+          }}
+        />
+        <Container maxWidth="xl" sx={{ ...gutter, position: 'relative', zIndex: 1, pt: { xs: 3, md: 4 }, pb: 0 }}>
+          <AnimatedSection delay={0.05}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.05fr) minmax(0, 0.95fr)' },
+                gap: { xs: 5, lg: 8 },
+                alignItems: 'start',
+                pb: { xs: 5, md: 7 },
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                  <Box sx={{ width: 24, height: 2, bgcolor: 'primary.main', flexShrink: 0 }} />
+                  <Typography variant="overline" sx={{ color: hero.eyebrow, lineHeight: 1, letterSpacing: '0.1em' }}>
+                    Enterprise multi-agent control plane
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-                    {['Requirement Analyst', 'Test Designer', 'Test Generator', 'Test Reviewer', 'Test Evaluator'].map((ag, idx) => (
-                      <Chip key={idx} label={`${idx + 1}. ${ag}`} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 500, height: 22 }} />
-                    ))}
-                  </Box>
                 </Box>
-
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                  <Button
-                    variant="contained" color="primary"
-                    startIcon={<ExternalLink size={16} />}
-                    onClick={() => router.push('/generate')}
-                    sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2.5, py: 1 }}
-                  >
-                    Launch Custom UI
-                  </Button>
-                  <Button
-                    variant="outlined" color="inherit"
-                    startIcon={<Terminal size={14} />}
-                    onClick={() => router.push('/chat?workflow=test-case-generation')}
-                    sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2 }}
-                  >
-                    Run via Agent Console
-                  </Button>
-                </Box>
-              </Card>
-            </Grid>
-
-            {/* Card 2: Universal Agent Console */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                variant="outlined"
-                sx={{
-                  height: '100%', display: 'flex', flexDirection: 'column',
-                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3.5 },
-                  position: 'relative', overflow: 'hidden',
-                  transition: 'all 0.25s ease',
-                  border: '1px solid', borderColor: 'divider',
-                  boxShadow: isLight ? '0 10px 28px -10px rgba(0,0,0,0.06)' : '0 10px 28px -10px rgba(0,0,0,0.4)',
-                  '&:hover': {
-                    borderColor: '#3b82f6', transform: 'translateY(-4px)',
-                    boxShadow: '0 20px 40px -12px rgba(59, 130, 246, 0.2)',
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{
-                      p: 1.25, borderRadius: 2,
-                      bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6',
-                    }}>
-                      <Terminal size={24} />
-                    </Box>
-                    <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 500, fontSize: '1.25rem' }}>
-                        Universal Agent Console
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                        Interactive Execution Plane
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Chip label="Core Platform" size="small" sx={{ fontWeight: 500, fontSize: '0.72rem', height: 24, bgcolor: 'rgba(59,130,246,0.12)', color: '#3b82f6' }} />
-                </Box>
-
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.6, mb: 2.5, flex: 1 }}>
-                  An interactive conversational interface. Choose any onboarded agent, workflow, domain skill, prompt template, and model (Claude 3.5 Sonnet, GPT-4o, o1, etc.) on the fly. Streams responses in real time with session persistence and rich code blocks.
+                <Typography
+                  component="h1"
+                  sx={{ mb: 1.25, fontWeight: 300, letterSpacing: 0, overflow: 'hidden' }}
+                >
+                  <ProductName variant="hero" inverse={!isLight} />
                 </Typography>
-
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 1, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Capabilities:
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-                    {['Agent Switcher', 'Model Choice', 'SSE Stream', 'Prompt Hydration', 'Session History'].map((cap, idx) => (
-                      <Chip key={idx} label={cap} size="small" variant="outlined" sx={{ fontSize: '0.72rem', fontWeight: 500, height: 22 }} />
-                    ))}
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
+                <Typography
+                  sx={{
+                    color: hero.color,
+                    fontSize: { xs: '1.125rem', md: '1.375rem' },
+                    fontWeight: 300,
+                    letterSpacing: '-0.01em',
+                    lineHeight: 1.3,
+                    mb: 1.5,
+                  }}
+                >
+                  One HUB. Every agent.
+                </Typography>
+                <Typography
+                  sx={{
+                    color: hero.lede,
+                    fontSize: { xs: '1.125rem', md: '1.3125rem' },
+                    fontWeight: 300,
+                    lineHeight: 1.5,
+                    maxWidth: 560,
+                    mb: { xs: 3.5, md: 4.5 },
+                  }}
+                >
+                  Bring agents, workflows, skills and prompts in as files, run them in the Agent
+                  Console, or open a Custom UI when the work needs its own surface
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
                   <Button
                     variant="contained"
-                    sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2.5, py: 1 }}
-                    startIcon={<Terminal size={16} />}
+                    color="primary"
+                    size="large"
                     onClick={() => router.push('/chat')}
+                    startIcon={<Terminal size={18} />}
+                    endIcon={<ArrowRight size={16} />}
                   >
                     Open Agent Console
                   </Button>
                   <Button
-                    variant="outlined" color="inherit"
-                    onClick={() => router.push('/registry')}
-                    sx={{ borderRadius: 2, fontWeight: 500, textTransform: 'none', px: 2 }}
+                    variant="outlined"
+                    size="large"
+                    onClick={() => scrollToSection('use-cases')}
+                    startIcon={<Layers size={18} />}
+                    sx={{
+                      color: hero.outlineColor,
+                      borderColor: hero.outlineBorder,
+                      '&:hover': { borderColor: hero.outlineHoverBorder, bgcolor: hero.outlineHoverBg },
+                    }}
                   >
-                    Browse Registry
+                    Browse use cases
                   </Button>
                 </Box>
-              </Card>
-            </Grid>
+              </Box>
 
-            {/* Card 3: Workflow Builder (Meta Custom UI) */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Card
-                variant="outlined"
-                sx={{
-                  height: '100%', display: 'flex', flexDirection: 'column',
-                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3 },
-                  border: '1px solid', borderColor: 'divider', transition: 'all 0.25s ease',
-                  '&:hover': {
-                    borderColor: '#8b5cf6', transform: 'translateY(-3px)',
-                    boxShadow: '0 16px 36px -10px rgba(139, 92, 246, 0.2)',
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
-                    <Layers size={22} />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1.1rem' }}>
-                        Workflow Builder
-                      </Typography>
-                      <Chip
-                        label="Custom UI"
-                        size="small"
-                        sx={{ height: 19, fontSize: '0.65rem', fontWeight: 500, bgcolor: 'rgba(139,92,246,0.12)', color: '#8b5cf6' }}
-                      />
-                    </Box>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Agents That Build Agents
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.86rem', lineHeight: 1.55, mb: 2, flex: 1 }}>
-                  Describe a multi-agent workflow in plain English. Four agents design the
-                  architecture, critique it, write the agent prompts and review the generated code &mdash;
-                  then you install the result into the Registry from the page. The new workflow is
-                  live in the Agent Console immediately, with nothing redeployed.
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mb: 2 }}>
-                  {['architect', 'review architecture', 'write agents', 'review code'].map((stage, i) => (
-                    <Chip
-                      key={stage}
-                      label={`${i + 1}. ${stage}`}
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontSize: '0.68rem', height: 21, fontWeight: 500 }}
-                    />
-                  ))}
-                </Box>
-
-                <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                  <Button
-                    size="small" variant="outlined" color="inherit"
-                    startIcon={<Sparkles size={13} />}
-                    onClick={() => router.push('/use-cases/workflow-builder')}
-                    sx={{ borderRadius: 1.5, fontWeight: 500, textTransform: 'none', fontSize: '0.8rem' }}
-                  >
-                    Build a Workflow
-                  </Button>
-                </Box>
-              </Card>
-            </Grid>
-
-            {/* Card 4: Document OCR & Vision Extraction */}
-            <Grid size={{ xs: 12, sm: 6, md: 6 }}>
-              <Card
-                variant="outlined"
-                sx={{
-                  height: '100%', display: 'flex', flexDirection: 'column',
-                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3 },
-                  border: '1px solid', borderColor: 'divider', transition: 'all 0.25s ease',
-                  '&:hover': {
-                    borderColor: '#10b981', transform: 'translateY(-3px)',
-                    boxShadow: '0 16px 36px -10px rgba(16, 185, 129, 0.2)',
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-                    <FileSearch size={22} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1.1rem' }}>
-                      Document OCR & Vision
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Visual Requirements Analysis
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.86rem', lineHeight: 1.55, mb: 2, flex: 1 }}>
-                  Visually extract and normalize structured business requirements from document images, UI mockups, flowchart branches, and scanned specs using multimodal vision agents.
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                  <Button
-                    size="small" variant="outlined" color="inherit"
-                    startIcon={<Terminal size={13} />}
-                    onClick={() => router.push('/generate')}
-                    sx={{ borderRadius: 1.5, fontWeight: 500, textTransform: 'none', fontSize: '0.8rem' }}
-                  >
-                    Open OCR workspace
-                  </Button>
-                </Box>
-              </Card>
-            </Grid>
-
-            {/* Card 5: Agent & Workflow Registry */}
-            <Grid size={{ xs: 12, sm: 6, md: 6 }}>
-              <Card
-                variant="outlined"
-                sx={{
-                  height: '100%', display: 'flex', flexDirection: 'column',
-                  borderRadius: 3.5, bgcolor: 'background.paper', p: { xs: 2.5, sm: 3 },
-                  border: '1px solid', borderColor: 'divider', transition: 'all 0.25s ease',
-                  '&:hover': {
-                    borderColor: '#f59e0b', transform: 'translateY(-3px)',
-                    boxShadow: '0 16px 36px -10px rgba(245, 158, 11, 0.2)',
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-                    <Layers size={22} />
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 500, fontSize: '1.1rem' }}>
-                      Agent Hub Registry & Onboarding
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Declarative File-Based Catalog
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.86rem', lineHeight: 1.55, mb: 2, flex: 1 }}>
-                  Onboard new custom `.agent.md` profiles, `.workflow.yaml` multi-agent chains, `SKILL.md` bundles, and `.prompt.md` templates with zero database migrations or backend redeployments.
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
-                  <Button
-                    size="small" variant="outlined" color="inherit"
-                    startIcon={<Layers size={13} />}
-                    onClick={() => router.push('/registry')}
-                    sx={{ borderRadius: 1.5, fontWeight: 500, textTransform: 'none', fontSize: '0.8rem' }}
-                  >
-                    Open Registry
-                  </Button>
-                </Box>
-              </Card>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  WHY NOT JUST PROMPT AN LLM DIRECTLY (Comparison Section)        */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box sx={{ py: { xs: 8, md: 11 } }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <ComparisonSection />
-        </Container>
-      </Box>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  SIX PILLARS OF DETERMINISTIC QUALITY (Feature Bento Grid)       */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box sx={{
-        py: { xs: 8, md: 11 },
-        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
-        borderTop: '1px solid',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-      }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <FeatureBentoGrid />
-        </Container>
-      </Box>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  INTERACTIVE PIPELINE EXPLORER                                   */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box id="pipeline" sx={{ py: { xs: 8, md: 11 }, scrollMarginTop: '70px' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <PipelineExplorer />
-        </Container>
-      </Box>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  DOMAIN SKILLS REPOSITORY                                        */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box sx={{
-        py: { xs: 8, md: 11 },
-        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
-        borderTop: '1px solid',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-      }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <DomainSkillsSection />
-        </Container>
-      </Box>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  LIVE INTERACTIVE PLAYGROUND (Simulator)                         */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box id="simulator" sx={{ py: { xs: 8, md: 11 }, scrollMarginTop: '70px' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <InteractiveSimulator />
-        </Container>
-      </Box>
-
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  OUR ENGINEERING & ARCHITECTURE TEAM                             */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box id="team" sx={{
-        py: { xs: 8, md: 11 },
-        bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.015)',
-        borderTop: '1px solid',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        scrollMarginTop: '70px',
-      }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <Box sx={{ textAlign: 'center', maxWidth: 780, mx: 'auto', mb: 6 }}>
-            <Box sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 1,
-              px: 1.75,
-              py: 0.5,
-              mb: 1.5,
-              borderRadius: 3,
-              bgcolor: isLight ? 'rgba(230,0,0,0.06)' : 'rgba(230,0,0,0.12)',
-              color: 'primary.main',
-            }}>
-              <Users size={14} />
-              <Typography variant="caption" sx={{ fontWeight: 500, letterSpacing: '0.04em' }}>
-                ARCHITECTURE & ENGINEERING
-              </Typography>
+              <Box sx={{ minWidth: 0 }}>
+                <HubPlatformFlow inverse={!isLight} />
+              </Box>
             </Box>
-            <Typography variant="h3" sx={{ fontWeight: 500, mb: 1.5, fontSize: { xs: '1.9rem', md: '2.45rem' }, letterSpacing: '-0.02em' }}>
-              Meet the Engineering & Architecture Team
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
-              The multi-disciplinary team uniting autonomous AI systems engineering, financial regulatory compliance, and enterprise test automation.
-            </Typography>
+          </AnimatedSection>
+
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 3,
+              overflow: 'hidden',
+              py: 1.5,
+              borderTop: `1px solid ${hero.hairline}`,
+              maskImage: 'linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                gap: 3,
+                whiteSpace: 'nowrap',
+                animation: 'hubTicker 28s linear infinite',
+                '@keyframes hubTicker': {
+                  from: { transform: 'translateX(0)' },
+                  to: { transform: 'translateX(-50%)' },
+                },
+                '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+              }}
+            >
+              {Array.from({ length: 2 }).flatMap((_, loop) =>
+                ['Agents', 'Workflows', 'Skills', 'Prompts', 'Agent Console', 'Custom UIs', 'Jobs', 'Audit trail'].map((item) => (
+                  <Typography
+                    key={`${loop}-${item}`}
+                    variant="overline"
+                    sx={{ color: hero.ticker, letterSpacing: '0.14em', lineHeight: 1 }}
+                  >
+                    {item}
+                    <Box component="span" sx={{ color: 'primary.main', mx: 1.5 }}>
+                      ·
+                    </Box>
+                  </Typography>
+                )),
+              )}
+            </Box>
           </Box>
 
-          <Grid container spacing={3}>
-            {TEAM_MEMBERS.map((member) => (
-              <Grid key={member.name} size={{ xs: 12, sm: 6, lg: 3 }}>
-                <Paper
-                  elevation={0}
+          <Grid container sx={{ borderTop: `1px solid ${hero.hairline}` }}>
+            {FIGURES.map((f, i) => (
+              <Grid
+                key={f.label}
+                size={{ xs: 6, md: 3 }}
+                sx={{
+                  py: { xs: 3.5, md: 5 },
+                  pr: { xs: 2, md: 4 },
+                  pl: { xs: i % 2 === 1 ? 3 : 0, md: i === 0 ? 0 : 4 },
+                  borderLeft: {
+                    xs: i % 2 === 1 ? `1px solid ${hero.hairline}` : 0,
+                    md: i === 0 ? 0 : `1px solid ${hero.hairline}`,
+                  },
+                  borderTop: { xs: i >= 2 ? `1px solid ${hero.hairline}` : 0, md: 0 },
+                }}
+              >
+                <Typography
                   sx={{
-                    p: 3.5,
-                    height: '100%',
-                    borderRadius: 3.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'background.paper',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                    transition: 'all 0.25s ease',
-                    boxShadow: isLight
-                      ? '0 10px 28px -10px rgba(0,0,0,0.06)'
-                      : '0 10px 28px -10px rgba(0,0,0,0.5)',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      transform: 'translateY(-5px)',
-                      boxShadow: isLight
-                        ? '0 16px 36px -10px rgba(230,0,0,0.15)'
-                        : '0 16px 36px -10px rgba(230,0,0,0.3)',
-                    },
+                    fontWeight: 300,
+                    lineHeight: 1,
+                    letterSpacing: '-0.03em',
+                    fontSize: { xs: '2.75rem', md: '3.75rem' },
+                    color: i === 2 ? '#e60000' : hero.figure,
+                    fontVariantNumeric: 'tabular-nums',
+                    mb: 1.25,
                   }}
                 >
-                  <Box
-                    component="img"
-                    src={member.image}
-                    alt={member.name}
-                    sx={{
-                      width: 110,
-                      height: 110,
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      mb: 2.5,
-                      border: '3px solid',
-                      borderColor: isLight ? '#F1F5F9' : '#1E293B',
-                      boxShadow: '0 6px 18px rgba(0,0,0,0.12)',
-                    }}
-                  />
-                  <Typography variant="h6" fontWeight={800} sx={{ fontSize: '1.08rem', mb: 0.5 }}>
-                    {member.name}
-                  </Typography>
-                  <Chip
-                    label={member.role}
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                    sx={{ fontWeight: 500, fontSize: '0.72rem', mb: 1.25 }}
-                  />
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, display: 'block', mb: 1.75, fontSize: '0.76rem' }}>
-                    {member.department}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.84rem', lineHeight: 1.55, mt: 'auto' }}>
-                    {member.bio}
-                  </Typography>
-                </Paper>
+                  {f.value}
+                </Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 500, mb: 0.4, color: hero.figure }}>
+                  {f.label}
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', lineHeight: 1.5, color: hero.figureMuted }}>
+                  {f.note}
+                </Typography>
               </Grid>
             ))}
           </Grid>
         </Container>
       </Box>
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  TECHNICAL FAQ SECTION                                           */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box id="faq" sx={{ py: { xs: 8, md: 11 }, scrollMarginTop: '70px' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-          <TechnicalFAQ />
+      {/* ---- 01 Use cases: Console + Custom UIs as peers ---- */}
+      <Box id="use-cases" sx={{ ...stoneBand, scrollMarginTop: '72px' }}>
+        <Container maxWidth="xl" sx={gutter}>
+          <SectionHeader
+            index="01"
+            eyebrow="Use cases & custom UIs"
+            title="One platform. Two ways to run."
+            lede="The Agent Console runs anything in the registry. A Custom UI is just a dedicated surface a workflow may declare — Test Design and Workflow Builder are two of those, not top-level products."
+          />
+
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12 }}>
+              <Panel accent={accents.teal} sx={{ p: 0, overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                    minHeight: { md: 320 },
+                  }}
+                >
+                  <Box sx={{ p: { xs: 3, md: 4 }, display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                      Universal execution plane
+                    </Typography>
+                    <Typography variant="h3" sx={{ fontWeight: 300, fontSize: { xs: '1.5rem', md: '1.75rem' }, mb: 1.5 }}>
+                      Agent Console
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 3, flex: 1 }}>
+                      Conversational control plane. Pick any onboarded agent, workflow, skill, prompt,
+                      and model on the fly. Streams live with session history.
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                      <Button variant="contained" color="secondary" startIcon={<Terminal size={16} />} onClick={() => router.push('/chat')}>
+                        Open Agent Console
+                      </Button>
+                      <Button variant="outlined" color="inherit" onClick={() => router.push('/registry')}>
+                        Browse Registry
+                      </Button>
+                    </Box>
+                  </Box>
+                  <Box sx={{ p: { xs: 2, md: 2.5 }, bgcolor: '#1c1c1c' }}>
+                    <ConsolePreview />
+                  </Box>
+                </Box>
+              </Panel>
+            </Grid>
+
+            {customUis.map((uc) => {
+              const agents = CUSTOM_UI_AGENTS[uc.id] ?? [];
+              const accent = uc.id === 'workflow-builder' ? accents.plum : accents.brand;
+              return (
+                <Grid key={uc.id} size={{ xs: 12, md: 6 }}>
+                  <Panel accent={accent}>
+                    <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                      Custom UI
+                    </Typography>
+                    <Typography variant="h3" sx={{ fontWeight: 300, fontSize: { xs: '1.375rem', md: '1.5rem' }, mb: 1.5 }}>
+                      {uc.label}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 3, flex: 1 }}>
+                      {uc.description}
+                    </Typography>
+                    {agents.length > 0 && (
+                      <Box sx={{ mb: 3 }}>
+                        <PipelineStrip agents={agents} accent={accent} />
+                      </Box>
+                    )}
+                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<ExternalLink size={16} />}
+                        onClick={() => router.push(uc.path)}
+                        disabled={uc.available === false}
+                      >
+                        Launch custom UI
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="inherit"
+                        startIcon={<Terminal size={14} />}
+                        onClick={() => router.push(`/chat?workflow=${encodeURIComponent(uc.id)}`)}
+                        disabled={uc.available === false}
+                      >
+                        Run in Console
+                      </Button>
+                    </Box>
+                  </Panel>
+                </Grid>
+              );
+            })}
+
+            {consoleWorkflows.map((uc) => (
+              <Grid
+                key={uc.id}
+                size={{
+                  xs: 12,
+                  md: consoleWorkflows.length === 1 ? 12 : consoleWorkflows.length === 2 ? 6 : 4,
+                }}
+              >
+                <Panel
+                  accent={accents.gold}
+                  sx={
+                    consoleWorkflows.length === 1
+                      ? {
+                          flexDirection: { xs: 'column', md: 'row' },
+                          alignItems: { md: 'center' },
+                          justifyContent: 'space-between',
+                          gap: { md: 4 },
+                        }
+                      : undefined
+                  }
+                >
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography variant="overline" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+                      Agent Console
+                    </Typography>
+                    <Typography variant="h3" sx={{ fontWeight: 300, fontSize: { xs: '1.375rem', md: '1.5rem' }, mb: 2 }}>
+                      {uc.label}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: { xs: 3, md: consoleWorkflows.length === 1 ? 0 : 3 }, maxWidth: 720 }}>
+                      {uc.description}
+                    </Typography>
+                    {uc.available === false && uc.unavailableReason && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5, lineHeight: 1.5 }}>
+                        {uc.unavailableReason}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<Terminal size={14} />}
+                    onClick={() => router.push(uc.path)}
+                    disabled={uc.available === false}
+                    sx={{ alignSelf: { xs: 'flex-start', md: consoleWorkflows.length === 1 ? 'center' : 'flex-start' }, flexShrink: 0 }}
+                  >
+                    Run in Console
+                  </Button>
+                </Panel>
+              </Grid>
+            ))}
+          </Grid>
         </Container>
       </Box>
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  STICKY BOTTOM CALL TO ACTION STRIP                              */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box sx={{
-        py: 6,
-        bgcolor: isLight ? '#12161D' : '#0B0D11',
-        color: '#FFFFFF',
-        borderTop: '1px solid',
-        borderColor: isLight ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.05)',
-        textAlign: 'center',
-      }}>
-        <Container maxWidth="md">
-          <Typography variant="h4" sx={{ fontWeight: 500, mb: 1.5, letterSpacing: '-0.02em' }}>
-            Ready to Orchestrate Multi-Agent Workflows?
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 3.5, fontSize: '1.05rem' }}>
-            Launch the universal Agent Console or run specialized workflows on the Agent HUB Platform.
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              onClick={() => router.push('/chat')}
-              startIcon={<Terminal size={18} />}
-              sx={{
-                height: 48,
-                px: 3.5,
-                fontWeight: 500,
-                borderRadius: 2,
-                boxShadow: '0 4px 16px rgba(230,0,0,0.4)',
-              }}
-            >
-              Open Agent Console
-            </Button>
-            <Button
-              variant="outlined"
-              color="inherit"
-              size="large"
-              onClick={() => router.push('/generate')}
-              startIcon={<FlaskConical size={18} />}
-              sx={{
-                height: 48,
-                px: 3.5,
-                fontWeight: 500,
-                borderRadius: 2,
-                borderColor: 'rgba(255,255,255,0.3)',
-                '&:hover': { borderColor: '#FFFFFF', bgcolor: 'rgba(255,255,255,0.05)' },
-              }}
-            >
-              Test Design & Evaluation UI
-            </Button>
+      <Box id="platform" sx={{ ...sectionPad, scrollMarginTop: '72px' }}>
+        <Container maxWidth="xl" sx={gutter}>
+          <FeatureBentoGrid index="02" />
+        </Container>
+      </Box>
+
+      <Box sx={stoneBand}>
+        <Container maxWidth="xl" sx={gutter}>
+          <ComparisonSection index="03" />
+        </Container>
+      </Box>
+
+      {/* ---- 04 One Custom UI, in focus — not the product. ---- */}
+      <Box id="custom-ui" sx={{ ...sectionPad, scrollMarginTop: '72px' }}>
+        <Container maxWidth="xl" sx={gutter}>
+          <SectionHeader
+            index="04"
+            eyebrow="Custom UI · example"
+            title="Test Design & Evaluation"
+            lede="A dedicated surface for one workflow — the same pattern as Workflow Builder. Five agents, an INVEST gate, and in-place healing, from unstructured requirement to a traced suite."
+            action={
+              <Button
+                variant="outlined"
+                color="inherit"
+                endIcon={<ArrowRight size={16} />}
+                onClick={() => router.push('/use-cases/workflow-builder')}
+              >
+                Workflow Builder
+              </Button>
+            }
+          />
+          <RealtimeFlowDiagram />
+        </Container>
+      </Box>
+
+      <Box sx={stoneBand}>
+        <Container maxWidth="xl" sx={gutter}>
+          <PipelineExplorer />
+        </Container>
+      </Box>
+
+      <Box id="simulator" sx={{ ...sectionPad, scrollMarginTop: '72px' }}>
+        <Container maxWidth="xl" sx={gutter}>
+          <InteractiveSimulator />
+        </Container>
+      </Box>
+
+      <Box sx={stoneBand}>
+        <Container maxWidth="xl" sx={gutter}>
+          <DomainSkillsSection index="05" />
+        </Container>
+      </Box>
+
+      {/* ---- Team: editorial rows, portrait left, no card chrome. ---- */}
+      <Box id="team" sx={{ ...sectionPad, scrollMarginTop: '72px' }}>
+        <Container maxWidth="xl" sx={gutter}>
+          <SectionHeader
+            index="06"
+            eyebrow="Architecture & engineering"
+            title="The team"
+            lede="The multi-disciplinary team uniting autonomous systems engineering, financial regulatory compliance, and enterprise test automation."
+          />
+          <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+            {TEAM_MEMBERS.map((member) => (
+              <Box
+                key={member.name}
+                sx={{
+                  display: 'flex',
+                  gap: { xs: 2.5, md: 5 },
+                  alignItems: { xs: 'flex-start', md: 'center' },
+                  py: { xs: 3, md: 4 },
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                }}
+              >
+                <Box
+                  aria-hidden
+                  sx={{
+                    width: { xs: 56, md: 72 },
+                    height: { xs: 56, md: 72 },
+                    borderRadius: 2,
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderTop: `2px solid ${member.tone}`,
+                    color: 'text.primary',
+                    fontWeight: 300,
+                    fontSize: { xs: '1.125rem', md: '1.375rem' },
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {initials(member.name)}
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexWrap: 'wrap', gap: { xs: 1.5, md: 5 } }}>
+                  <Box sx={{ minWidth: { md: 260 }, flexShrink: 0 }}>
+                    <Typography variant="h5" sx={{ fontWeight: 500, fontSize: '1.0625rem', mb: 0.5 }}>
+                      {member.name}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'primary.main', mb: 0.25 }}>
+                      {member.role}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {member.department}
+                    </Typography>
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ lineHeight: 1.7, flex: 1, minWidth: 240, maxWidth: 680 }}
+                  >
+                    {member.bio}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
           </Box>
         </Container>
       </Box>
 
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      {/*  FOOTER                                                          */}
-      {/* ══════════════════════════════════════════════════════════════════ */}
-      <Box sx={{
-        py: 4,
-        borderTop: '1px solid',
-        borderColor: 'divider',
-        bgcolor: 'background.paper',
-        textAlign: 'center',
-      }}>
-        <Container maxWidth="xl">
+      <Box id="faq" sx={{ ...stoneBand, scrollMarginTop: '72px' }}>
+        <Container maxWidth="xl" sx={gutter}>
+          <TechnicalFAQ index="07" />
+        </Container>
+      </Box>
+
+      {/* ---- Closing band: inverted, asymmetric, generous. ---- */}
+      <Box sx={{ py: { xs: 8, md: 12 }, bgcolor: '#1C1C1C', color: '#F9F9F7' }}>
+        <Container maxWidth="xl" sx={gutter}>
+          <Grid container spacing={{ xs: 4, md: 6 }} alignItems="flex-end">
+            <Grid size={{ xs: 12, md: 7 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                <Box sx={{ width: 24, height: 2, bgcolor: 'primary.main' }} />
+                <Typography variant="overline" sx={{ color: '#B8B3A2', lineHeight: 1 }}>
+                  Get started
+                </Typography>
+              </Box>
+              <Typography
+                sx={{
+                  fontWeight: 300,
+                  fontSize: { xs: '2rem', md: '3rem' },
+                  lineHeight: 1.12,
+                  letterSpacing: 0,
+                  color: '#F9F9F7',
+                  mb: 2,
+                }}
+              >
+                Ready to run a workflow?
+              </Typography>
+              <Typography sx={{ color: '#B8B3A2', fontWeight: 300, lineHeight: 1.6, fontSize: { md: '1.0625rem' }, maxWidth: 520 }}>
+                Open the Agent Console for anything in the registry, or pick a Custom UI from Use Cases.
+              </Typography>
+            </Grid>
+            <Grid size={{ xs: 12, md: 5 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: { md: 'flex-end' } }}>
+                <Button variant="contained" color="primary" size="large" onClick={() => router.push('/chat')} endIcon={<ArrowRight size={16} />}>
+                  Open Agent Console
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={() => scrollToSection('use-cases')}
+                  sx={{
+                    color: '#F9F9F7',
+                    borderColor: '#8E8D83',
+                    '&:hover': { borderColor: '#F9F9F7', bgcolor: 'transparent' },
+                  }}
+                >
+                  Browse use cases
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
+
+      <Box sx={{ py: 4, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+        <Container maxWidth="xl" sx={gutter}>
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
             <UnifiedBrand />
             <Typography variant="caption" color="text.secondary">
-              &copy; 2026 Agent HUB Platform. Enterprise Multi-Agent Orchestration.
+              &copy; 2026 Agent HUB Platform. Enterprise multi-agent orchestration.
             </Typography>
           </Box>
         </Container>

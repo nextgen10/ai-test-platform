@@ -83,7 +83,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: isLight ? '#f6f8fa' : '#0d1117',
+        bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
         borderRight: '1px solid',
         borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
       }}
@@ -96,8 +96,8 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
           startIcon={<Plus size={16} />}
           onClick={handleNewChat}
           sx={{
-            borderRadius: 1.5,
-            fontWeight: 700,
+            borderRadius: 2,
+            fontWeight: 500,
             fontSize: '0.84rem',
             textTransform: 'none',
             py: 0.8,
@@ -124,7 +124,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
             px: 1,
             py: 0.5,
             display: 'block',
-            fontWeight: 700,
+            fontWeight: 500,
             color: 'text.secondary',
             fontSize: '0.72rem',
             textTransform: 'uppercase',
@@ -158,7 +158,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                   key={s.id}
                   onClick={() => handleSelect(s.id)}
                   sx={{
-                    borderRadius: 1.5,
+                    borderRadius: 2,
                     mb: 0.5,
                     px: 1.25,
                     py: 0.75,
@@ -184,7 +184,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                 >
                   <MessageSquare
                     size={15}
-                    color={isActive ? theme.palette.primary.main : isLight ? '#64748b' : '#94a3b8'}
+                    color={isActive ? theme.palette.primary.main : isLight ? '#5a5d5c' : '#8e8d83'}
                     style={{ flexShrink: 0, marginRight: 8 }}
                   />
                   <ListItemText
@@ -192,9 +192,9 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                     secondary={relativeTime(s.last_activity)}
                     primaryTypographyProps={{
                       fontSize: '0.82rem',
-                      fontWeight: isActive ? 700 : 500,
+                      fontWeight: isActive ? 500 : 400,
                       noWrap: true,
-                      color: isActive ? 'primary.main' : isLight ? '#1e293b' : '#e2e8f0',
+                      color: isActive ? 'primary.main' : isLight ? '#2a2a2a' : '#e0dfd7',
                     }}
                     secondaryTypographyProps={{
                       fontSize: '0.68rem',

@@ -61,7 +61,7 @@ export default function AgentInsightsPanel() {
     const slowest = Math.max(1, ...agents.map((a) => a.total_duration_ms));
 
     return (
-        <Paper variant="outlined" sx={{ borderRadius: 2.5, overflow: 'hidden' }}>
+        <Paper variant="outlined" sx={{ borderRadius: 2, overflow: 'hidden' }}>
             <Box
                 sx={{
                     px: 2.5,
@@ -72,13 +72,13 @@ export default function AgentInsightsPanel() {
                     gap: 2,
                     borderBottom: '1px solid',
                     borderColor: 'divider',
-                    bgcolor: isLight ? '#f8fafc' : '#11161d',
+                    bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Activity size={17} color={theme.palette.primary.main} />
                     <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.98rem' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '0.98rem' }}>
                             Agent usage
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -118,12 +118,12 @@ export default function AgentInsightsPanel() {
                     <Table size="small" sx={{ '& td, & th': { fontSize: '0.78rem' } }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell sx={{ fontWeight: 700 }}>Agent</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700 }}>Runs</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700 }}>Mean</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700 }}>Total time</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700 }}>Tokens</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700 }}>Cost</TableCell>
+                                <TableCell sx={{ fontWeight: 500 }}>Agent</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 500 }}>Runs</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 500 }}>Mean</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 500 }}>Total time</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 500 }}>Tokens</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 500 }}>Cost</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -133,7 +133,7 @@ export default function AgentInsightsPanel() {
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ fontWeight: 600, fontSize: '0.78rem', fontFamily: 'monospace' }}
+                                                sx={{ fontWeight: 500, fontSize: '0.78rem', fontFamily: 'monospace' }}
                                             >
                                                 {agent.agent_id}
                                             </Typography>

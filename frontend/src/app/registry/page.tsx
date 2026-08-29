@@ -280,12 +280,12 @@ function RegistryContent() {
     height: '100%',
     display: 'flex',
     flexDirection: 'column' as const,
-    borderRadius: 2.5,
-    bgcolor: isLight ? '#ffffff' : '#11161d',
+    borderRadius: 2,
+    bgcolor: isLight ? '#ffffff' : '#1c1c1c',
     transition: 'all 0.2s',
     '&:hover': {
       borderColor: hoverColor,
-      boxShadow: `0 6px 18px ${alpha(hoverColor, 0.15)}`,
+      bgcolor: 'var(--col-background-ui-10-hovered)',
     },
   });
 
@@ -295,7 +295,7 @@ function RegistryContent() {
         <IconButton
           size="small"
           onClick={() => setPreviewItem({ id, title: name, content, type })}
-          sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+          sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
         >
           <Eye size={15} />
         </IconButton>
@@ -304,7 +304,7 @@ function RegistryContent() {
         <IconButton
           size="small"
           onClick={() => openEdit(type, id, content)}
-          sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+          sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
         >
           <Pencil size={15} />
         </IconButton>
@@ -313,7 +313,7 @@ function RegistryContent() {
         <IconButton
           size="small"
           onClick={() => setDeleteTarget({ id, name, type })}
-          sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+          sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
         >
           <Trash2 size={15} />
         </IconButton>
@@ -324,9 +324,9 @@ function RegistryContent() {
   const emptyState = (label: string) => (
     <Paper
       variant="outlined"
-      sx={{ p: 6, textAlign: 'center', borderRadius: 2.5, borderStyle: 'dashed' }}
+      sx={{ p: 6, textAlign: 'center', borderRadius: 2, borderStyle: 'dashed' }}
     >
-      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
         {query ? `No ${label} match “${searchQuery.trim()}”` : `No ${label} yet`}
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
@@ -355,14 +355,14 @@ function RegistryContent() {
     <Grid container spacing={2.5}>
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
-          <Skeleton variant="rounded" height={220} sx={{ borderRadius: 2.5 }} />
+          <Skeleton variant="rounded" height={220} sx={{ borderRadius: 2 }} />
         </Grid>
       ))}
     </Grid>
   );
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 60px)', bgcolor: isLight ? '#f8fafc' : '#0a0d12', py: 4 }}>
+    <Box sx={{ minHeight: 'calc(100vh - 60px)', bgcolor: isLight ? '#f9f9f7' : '#1c1c1c', py: 4 }}>
       <Container maxWidth="xl">
         {/* Header */}
         <Box
@@ -378,8 +378,8 @@ function RegistryContent() {
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
               <Bot size={28} color={theme.palette.primary.main} />
-              <Typography variant="h4" sx={{ fontWeight: 800 }}>
-                Agent Hub Registry
+              <Typography variant="h4" sx={{ fontWeight: 500 }}>
+                Agent HUB Platform Registry
               </Typography>
             </Box>
             <Typography variant="body2" sx={{ color: 'text.secondary', maxWidth: 640 }}>
@@ -407,7 +407,7 @@ function RegistryContent() {
               onClick={() => openCreate(ENTITY_OF[tab])}
               sx={{
                 borderRadius: 2,
-                fontWeight: 700,
+                fontWeight: 500,
                 px: 2.5,
                 py: 1,
                 boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.3)}`,
@@ -439,11 +439,11 @@ function RegistryContent() {
             onChange={(_, v: TabKey) => setTab(v)}
             sx={{
               '& .MuiTab-root': {
-                fontWeight: 700,
+                fontWeight: 500,
                 fontSize: '0.86rem',
                 textTransform: 'none',
                 minHeight: 40,
-                borderRadius: 1.5,
+                borderRadius: 2,
               },
             }}
           >
@@ -461,7 +461,7 @@ function RegistryContent() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search size={16} color={isLight ? '#64748b' : '#94a3b8'} />
+                  <Search size={16} color={isLight ? '#5a5d5c' : '#8e8d83'} />
                 </InputAdornment>
               ),
             }}
@@ -494,7 +494,7 @@ function RegistryContent() {
                               <Box
                                 sx={{
                                   p: 0.75,
-                                  borderRadius: 1.5,
+                                  borderRadius: 2,
                                   bgcolor: alpha(theme.palette.primary.main, 0.1),
                                   color: 'primary.main',
                                   flexShrink: 0,
@@ -502,14 +502,14 @@ function RegistryContent() {
                               >
                                 <Bot size={18} />
                               </Box>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem' }} noWrap>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '0.95rem' }} noWrap>
                                 {agent.name}
                               </Typography>
                             </Box>
                             <Chip
                               label={agent.id}
                               size="small"
-                              sx={{ fontSize: '0.7rem', fontWeight: 600, fontFamily: 'monospace', flexShrink: 0 }}
+                              sx={{ fontSize: '0.7rem', fontWeight: 500, fontFamily: 'monospace', flexShrink: 0 }}
                             />
                           </Box>
 
@@ -553,7 +553,7 @@ function RegistryContent() {
                                 output_artifact: agent.output_artifact,
                               })
                             }
-                            sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '0.8rem' }}
+                            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem' }}
                           >
                             Test
                           </Button>
@@ -561,7 +561,7 @@ function RegistryContent() {
                             <IconButton
                               size="small"
                               onClick={() => handleTryInChat({ agentId: agent.id })}
-                              sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5 }}
+                              sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
                             >
                               <Play size={15} />
                             </IconButton>
@@ -582,23 +582,23 @@ function RegistryContent() {
                 <Grid container spacing={2.5}>
                   {filtered.workflows.map((wf: HubWorkflow) => (
                     <Grid size={{ xs: 12, sm: 6, md: 4 }} key={wf.id}>
-                      <Card variant="outlined" sx={cardSx('#3b82f6')}>
+                      <Card variant="outlined" sx={cardSx('#00759e')}>
                         <CardContent sx={{ flex: 1, p: 2.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, gap: 1 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-                              <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', flexShrink: 0 }}>
+                              <Box sx={{ p: 0.75, borderRadius: 2, bgcolor: 'rgba(0, 117, 158, 0.1)', color: '#00759e', flexShrink: 0 }}>
                                 <WorkflowIcon size={18} />
                               </Box>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem' }} noWrap>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '0.95rem' }} noWrap>
                                 {wf.name}
                               </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
                               {wf.has_custom_ui && (
-                                <Chip label="Custom UI" size="small" color="primary" sx={{ fontSize: '0.68rem', fontWeight: 700, height: 20 }} />
+                                <Chip label="Custom UI" size="small" color="primary" sx={{ fontSize: '0.68rem', fontWeight: 500, height: 20 }} />
                               )}
                               {wf.available === false && (
-                                <Chip label="Unavailable" size="small" color="warning" sx={{ fontSize: '0.68rem', fontWeight: 700, height: 20 }} />
+                                <Chip label="Unavailable" size="small" color="warning" sx={{ fontSize: '0.68rem', fontWeight: 500, height: 20 }} />
                               )}
                             </Box>
                           </Box>
@@ -614,14 +614,14 @@ function RegistryContent() {
                             <Alert
                               severity="warning"
                               icon={<AlertTriangle size={16} />}
-                              sx={{ mb: 1.5, py: 0.25, fontSize: '0.76rem', borderRadius: 1.5 }}
+                              sx={{ mb: 1.5, py: 0.25, fontSize: '0.76rem', borderRadius: 2 }}
                             >
                               {wf.unavailable_reason}
                             </Alert>
                           )}
 
                           <Box sx={{ mb: 1.5 }}>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', display: 'block', mb: 0.5 }}>
+                            <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary', display: 'block', mb: 0.5 }}>
                               Agent pipeline{wf.approval_gate ? ' · pauses for approval' : ''}
                             </Typography>
                             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -646,7 +646,7 @@ function RegistryContent() {
                               size="small"
                               startIcon={<ExternalLink size={13} />}
                               onClick={() => router.push(wf.custom_ui_route!)}
-                              sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '0.8rem' }}
+                              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem' }}
                             >
                               Open UI
                             </Button>
@@ -658,7 +658,7 @@ function RegistryContent() {
                               disabled={wf.available === false}
                               startIcon={<Play size={13} fill="currentColor" />}
                               onClick={() => handleTryInChat({ workflowId: wf.id })}
-                              sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '0.8rem' }}
+                              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem' }}
                             >
                               Run workflow
                             </Button>
@@ -679,13 +679,13 @@ function RegistryContent() {
                 <Grid container spacing={2.5}>
                   {filtered.skills.map((sk) => (
                     <Grid size={{ xs: 12, sm: 6, md: 4 }} key={sk.id}>
-                      <Card variant="outlined" sx={cardSx('#10b981')}>
+                      <Card variant="outlined" sx={cardSx('#469a6c')}>
                         <CardContent sx={{ flex: 1, p: 2.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, minWidth: 0 }}>
-                            <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', flexShrink: 0 }}>
+                            <Box sx={{ p: 0.75, borderRadius: 2, bgcolor: 'rgba(70, 154, 108, 0.1)', color: '#469a6c', flexShrink: 0 }}>
                               <Layers size={18} />
                             </Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem' }} noWrap>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '0.95rem' }} noWrap>
                               {sk.name}
                             </Typography>
                           </Box>
@@ -707,7 +707,7 @@ function RegistryContent() {
                             size="small"
                             startIcon={<Play size={13} fill="currentColor" />}
                             onClick={() => handleTryInChat({ skillId: sk.id })}
-                            sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '0.8rem' }}
+                            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem' }}
                           >
                             Load in Console
                           </Button>
@@ -727,13 +727,13 @@ function RegistryContent() {
                 <Grid container spacing={2.5}>
                   {filtered.prompts.map((pr) => (
                     <Grid size={{ xs: 12, sm: 6, md: 4 }} key={pr.id}>
-                      <Card variant="outlined" sx={cardSx('#f59e0b')}>
+                      <Card variant="outlined" sx={cardSx('#e4a911')}>
                         <CardContent sx={{ flex: 1, p: 2.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, minWidth: 0 }}>
-                            <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', flexShrink: 0 }}>
+                            <Box sx={{ p: 0.75, borderRadius: 2, bgcolor: 'rgba(228, 169, 17, 0.1)', color: '#e4a911', flexShrink: 0 }}>
                               <FileCode2 size={18} />
                             </Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem' }} noWrap>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '0.95rem' }} noWrap>
                               {pr.name}
                             </Typography>
                           </Box>
@@ -759,7 +759,7 @@ function RegistryContent() {
                             size="small"
                             startIcon={<Play size={13} fill="currentColor" />}
                             onClick={() => handleTryInChat({ promptId: pr.id })}
-                            sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 700, fontSize: '0.8rem' }}
+                            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500, fontSize: '0.8rem' }}
                           >
                             Apply in Console
                           </Button>
@@ -780,11 +780,11 @@ function RegistryContent() {
         onClose={() => setPreviewItem(null)}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 2.5, maxHeight: '80vh' } }}
+        PaperProps={{ sx: { borderRadius: 2, maxHeight: '80vh' } }}
       >
-        <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <DialogTitle sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span>{previewItem?.title}</span>
-          <Chip label={previewItem ? FILE_HINT[previewItem.type] : ''} size="small" color="primary" sx={{ fontWeight: 700 }} />
+          <Chip label={previewItem ? FILE_HINT[previewItem.type] : ''} size="small" color="primary" sx={{ fontWeight: 500 }} />
         </DialogTitle>
         <DialogContent dividers sx={{ p: 3 }}>
           {previewItem && (
@@ -815,14 +815,14 @@ function RegistryContent() {
         onClose={() => setEditorOpen(false)}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 2.5 } }}
+        PaperProps={{ sx: { borderRadius: 2 } }}
       >
-        <DialogTitle sx={{ fontWeight: 800 }}>
+        <DialogTitle sx={{ fontWeight: 500 }}>
           {editingId ? `Edit ${entityType}: ${editingId}` : `Onboard a new ${entityType}`}
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           {editorError && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
+            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
               {editorError}
             </Alert>
           )}
@@ -834,7 +834,7 @@ function RegistryContent() {
                 setEntityType(v);
                 loadTemplate(v);
               }}
-              sx={{ mb: 2.5, '& .MuiTab-root': { textTransform: 'none', fontWeight: 700 } }}
+              sx={{ mb: 2.5, '& .MuiTab-root': { textTransform: 'none', fontWeight: 500 } }}
             >
               <Tab value="agent" label="Agent" />
               <Tab value="workflow" label="Workflow" />
@@ -879,7 +879,7 @@ function RegistryContent() {
             variant="contained"
             onClick={handleSubmit}
             disabled={submitting || loadingTemplate}
-            sx={{ fontWeight: 700 }}
+            sx={{ fontWeight: 500 }}
           >
             {submitting ? 'Saving…' : editingId ? 'Save changes' : 'Create & register'}
           </Button>
@@ -894,7 +894,7 @@ function RegistryContent() {
 
       {/* Delete confirmation */}
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>Delete {deleteTarget?.type}?</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 500 }}>Delete {deleteTarget?.type}?</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: '0.9rem' }}>
             <strong>{deleteTarget?.name}</strong> will be removed from the hub. Any workflow that

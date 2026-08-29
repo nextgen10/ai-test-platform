@@ -17,11 +17,11 @@ import {
 import PageHeader from '@/components/PageHeader';
 import { api, type AgentInfo, type SkillInfo, type BenchmarkResponse, type BenchmarkItem, type Workflow } from '@/lib/api';
 
-const AMBER = '#D9822B';
-const GREEN = '#1F8A70';
-const RED = '#D00000';
-const BLUE = '#2D6CDF';
-const PURPLE = '#8B5CF6';
+const AMBER = '#af8626';
+const GREEN = '#469a6c';
+const RED = '#e60000';
+const BLUE = '#00759e';
+const PURPLE = '#804c95';
 
 /**
  * Hand-written notes for agents that have them.
@@ -248,7 +248,7 @@ function DocsContent() {
     return (
         <Box sx={{ maxWidth: 1400, mx: 'auto', pb: 6 }}>
             <PageHeader
-                title="Agent HUB Platform — Technical Documentation"
+                title="Documentation"
                 subtitle="Complete technical reference for Copilot multi-agent state machines, domain skills, and 5-D RQS mathematical scoring."
                 actions={
                     <Button
@@ -256,7 +256,7 @@ function DocsContent() {
                         color="primary"
                         endIcon={<ArrowRight size={18} />}
                         onClick={() => router.push('/generate')}
-                        sx={{ fontWeight: 700, borderRadius: 2 }}
+                        sx={{ fontWeight: 500, borderRadius: 2 }}
                     >
                         Generate Test Cases
                     </Button>
@@ -264,7 +264,7 @@ function DocsContent() {
             />
 
             {/* Top Level Section Tabs (3 Clean Tabs) */}
-            <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 3, overflow: 'hidden' }}>
+            <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 3, overflow: 'hidden' }}>
                 <Tabs
                     value={mainTab}
                     onChange={(_, val) => {
@@ -275,10 +275,10 @@ function DocsContent() {
                     variant="scrollable"
                     scrollButtons="auto"
                     sx={{
-                        bgcolor: isLight ? '#FAFBFC' : 'background.paper',
+                        bgcolor: isLight ? '#f9f9f7' : 'background.paper',
                         px: 2,
                         '& .MuiTab-root': {
-                            fontWeight: 700,
+                            fontWeight: 500,
                             fontSize: '0.9rem',
                             textTransform: 'none',
                             minHeight: 52,
@@ -302,16 +302,16 @@ function DocsContent() {
                     {mainTab === 0 && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {/* Pipeline Overview Ribbon */}
-                            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
-                                    <Typography variant="h6" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="h6" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <Layers size={20} color={RED} />
                                         Multi-Agent Autonomous Execution Pipeline
                                     </Typography>
                                     <Chip
                                         label={`${agents.length} Specialized Agents \u2022 ${workflows.length} Workflow${workflows.length === 1 ? '' : 's'}`}
                                         size="small"
-                                        sx={{ fontWeight: 700, bgcolor: alpha(RED, 0.1), color: RED }}
+                                        sx={{ fontWeight: 500, bgcolor: alpha(RED, 0.1), color: RED }}
                                     />
                                 </Box>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
@@ -356,7 +356,7 @@ function DocsContent() {
                                                     flexDirection: 'column',
                                                     justifyContent: 'space-between',
                                                     overflow: 'hidden',
-                                                    '&:hover': { borderColor: accent, transform: 'translateY(-2px)' },
+                                                    '&:hover': { borderColor: accent, bgcolor: 'var(--col-background-ui-10-hovered)' },
                                                 }}
                                             >
                                                 <Box sx={{ minWidth: 0 }}>
@@ -364,20 +364,20 @@ function DocsContent() {
                                                         <Box sx={{
                                                             width: 26,
                                                             height: 26,
-                                                            borderRadius: 1.2,
+                                                            borderRadius: 2,
                                                             bgcolor: alpha(accent, isSelected ? 1 : 0.12),
                                                             color: isSelected ? '#FFFFFF' : accent,
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
-                                                            fontWeight: 800,
+                                                            fontWeight: 500,
                                                             fontSize: '0.75rem',
                                                             flexShrink: 0,
                                                         }}>
                                                             {ag.id === 'ocr-extractor' ? <ScanText size={13} /> : ag.id === 'gap-closer' ? <RotateCcw size={13} /> : stageNum}
                                                         </Box>
                                                         <Typography variant="caption" sx={{
-                                                            fontWeight: 700,
+                                                            fontWeight: 500,
                                                             fontFamily: 'monospace',
                                                             fontSize: '0.65rem',
                                                             color: isSelected ? accent : 'text.secondary',
@@ -388,7 +388,7 @@ function DocsContent() {
                                                     </Box>
                                                     <Typography
                                                         variant="subtitle2"
-                                                        fontWeight={700}
+                                                        fontWeight={500}
                                                         sx={{
                                                             fontSize: '0.82rem',
                                                             lineHeight: 1.2,
@@ -426,14 +426,14 @@ function DocsContent() {
                             {selectedAgent && (
                                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '380px 1fr' }, gap: 3 }}>
                                     {/* Left Specification Column */}
-                                    <Paper elevation={0} sx={{ p: 3.5, borderRadius: 3, border: '1px solid', borderColor: agentAccent, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Paper elevation={0} sx={{ p: 3.5, borderRadius: 2, border: '1px solid', borderColor: agentAccent, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                                         <Box>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                                                 <Box sx={{ p: 1, borderRadius: 2, bgcolor: agentAccent, color: '#FFFFFF', display: 'flex' }}>
                                                     <Bot size={22} />
                                                 </Box>
                                                 <Box>
-                                                    <Typography variant="h6" fontWeight={700}>
+                                                    <Typography variant="h6" fontWeight={500}>
                                                         {selectedAgent.name}
                                                     </Typography>
                                                     <Typography variant="caption" color="text.secondary">
@@ -447,35 +447,35 @@ function DocsContent() {
                                         <Divider />
 
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                                 Pipeline Position
                                             </Typography>
-                                            <Typography variant="body2" fontWeight={700} sx={{ mt: 0.5, color: agentAccent }}>
+                                            <Typography variant="body2" fontWeight={500} sx={{ mt: 0.5, color: agentAccent }}>
                                                 Stage {STAGE_CONFIG[selectedAgent.id]?.order ?? 'Specialized'} &bull; {selectedAgent.stage.toUpperCase()}
                                             </Typography>
                                         </Box>
 
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                                 Input Contract
                                             </Typography>
-                                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', mt: 0.5, bgcolor: isLight ? '#F5F7FA' : '#161B22', p: 1, borderRadius: 1.5, border: '1px solid', borderColor: 'divider' }}>
+                                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', mt: 0.5, bgcolor: isLight ? '#f4f3ee' : '#2a2a2a', p: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                                 {selectedAgent.input_artifact}
                                             </Typography>
                                         </Box>
 
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                                 Output Contract
                                             </Typography>
-                                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', mt: 0.5, bgcolor: isLight ? '#F5F7FA' : '#161B22', p: 1, borderRadius: 1.5, border: '1px solid', borderColor: 'divider', color: agentAccent, fontWeight: 700 }}>
+                                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', mt: 0.5, bgcolor: isLight ? '#f4f3ee' : '#2a2a2a', p: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider', color: agentAccent, fontWeight: 500 }}>
                                                 {selectedAgent.output_artifact}
                                             </Typography>
                                         </Box>
 
                                         {agentCfg?.schema && (
                                             <Box>
-                                                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                                <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                                     JSON Schema Enforcement
                                                 </Typography>
                                                 <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.78rem', mt: 0.5, color: 'text.secondary' }}>
@@ -485,12 +485,12 @@ function DocsContent() {
                                         )}
 
                                         <Box>
-                                            <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                            <Typography variant="caption" color="text.secondary" fontWeight={500} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                                 Permitted Sandboxed Tools
                                             </Typography>
                                             <Box sx={{ display: 'flex', gap: 1, mt: 0.8, flexWrap: 'wrap' }}>
                                                 {selectedAgent.tools.map((t) => (
-                                                    <Chip key={t} size="small" label={t} color="primary" variant="outlined" icon={<ShieldCheck size={12} />} sx={{ fontWeight: 600 }} />
+                                                    <Chip key={t} size="small" label={t} color="primary" variant="outlined" icon={<ShieldCheck size={12} />} sx={{ fontWeight: 500 }} />
                                                 ))}
                                             </Box>
                                         </Box>
@@ -504,15 +504,15 @@ function DocsContent() {
                                     </Paper>
 
                                     {/* Right Dual-Tab Inspector Column */}
-                                    <Paper elevation={0} sx={{ p: 3.5, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                                    <Paper elevation={0} sx={{ p: 3.5, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
                                             <Tabs
                                                 value={agentTab}
                                                 onChange={(_, val) => setAgentTab(val)}
                                                 sx={{ minHeight: 38 }}
                                             >
-                                                <Tab label="Agent Briefing & Guardrails" sx={{ fontWeight: 700, fontSize: '0.85rem', textTransform: 'none' }} />
-                                                <Tab label="Copilot Prompt (.agent.md)" sx={{ fontWeight: 700, fontSize: '0.85rem', textTransform: 'none' }} />
+                                                <Tab label="Agent Briefing & Guardrails" sx={{ fontWeight: 500, fontSize: '0.85rem', textTransform: 'none' }} />
+                                                <Tab label="Copilot Prompt (.agent.md)" sx={{ fontWeight: 500, fontSize: '0.85rem', textTransform: 'none' }} />
                                             </Tabs>
 
                                             <Button
@@ -520,7 +520,7 @@ function DocsContent() {
                                                 variant="outlined"
                                                 startIcon={copied ? <Check size={14} color={GREEN} /> : <Copy size={14} />}
                                                 onClick={() => handleCopy(selectedAgent.content)}
-                                                sx={{ fontWeight: 600, borderRadius: 2 }}
+                                                sx={{ fontWeight: 500, borderRadius: 2 }}
                                             >
                                                 {copied ? 'Copied' : 'Copy Prompt'}
                                             </Button>
@@ -532,7 +532,7 @@ function DocsContent() {
                                             /* Tab 1: Formatted Briefing */
                                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                                 <Box>
-                                                    <Typography variant="subtitle2" fontWeight={800} color={agentAccent} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.5 }}>
+                                                    <Typography variant="subtitle2" fontWeight={500} color={agentAccent} sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.5 }}>
                                                         Role Description
                                                     </Typography>
                                                     <Typography variant="body1" sx={{ lineHeight: 1.65 }}>
@@ -541,7 +541,7 @@ function DocsContent() {
                                                 </Box>
 
                                                 <Box>
-                                                    <Typography variant="subtitle2" fontWeight={800} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mb: 1.5 }}>
+                                                    <Typography variant="subtitle2" fontWeight={500} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mb: 1.5 }}>
                                                         Active Guardrails & Verification Rules
                                                     </Typography>
                                                     <Stack spacing={1.5}>
@@ -556,8 +556,8 @@ function DocsContent() {
                                                     </Stack>
                                                 </Box>
 
-                                                <Box sx={{ p: 2, borderRadius: 2, bgcolor: isLight ? '#F8FAFC' : 'rgba(255,255,255,0.02)', border: '1px solid', borderColor: 'divider' }}>
-                                                    <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Box sx={{ p: 2, borderRadius: 2, bgcolor: isLight ? '#f9f9f7' : 'rgba(255,255,255,0.02)', border: '1px solid', borderColor: 'divider' }}>
+                                                    <Typography variant="subtitle2" fontWeight={500} sx={{ mb: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
                                                         <ShieldAlert size={16} color={AMBER} />
                                                         Trust Boundary & Sandboxing
                                                     </Typography>
@@ -573,10 +573,10 @@ function DocsContent() {
                                                 sx={{
                                                     p: 2.5,
                                                     borderRadius: 2,
-                                                    bgcolor: '#0D1117',
-                                                    color: '#E6EDF3',
+                                                    bgcolor: '#1c1c1c',
+                                                    color: '#f9f9f7',
                                                     border: '1px solid',
-                                                    borderColor: '#30363D',
+                                                    borderColor: '#7a7870',
                                                     overflowX: 'auto',
                                                     fontFamily: 'ui-monospace, monospace',
                                                     fontSize: '0.82rem',
@@ -600,7 +600,7 @@ function DocsContent() {
                             {/* Skill Selector Chips */}
                             {skills.length > 1 && (
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                    <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mr: 0.5, fontSize: '0.72rem' }}>
+                                    <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', mr: 0.5, fontSize: '0.72rem' }}>
                                         Active Skill:
                                     </Typography>
                                     {skills.map((sk) => (
@@ -611,7 +611,7 @@ function DocsContent() {
                                             clickable
                                             onClick={() => { setSelectedSkillId(sk.id); setSkillSubTab(0); }}
                                             sx={{
-                                                fontWeight: 700,
+                                                fontWeight: 500,
                                                 fontSize: '0.78rem',
                                                 height: 30,
                                                 borderRadius: 2,
@@ -627,7 +627,7 @@ function DocsContent() {
                             )}
 
                             {/* Skill Banner */}
-                            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
                                     <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                                         <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: RED, color: '#FFFFFF', display: 'flex' }}>
@@ -635,7 +635,7 @@ function DocsContent() {
                                         </Box>
                                         <Box>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                                                <Typography variant="h5" fontWeight={700}>
+                                                <Typography variant="h5" fontWeight={500}>
                                                     {currentSkill.name}
                                                 </Typography>
                                                 <Chip size="small" color="success" label="Active Workflow" icon={<CheckCircle2 size={13} />} />
@@ -650,7 +650,7 @@ function DocsContent() {
                                         variant="outlined"
                                         startIcon={copied ? <Check size={16} /> : <Copy size={16} />}
                                         onClick={() => handleCopy(currentSkill.content)}
-                                        sx={{ borderRadius: 2, fontWeight: 600 }}
+                                        sx={{ borderRadius: 2, fontWeight: 500 }}
                                     >
                                         {copied ? 'Copied' : 'Copy SKILL.md'}
                                     </Button>
@@ -658,27 +658,27 @@ function DocsContent() {
                             </Paper>
 
                             {/* Sub-tabs for Skill components */}
-                            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                 <Tabs
                                     value={skillSubTab}
                                     onChange={(_, val) => setSkillSubTab(val)}
                                     sx={{ mb: 3, borderBottom: '1px solid', borderColor: 'divider' }}
                                 >
-                                    <Tab label="5 Coverage Categories" sx={{ fontWeight: 700, textTransform: 'none' }} />
-                                    <Tab label="Quality Gates & Invariants" sx={{ fontWeight: 700, textTransform: 'none' }} />
-                                    <Tab label="Full SKILL.md Specification" sx={{ fontWeight: 700, textTransform: 'none' }} />
+                                    <Tab label="5 Coverage Categories" sx={{ fontWeight: 500, textTransform: 'none' }} />
+                                    <Tab label="Quality Gates & Invariants" sx={{ fontWeight: 500, textTransform: 'none' }} />
+                                    <Tab label="Full SKILL.md Specification" sx={{ fontWeight: 500, textTransform: 'none' }} />
                                 </Tabs>
 
                                 {skillSubTab === 0 && (
                                     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
                                         {CATEGORIES.map((cat) => (
-                                            <Card key={cat.key} variant="outlined" sx={{ borderRadius: 2.5 }}>
+                                            <Card key={cat.key} variant="outlined" sx={{ borderRadius: 2 }}>
                                                 <CardContent>
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                        <Typography variant="subtitle1" fontWeight={700}>
+                                                        <Typography variant="subtitle1" fontWeight={500}>
                                                             {cat.name}
                                                         </Typography>
-                                                        <Chip size="small" label={cat.key} color={cat.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'} sx={{ fontWeight: 700, fontSize: '0.72rem' }} />
+                                                        <Chip size="small" label={cat.key} color={cat.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'} sx={{ fontWeight: 500, fontSize: '0.72rem' }} />
                                                     </Box>
                                                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem', lineHeight: 1.5 }}>
                                                         {cat.desc}
@@ -693,17 +693,17 @@ function DocsContent() {
                                     <Table size="medium">
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell sx={{ fontWeight: 700 }}>Quality Rule</TableCell>
-                                                <TableCell sx={{ fontWeight: 700 }}>Strict Threshold</TableCell>
-                                                <TableCell sx={{ fontWeight: 700 }}>Architectural Rationale</TableCell>
+                                                <TableCell sx={{ fontWeight: 500 }}>Quality Rule</TableCell>
+                                                <TableCell sx={{ fontWeight: 500 }}>Strict Threshold</TableCell>
+                                                <TableCell sx={{ fontWeight: 500 }}>Architectural Rationale</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {QUALITY_GATES.map((g) => (
                                                 <TableRow key={g.rule}>
-                                                    <TableCell sx={{ fontWeight: 600 }}>{g.rule}</TableCell>
+                                                    <TableCell sx={{ fontWeight: 500 }}>{g.rule}</TableCell>
                                                     <TableCell>
-                                                        <Chip size="small" label={g.threshold} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+                                                        <Chip size="small" label={g.threshold} color="primary" variant="outlined" sx={{ fontWeight: 500 }} />
                                                     </TableCell>
                                                     <TableCell sx={{ color: 'text.secondary' }}>{g.rationale}</TableCell>
                                                 </TableRow>
@@ -718,10 +718,10 @@ function DocsContent() {
                                         sx={{
                                             p: 2.5,
                                             borderRadius: 2,
-                                            bgcolor: '#0D1117',
-                                            color: '#E6EDF3',
+                                            bgcolor: '#1c1c1c',
+                                            color: '#f9f9f7',
                                             border: '1px solid',
-                                            borderColor: '#30363D',
+                                            borderColor: '#7a7870',
                                             overflowX: 'auto',
                                             fontFamily: 'ui-monospace, monospace',
                                             fontSize: '0.82rem',
@@ -741,13 +741,13 @@ function DocsContent() {
                     {mainTab === 2 && benchmarkData && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {/* Five Dimensions Card */}
-                            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                                    <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: RED, color: '#FFFFFF', display: 'flex' }}>
+                                    <Box sx={{ p: 1, borderRadius: 2, bgcolor: RED, color: '#FFFFFF', display: 'flex' }}>
                                         <Award size={22} />
                                     </Box>
                                     <Box>
-                                        <Typography variant="h6" fontWeight={700}>
+                                        <Typography variant="h6" fontWeight={500}>
                                             The Five Requirements Quality Score (RQS) Dimensions
                                         </Typography>
                                         <Typography variant="caption" color="text.secondary">
@@ -760,13 +760,13 @@ function DocsContent() {
 
                                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }, gap: 2 }}>
                                     {benchmarkData.dimensions.map((dim) => (
-                                        <Card key={dim.id} variant="outlined" sx={{ borderRadius: 2.5 }}>
+                                        <Card key={dim.id} variant="outlined" sx={{ borderRadius: 2 }}>
                                             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                    <Typography variant="subtitle2" fontWeight={700}>
+                                                    <Typography variant="subtitle2" fontWeight={500}>
                                                         {dim.name}
                                                     </Typography>
-                                                    <Chip label={`${Math.round(dim.weight * 100)}%`} size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }} />
+                                                    <Chip label={`${Math.round(dim.weight * 100)}%`} size="small" color="primary" sx={{ height: 20, fontSize: '0.7rem', fontWeight: 500 }} />
                                                 </Box>
                                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', minHeight: 48, fontSize: '0.75rem', lineHeight: 1.4 }}>
                                                     {dim.description}
@@ -778,9 +778,9 @@ function DocsContent() {
                             </Paper>
 
                             {/* Benchmark Samples */}
-                            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                            <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h6" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="h6" fontWeight={500} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <Database size={20} color={BLUE} />
                                         Standard Benchmark Requirements
                                     </Typography>
@@ -808,7 +808,7 @@ function DocsContent() {
                                                         '&:hover': { borderColor: 'primary.light' },
                                                     }}
                                                 >
-                                                    <Typography variant="subtitle2" fontWeight={700}>
+                                                    <Typography variant="subtitle2" fontWeight={500}>
                                                         {sample.title}
                                                     </Typography>
                                                     <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
@@ -820,9 +820,9 @@ function DocsContent() {
                                     </Stack>
 
                                     {selectedSample && (
-                                        <Paper elevation={0} sx={{ p: 3, borderRadius: 2.5, border: '1px solid', borderColor: 'divider', bgcolor: isLight ? '#FAFBFC' : 'background.paper' }}>
+                                        <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', bgcolor: isLight ? '#f9f9f7' : 'background.paper' }}>
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                                                <Typography variant="subtitle1" fontWeight={700}>
+                                                <Typography variant="subtitle1" fontWeight={500}>
                                                     {selectedSample.title}
                                                 </Typography>
                                                 <Button
@@ -831,7 +831,7 @@ function DocsContent() {
                                                     size="small"
                                                     endIcon={<ArrowRight size={16} />}
                                                     onClick={() => handleRunBenchmark(selectedSample)}
-                                                    sx={{ fontWeight: 700, borderRadius: 2 }}
+                                                    sx={{ fontWeight: 500, borderRadius: 2 }}
                                                 >
                                                     Load into Generator
                                                 </Button>
@@ -841,8 +841,8 @@ function DocsContent() {
                                                 sx={{
                                                     p: 2.5,
                                                     borderRadius: 2,
-                                                    bgcolor: isLight ? '#FFFFFF' : '#0D1117',
-                                                    color: isLight ? 'text.primary' : '#E6EDF3',
+                                                    bgcolor: isLight ? '#FFFFFF' : '#1c1c1c',
+                                                    color: isLight ? 'text.primary' : '#f9f9f7',
                                                     border: '1px solid',
                                                     borderColor: 'divider',
                                                     overflowX: 'auto',

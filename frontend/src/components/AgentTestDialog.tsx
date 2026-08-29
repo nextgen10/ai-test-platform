@@ -91,13 +91,13 @@ export default function AgentTestDialog({
 
     return (
         <Dialog open={open} onClose={close} maxWidth="lg" fullWidth
-            PaperProps={{ sx: { borderRadius: 2.5, maxHeight: '90vh' } }}>
-            <DialogTitle sx={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            PaperProps={{ sx: { borderRadius: 2, maxHeight: '90vh' } }}>
+            <DialogTitle sx={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1.25 }}>
                 <FlaskConical size={20} color={theme.palette.primary.main} />
                 <span>Test {agent?.name ?? 'agent'}</span>
                 {agent && (
                     <Chip label={agent.id} size="small"
-                        sx={{ fontFamily: 'monospace', fontSize: '0.7rem', fontWeight: 600 }} />
+                        sx={{ fontFamily: 'monospace', fontSize: '0.7rem', fontWeight: 500 }} />
                 )}
             </DialogTitle>
 
@@ -151,12 +151,12 @@ export default function AgentTestDialog({
                     startIcon={running ? <CircularProgress size={16} color="inherit" /> : <Play size={16} />}
                     disabled={running || !input.trim()}
                     onClick={run}
-                    sx={{ fontWeight: 700, borderRadius: 2 }}
+                    sx={{ fontWeight: 500, borderRadius: 2 }}
                 >
                     {running ? 'Running…' : 'Run once'}
                 </Button>
 
-                {running && <LinearProgress sx={{ mt: 2, borderRadius: 1 }} />}
+                {running && <LinearProgress sx={{ mt: 2, borderRadius: 2 }} />}
 
                 {error && (
                     <Alert severity="error" sx={{ mt: 2.5, borderRadius: 2 }}>
@@ -178,14 +178,14 @@ export default function AgentTestDialog({
                                             ? `Valid against ${result.contract_checked}`
                                             : 'Ran without error'
                                     }
-                                    sx={{ fontWeight: 700 }}
+                                    sx={{ fontWeight: 500 }}
                                 />
                             ) : (
                                 <Chip
                                     icon={<XCircle size={14} />}
                                     color="error"
                                     label={`Failed ${result.contract_checked}`}
-                                    sx={{ fontWeight: 700 }}
+                                    sx={{ fontWeight: 500 }}
                                 />
                             )}
 
@@ -197,7 +197,7 @@ export default function AgentTestDialog({
                             />
                             {result.engine === 'mock' && (
                                 <Tooltip title="Deterministic stand-in — not a real model call">
-                                    <Chip size="small" label="mock" sx={{ fontWeight: 700 }} />
+                                    <Chip size="small" label="mock" sx={{ fontWeight: 500 }} />
                                 </Tooltip>
                             )}
                         </Box>
@@ -208,7 +208,7 @@ export default function AgentTestDialog({
                                 icon={<AlertTriangle size={18} />}
                                 sx={{ mb: 2, borderRadius: 2 }}
                             >
-                                <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
                                     The output did not match the contract
                                 </Typography>
                                 <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
@@ -229,7 +229,7 @@ export default function AgentTestDialog({
 
                         {result.output && (
                             <>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                                <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary' }}>
                                     {result.output_artifact ?? 'Output'}
                                 </Typography>
                                 <Box
@@ -238,7 +238,7 @@ export default function AgentTestDialog({
                                         mt: 0.5,
                                         p: 1.5,
                                         borderRadius: 2,
-                                        bgcolor: isLight ? '#f6f8fa' : '#0d1117',
+                                        bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                                         border: '1px solid',
                                         borderColor: 'divider',
                                         fontSize: '0.76rem',
@@ -255,7 +255,7 @@ export default function AgentTestDialog({
 
                         {result.log && (
                             <Box sx={{ mt: 2 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                                <Typography variant="caption" sx={{ fontWeight: 500, color: 'text.secondary' }}>
                                     Agent log
                                 </Typography>
                                 <Box

@@ -112,8 +112,8 @@ export default function BespokeUseCaseTemplatePage() {
       <Grid container spacing={3} sx={{ mt: 1 }}>
         {/* Input */}
         <Grid size={{ xs: 12, md: 7 }}>
-          <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1 }}>
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1 }}>
               Input
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -132,7 +132,7 @@ export default function BespokeUseCaseTemplatePage() {
               sx={{ mb: 2.5 }}
             />
 
-            {submitting && <LinearProgress sx={{ mb: 2, borderRadius: 1 }} />}
+            {submitting && <LinearProgress sx={{ mb: 2, borderRadius: 2 }} />}
 
             <Button
               variant="contained"
@@ -141,7 +141,7 @@ export default function BespokeUseCaseTemplatePage() {
               startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <Play size={18} />}
               disabled={submitting || unavailable || !input.trim()}
               onClick={handleExecute}
-              sx={{ fontWeight: 800, py: 1.25, borderRadius: 2 }}
+              sx={{ fontWeight: 500, py: 1.25, borderRadius: 2 }}
             >
               {submitting ? 'Starting the pipeline…' : 'Run this workflow'}
             </Button>
@@ -154,14 +154,14 @@ export default function BespokeUseCaseTemplatePage() {
             elevation={0}
             sx={{
               p: 3,
-              borderRadius: 3,
+              borderRadius: 2,
               border: '1px solid',
               borderColor: 'divider',
               height: '100%',
-              bgcolor: isLight ? '#f8fafc' : '#11161d',
+              bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
             }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 1.5 }}>
               What runs
             </Typography>
 
@@ -173,10 +173,10 @@ export default function BespokeUseCaseTemplatePage() {
                       <Chip
                         label={index + 1}
                         size="small"
-                        sx={{ minWidth: 28, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+                        sx={{ minWidth: 28, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}
                       />
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {agent.stage}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>

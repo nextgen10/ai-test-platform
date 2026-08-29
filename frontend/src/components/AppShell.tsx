@@ -8,9 +8,10 @@ import {
     ChevronRight, FlaskConical, AlarmClock,
 } from 'lucide-react';
 
-import ThemeToggle from '@/components/ThemeToggle';
 import AuthStatus from '@/components/AuthStatus';
+import ThemeToggle from '@/components/ThemeToggle';
 import { UnifiedNavBar } from '@/components/UnifiedNavBar';
+import ProductName from '@/components/ProductName';
 import { coreNavItems, mapWorkflowsToUseCases, type UseCaseItem } from '@/config/nav';
 import { hubApi } from '@/lib/hub-api';
 
@@ -30,7 +31,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const theme = useTheme();
-    const isLight = theme.palette.mode === 'light';
 
     // Use cases are whatever the registry says they are, so onboarding a
     // workflow with a custom UI adds it to the navigation on its own.
@@ -84,7 +84,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 useCases={useCases}
                 onLogoClick={() => router.push('/')}
                 actions={
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" spacing={0.5} alignItems="center">
                         <AuthStatus />
                         <ThemeToggle />
                     </Stack>
@@ -97,7 +97,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     sx={{
                         borderBottom: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: isLight ? 'rgba(208, 0, 0, 0.03)' : 'rgba(208, 0, 0, 0.08)',
+                        bgcolor: 'var(--col-background-ui-30)',
                         px: { xs: 2, sm: 3, md: 4 },
                         py: 0.85,
                         display: 'flex',
@@ -111,16 +111,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         separator={<ChevronRight size={13} />}
                         aria-label="breadcrumb"
                         sx={{
-                            '& .MuiBreadcrumbs-li': { fontSize: '0.8rem', fontWeight: 600 },
+                            '& .MuiBreadcrumbs-li': { fontSize: '0.8rem', fontWeight: 500 },
                         }}
                     >
-                        <Typography
+                        <Box
                             color="inherit"
                             onClick={() => router.push('/')}
-                            sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+                            sx={{ cursor: 'pointer' }}
                         >
-                            Agent HUB
-                        </Typography>
+                            <ProductName variant="inline" />
+                        </Box>
                         <Typography
                             color="inherit"
                             onClick={() => router.push('/registry?tab=workflows')}
@@ -130,14 +130,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                             <FlaskConical size={14} color={theme.palette.primary.main} />
-                            <Typography color="text.primary" sx={{ fontWeight: 800 }}>
+                            <Typography color="text.primary" sx={{ fontWeight: 500 }}>
                                 {activeUseCase.label}
                             </Typography>
                             <Chip
                                 label="Bespoke UI"
                                 size="small"
                                 color="primary"
-                                sx={{ height: 18, fontSize: '0.65rem', fontWeight: 800 }}
+                                sx={{ height: 18, fontSize: '0.65rem', fontWeight: 500 }}
                             />
                         </Box>
                     </Breadcrumbs>
@@ -149,7 +149,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                             color="inherit"
                             startIcon={<Bot size={14} color={theme.palette.primary.main} />}
                             onClick={() => router.push(`/chat?workflow=${activeUseCase.id}`)}
-                            sx={{ fontSize: '0.76rem', fontWeight: 700, textTransform: 'none', px: 1 }}
+                            sx={{ fontSize: '0.76rem', fontWeight: 500, textTransform: 'none', px: 1 }}
                         >
                             Open in Agent Console
                         </Button>
@@ -159,7 +159,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                             color="inherit"
                             startIcon={<Layers size={14} />}
                             onClick={() => router.push('/registry')}
-                            sx={{ fontSize: '0.76rem', fontWeight: 700, textTransform: 'none', px: 1, color: 'text.secondary' }}
+                            sx={{ fontSize: '0.76rem', fontWeight: 500, textTransform: 'none', px: 1, color: 'text.secondary' }}
                         >
                             View Registry
                         </Button>

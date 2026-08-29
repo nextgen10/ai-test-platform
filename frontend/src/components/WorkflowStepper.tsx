@@ -130,7 +130,7 @@ export default function WorkflowStepper({
                                         variant="caption"
                                         align="center"
                                         sx={{
-                                            fontWeight: state === 'pending' ? 500 : 700,
+                                            fontWeight: state === 'pending' ? 400 : 500,
                                             color: state === 'pending' ? 'text.disabled' : 'text.primary',
                                             lineHeight: 1.3,
                                         }}
@@ -138,7 +138,7 @@ export default function WorkflowStepper({
                                         {stage.label}
                                     </Typography>
                                     {state === 'blocked' && (
-                                        <Typography variant="caption" sx={{ color: 'warning.main', fontWeight: 600 }}>
+                                        <Typography variant="caption" sx={{ color: 'warning.main', fontWeight: 500 }}>
                                             action needed
                                         </Typography>
                                     )}
@@ -152,7 +152,7 @@ export default function WorkflowStepper({
                                         minWidth: 16,
                                         height: 2,
                                         mt: '16px',
-                                        borderRadius: 1,
+                                        borderRadius: 2,
                                         bgcolor: done ? theme.palette.success.main : theme.palette.divider,
                                     }}
                                 />

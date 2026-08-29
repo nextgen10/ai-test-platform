@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Start the Agent HUB Platform locally (orchestrator + UI).
+# Start Agent HUB locally (orchestrator + UI).
 # Ports 8100/3100 run the backend orchestrator and Next.js frontend.
 #
 set -Eeuo pipefail

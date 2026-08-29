@@ -22,8 +22,8 @@ export default function GlobalLoading() {
             }}
         >
             <CircularProgress size={40} thickness={4} />
-            <Typography variant="body2" color="text.secondary" fontWeight={600}>
-                Loading Agent HUB...
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                Loading Agent HUB Platform...
             </Typography>
         </Box>
     );

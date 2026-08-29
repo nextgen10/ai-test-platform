@@ -115,7 +115,7 @@ export default function JobsPage() {
                                                     variant="outlined"
                                                     label={job.provenance.engine === 'mock' ? 'Mock' : 'GHCP'}
                                                     color={job.provenance.engine === 'mock' ? 'warning' : 'primary'}
-                                                    sx={{ height: 20, fontSize: '0.68rem', fontWeight: 800 }}
+                                                    sx={{ height: 20, fontSize: '0.68rem', fontWeight: 500 }}
                                                 />
                                             ) : '—'}
                                         </TableCell>

@@ -29,9 +29,9 @@ export const StreamingIndicator: React.FC<{ statusText?: string }> = ({
         px: 1.75,
         py: 0.75,
         borderRadius: 2,
-        bgcolor: isLight ? 'rgba(208, 0, 0, 0.05)' : 'rgba(208, 0, 0, 0.12)',
+        bgcolor: isLight ? 'rgba(230, 0, 0, 0.05)' : 'rgba(230, 0, 0, 0.12)',
         border: '1px solid',
-        borderColor: isLight ? 'rgba(208, 0, 0, 0.15)' : 'rgba(208, 0, 0, 0.25)',
+        borderColor: isLight ? 'rgba(230, 0, 0, 0.15)' : 'rgba(230, 0, 0, 0.25)',
         mt: 1,
       }}
     >
@@ -76,9 +76,9 @@ export const StreamingIndicator: React.FC<{ statusText?: string }> = ({
       <Typography
         variant="caption"
         sx={{
-          fontWeight: 600,
+          fontWeight: 500,
           fontSize: '0.78rem',
-          color: isLight ? '#475569' : '#94a3b8',
+          color: isLight ? '#404040' : '#8e8d83',
         }}
       >
         {statusText}

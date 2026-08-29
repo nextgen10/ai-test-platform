@@ -43,7 +43,7 @@ export default function RunCostPanel({ breakdown }: { breakdown: JobBreakdown })
     return (
         <Paper
             variant="outlined"
-            sx={{ mt: 2, borderRadius: 2.5, overflow: 'hidden' }}
+            sx={{ mt: 2, borderRadius: 2, overflow: 'hidden' }}
         >
             <Box
                 sx={{
@@ -55,12 +55,12 @@ export default function RunCostPanel({ breakdown }: { breakdown: JobBreakdown })
                     gap: 1,
                     borderBottom: '1px solid',
                     borderColor: 'divider',
-                    bgcolor: isLight ? '#f8fafc' : '#11161d',
+                    bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Coins size={16} color={theme.palette.primary.main} />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
                         Run cost
                     </Typography>
                 </Box>
@@ -77,10 +77,10 @@ export default function RunCostPanel({ breakdown }: { breakdown: JobBreakdown })
                 <Table size="small" sx={{ '& td, & th': { fontSize: '0.78rem' } }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 700 }}>Stage</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Time</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Tokens</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700 }}>Cost</TableCell>
+                            <TableCell sx={{ fontWeight: 500 }}>Stage</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 500 }}>Time</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 500 }}>Tokens</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 500 }}>Cost</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -99,7 +99,7 @@ export default function RunCostPanel({ breakdown }: { breakdown: JobBreakdown })
                                         />
                                         <Typography
                                             variant="body2"
-                                            sx={{ fontSize: '0.78rem', fontWeight: 600 }}
+                                            sx={{ fontSize: '0.78rem', fontWeight: 500 }}
                                             noWrap
                                         >
                                             {stage.stage ?? stage.agent_id}
@@ -153,24 +153,24 @@ export default function RunCostPanel({ breakdown }: { breakdown: JobBreakdown })
                         ))}
 
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 800, borderTop: '2px solid', borderColor: 'divider' }}>
+                            <TableCell sx={{ fontWeight: 500, borderTop: '2px solid', borderColor: 'divider' }}>
                                 Total
                             </TableCell>
                             <TableCell
                                 align="right"
-                                sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', borderTop: '2px solid', borderColor: 'divider' }}
+                                sx={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums', borderTop: '2px solid', borderColor: 'divider' }}
                             >
                                 {formatDuration(totals.stage_duration_ms)}
                             </TableCell>
                             <TableCell
                                 align="right"
-                                sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', borderTop: '2px solid', borderColor: 'divider' }}
+                                sx={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums', borderTop: '2px solid', borderColor: 'divider' }}
                             >
                                 {formatTokens(totals.total_tokens)}
                             </TableCell>
                             <TableCell
                                 align="right"
-                                sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', borderTop: '2px solid', borderColor: 'divider' }}
+                                sx={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums', borderTop: '2px solid', borderColor: 'divider' }}
                             >
                                 {formatCost(totals.cost_usd)}
                             </TableCell>
@@ -190,7 +190,7 @@ export default function RunCostPanel({ breakdown }: { breakdown: JobBreakdown })
                         alignItems: 'flex-start',
                         borderTop: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: isLight ? '#fffbeb' : alpha(theme.palette.warning.main, 0.08),
+                        bgcolor: isLight ? '#fbf9ee' : alpha(theme.palette.warning.main, 0.08),
                     }}
                 >
                     <Info size={14} style={{ marginTop: 2, flexShrink: 0 }} />

@@ -21,7 +21,7 @@ function StatTile({ label, value, hint }: { label: string; value: string; hint?:
             <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 {label}
             </Typography>
-            <Typography variant="h4" fontWeight={700} sx={{ mt: 0.5, lineHeight: 1.2 }}>
+            <Typography variant="h4" fontWeight={500} sx={{ mt: 0.5, lineHeight: 1.2 }}>
                 {value}
             </Typography>
             {hint && (
@@ -74,7 +74,7 @@ export default function DashboardPage() {
     return (
         <Box>
             <PageHeader
-                title="Agent HUB Platform — Dashboard"
+                title="Dashboard"
                 subtitle="Real-time execution metrics, active agent runs, and quality benchmarks."
                 actions={
                     <>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
                 >
                     <AlertTriangle size={18} color={theme.palette.error.main} />
                     <Box>
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant="body2" fontWeight={500}>
                             Cannot reach the orchestrator
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -126,7 +126,7 @@ export default function DashboardPage() {
                 >
                     <UserCheck size={18} color={theme.palette.warning.main} />
                     <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant="body2" fontWeight={500}>
                             {stats.awaiting_approval} job{stats.awaiting_approval > 1 ? 's' : ''} awaiting approval
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -178,7 +178,7 @@ export default function DashboardPage() {
                 </>
             )}
 
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5 }}>
+            <Typography variant="h6" fontWeight={500} sx={{ mb: 1.5 }}>
                 Recent jobs
             </Typography>
 

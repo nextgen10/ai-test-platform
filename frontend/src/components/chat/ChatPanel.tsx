@@ -120,7 +120,6 @@ export const ChatPanel: React.FC = () => {
     transition: 'border-color 0.15s, transform 0.15s',
     '&:hover': {
       borderColor: accent,
-      transform: 'translateY(-1px)',
     },
     '&:focus-within': { borderColor: accent },
   });
@@ -130,8 +129,9 @@ export const ChatPanel: React.FC = () => {
       sx={{
         display: 'flex',
         height: '100%',
+        minHeight: 0,
         width: '100%',
-        bgcolor: isLight ? '#ffffff' : '#0a0d12',
+        bgcolor: isLight ? '#ffffff' : '#1c1c1c',
         overflow: 'hidden',
       }}
     >
@@ -152,6 +152,7 @@ export const ChatPanel: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
+          minHeight: 0,
           minWidth: 0,
           position: 'relative',
         }}
@@ -165,7 +166,7 @@ export const ChatPanel: React.FC = () => {
             py: 1,
             borderBottom: '1px solid',
             borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
-            bgcolor: isLight ? '#ffffff' : '#0d1117',
+            bgcolor: isLight ? '#ffffff' : '#1c1c1c',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -185,7 +186,7 @@ export const ChatPanel: React.FC = () => {
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Bot size={20} color={theme.palette.primary.main} />
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, fontSize: '0.95rem' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '0.95rem' }}>
                 Agent Console
               </Typography>
             </Box>
@@ -199,9 +200,9 @@ export const ChatPanel: React.FC = () => {
               startIcon={<Plus size={14} />}
               onClick={newChat}
               sx={{
-                borderRadius: 1.5,
+                borderRadius: 2,
                 fontSize: '0.78rem',
-                fontWeight: 600,
+                fontWeight: 500,
                 textTransform: 'none',
               }}
             >
@@ -213,7 +214,7 @@ export const ChatPanel: React.FC = () => {
         <ConfigBar />
 
         {error && (
-          <Alert severity="error" onClose={clearError} sx={{ m: 1.5, mb: 0, borderRadius: 1.5 }}>
+          <Alert severity="error" onClose={clearError} sx={{ m: 1.5, mb: 0, borderRadius: 2 }}>
             {error}
           </Alert>
         )}
@@ -223,6 +224,7 @@ export const ChatPanel: React.FC = () => {
           onScroll={onScroll}
           sx={{
             flex: 1,
+            minHeight: 0,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -234,8 +236,8 @@ export const ChatPanel: React.FC = () => {
             </Box>
           ) : showEmpty && selectedWorkflow ? (
             <Box sx={{ m: 'auto', p: { xs: 2, sm: 4 }, maxWidth: 640, textAlign: 'center' }}>
-              <Workflow size={32} color="#3b82f6" />
-              <Typography variant="h5" sx={{ fontWeight: 800, mt: 2, mb: 1 }}>
+              <Workflow size={32} color="#00759e" />
+              <Typography variant="h5" sx={{ fontWeight: 500, mt: 2, mb: 1 }}>
                 Run {selectedWorkflow.name}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
@@ -271,7 +273,7 @@ export const ChatPanel: React.FC = () => {
                 <Bot size={36} />
               </Box>
 
-              <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+              <Typography variant="h5" sx={{ fontWeight: 500, mb: 1 }}>
                 Agent Console
               </Typography>
               <Typography
@@ -295,7 +297,7 @@ export const ChatPanel: React.FC = () => {
               <Grid container spacing={2} sx={{ textAlign: 'left' }}>
                 {workflows.slice(0, 8).map((wf) => (
                   <Grid size={{ xs: 12, sm: 6 }} key={wf.id}>
-                    <Card variant="outlined" sx={quickCardSx('#3b82f6')}>
+                    <Card variant="outlined" sx={quickCardSx('#00759e')}>
                       <CardActionArea
                         sx={{ height: '100%' }}
                         // Always select it here. Every workflow in the registry
@@ -305,15 +307,15 @@ export const ChatPanel: React.FC = () => {
                       >
                         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                            <Workflow size={16} color="#3b82f6" />
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            <Workflow size={16} color="#00759e" />
+                            <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
                               {wf.name}
                             </Typography>
                           </Box>
                           <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
                             {wf.description}
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#3b82f6', fontSize: '0.75rem', fontWeight: 600 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#00759e', fontSize: '0.75rem', fontWeight: 500 }}>
                             <span>Run as a job</span>
                             <ChevronRight size={13} />
                           </Box>
@@ -333,14 +335,14 @@ export const ChatPanel: React.FC = () => {
                         <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
                             <Bot size={16} color={theme.palette.primary.main} />
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
                               {agent.name}
                             </Typography>
                           </Box>
                           <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
                             {agent.description || 'Specialized Copilot agent.'}
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontSize: '0.75rem', fontWeight: 600 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontSize: '0.75rem', fontWeight: 500 }}>
                             <span>Chat with this agent</span>
                             <ChevronRight size={13} />
                           </Box>
@@ -354,7 +356,7 @@ export const ChatPanel: React.FC = () => {
                   <Grid size={{ xs: 12 }}>
                     <Card variant="outlined" sx={{ borderRadius: 2, borderStyle: 'dashed' }}>
                       <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 500, mb: 0.5 }}>
                           {q ? 'Nothing matches that filter' : 'Nothing onboarded yet'}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 2 }}>
