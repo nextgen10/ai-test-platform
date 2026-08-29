@@ -15,7 +15,8 @@
 #>
 $ErrorActionPreference = 'Stop'
 
-$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+# $MyInvocation.MyCommand.Path is empty when the script is dot-sourced.
+$Root = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 $LogDir = Join-Path $Root 'logs'
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
@@ -29,8 +30,15 @@ function Set-EnvDefault([string]$Name, [string]$Value) {
     }
 }
 
+function Test-RealWin32([string]$Path) {
+    if (-not $Path) { return $false }
+    # The Microsoft Store alias is on PATH but is not a real interpreter.
+    if ($Path -match '(?i)\\WindowsApps\\') { return $false }
+    return [IO.File]::Exists($Path)
+}
+
 function Import-EnvDefaults([string]$File) {
-    foreach ($raw in Get-Content -Path $File) {
+    foreach ($raw in Get-Content -Path $File -Encoding UTF8) {
         $line = $raw.Trim()
         if (-not $line -or $line.StartsWith('#')) { continue }
         if ($line.StartsWith('export ')) { $line = $line.Substring(7) }
@@ -51,73 +59,65 @@ function Import-EnvDefaults([string]$File) {
 }
 
 function Resolve-Python {
-    if ($env:PYTHON) {
+    if ($env:PYTHON -and (Get-Command $env:PYTHON -ErrorAction SilentlyContinue)) {
         return @{ Exe = $env:PYTHON; Prefix = @() }
     }
-    if (Get-Command py -ErrorAction SilentlyContinue) {
+    $py = Get-Command py -ErrorAction SilentlyContinue
+    if ($py -and ((Test-RealWin32 $py.Source) -or $py.Name -eq 'py.exe' -or $py.Name -eq 'py')) {
         & py -3 -c "import sys" 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            return @{ Exe = 'py'; Prefix = @('-3') }
+            return @{ Exe = $py.Source; Prefix = @('-3') }
         }
     }
     foreach ($name in @('python', 'python3')) {
         $cmd = Get-Command $name -ErrorAction SilentlyContinue
-        if ($cmd) {
+        if ($cmd -and (Test-RealWin32 $cmd.Source)) {
             return @{ Exe = $cmd.Source; Prefix = @() }
         }
     }
-    throw 'Python 3 not found. Install it or set $env:PYTHON.'
+    throw 'Python 3 not found. Install it from python.org (tick "Add python.exe to PATH") or set $env:PYTHON.'
 }
 
-function Resolve-Npm([string]$Name) {
-    $cmd = Get-Command "$Name.cmd" -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    $cmd = Get-Command $Name -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    throw "$Name not found. Install Node.js and ensure it is on PATH."
+function Resolve-Node {
+    foreach ($name in @('node', 'node.exe')) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if ($cmd -and (Test-RealWin32 $cmd.Source)) {
+            return $cmd.Source
+        }
+    }
+    throw 'node.exe not found. Install Node.js LTS and open a new terminal so PATH updates.'
+}
+
+function Resolve-NpmCli([string]$NodeExe) {
+    $dir = Split-Path -Parent $NodeExe
+    $candidates = @(
+        (Join-Path $dir 'node_modules\npm\bin\npm-cli.js'),
+        (Join-Path (Split-Path $dir) 'node_modules\npm\bin\npm-cli.js')
+    )
+    foreach ($c in $candidates) {
+        if (Test-Path -LiteralPath $c) { return $c }
+    }
+    $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
+    if ($npm) {
+        $npmDir = Split-Path -Parent $npm.Source
+        $viaCmd = Join-Path $npmDir 'node_modules\npm\bin\npm-cli.js'
+        if (Test-Path -LiteralPath $viaCmd) { return $viaCmd }
+    }
+    throw 'npm-cli.js not found next to node.exe. Reinstall Node.js LTS.'
 }
 
 function Stop-ListenersOnPort([int]$Port) {
-    $procIds = @()
-    try {
-        $procIds = @(
-            Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
-                Select-Object -ExpandProperty OwningProcess -Unique
-        )
-    } catch {
-        $procIds = @()
-    }
-    if (-not $procIds) {
-        $escaped = [regex]::Escape(":$Port")
-        $procIds = @(
-            netstat -ano -p tcp |
-                Select-String -Pattern "$escaped\s+\S+\s+LISTENING\s+(\d+)$" |
-                ForEach-Object { [int]$_.Matches[0].Groups[1].Value } |
-                Select-Object -Unique
-        )
+    $procIds = New-Object System.Collections.Generic.List[int]
+    foreach ($line in @(netstat -ano -p tcp 2>$null)) {
+        if ($line -match ":${Port}\s+\S+\s+LISTENING\s+(\d+)\s*$") {
+            $id = [int]$Matches[1]
+            if ($id -gt 0 -and -not $procIds.Contains($id)) { $procIds.Add($id) }
+        }
     }
     foreach ($procId in $procIds) {
-        if ($procId -and $procId -ne 0) {
-            Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
-        }
+        # /T kills the process tree so a leftover cmd.exe does not leave node.exe bound.
+        & taskkill.exe /PID $procId /T /F 2>$null | Out-Null
     }
-}
-
-function Resolve-StartTarget([string]$FilePath, [string[]]$ArgumentList) {
-    $ext = [IO.Path]::GetExtension($FilePath)
-    if ($ext -in @('.cmd', '.bat')) {
-        $quoted = ($ArgumentList | ForEach-Object {
-            if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ }
-        }) -join ' '
-        return @{
-            FilePath = $env:ComSpec
-            ArgumentList = @('/d', '/s', '/c', "`"`"$FilePath`" $quoted`"")
-        }
-    }
-    $argString = ($ArgumentList | ForEach-Object {
-        if ($_ -match '\s') { '"{0}"' -f ($_ -replace '"', '\"') } else { $_ }
-    }) -join ' '
-    return @{ FilePath = $FilePath; ArgumentList = $argString }
 }
 
 function Start-LoggedProcess {
@@ -129,10 +129,22 @@ function Start-LoggedProcess {
         [Parameter(Mandatory = $true)][string]$StdErr,
         [switch]$Wait
     )
-    $target = Resolve-StartTarget $FilePath $ArgumentList
+    foreach ($log in @($StdOut, $StdErr)) {
+        $dir = Split-Path -Parent $log
+        if ($dir -and -not (Test-Path $dir)) {
+            New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        }
+        if (Test-Path -LiteralPath $log) {
+            Remove-Item -LiteralPath $log -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    # Pass an argument *array*. A single joined string is re-quoted by Windows
+    # PowerShell 5.1 and uvicorn/next then see one giant argv[1]. Do not
+    # pre-quote paths: Start-Process quotes any element that contains spaces.
     $start = @{
-        FilePath               = $target.FilePath
-        ArgumentList           = $target.ArgumentList
+        FilePath               = $FilePath
+        ArgumentList           = $ArgumentList
         WorkingDirectory       = $WorkingDirectory
         RedirectStandardOutput = $StdOut
         RedirectStandardError  = $StdErr
@@ -143,11 +155,33 @@ function Start-LoggedProcess {
     return Start-Process @start
 }
 
+function Stop-ProcessTree($proc) {
+    if (-not $proc) { return }
+    try { $proc.Refresh() } catch { return }
+    if ($proc.HasExited) { return }
+    & taskkill.exe /PID $proc.Id /T /F 2>$null | Out-Null
+}
+
 function Show-LogTail([string[]]$Files, [int]$Lines = 20) {
     foreach ($file in $Files) {
-        if (Test-Path $file) {
-            Get-Content -Path $file -Tail $Lines
+        if (Test-Path -LiteralPath $file) {
+            Get-Content -Path $file -Tail $Lines -ErrorAction SilentlyContinue
         }
+    }
+}
+
+function Test-BackendReady([int]$Port) {
+    $url = "http://127.0.0.1:$Port/api/v1/health"
+    $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if ($curl) {
+        & curl.exe -sf --max-time 2 $url 2>$null | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    }
+    try {
+        $null = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 2
+        return $true
+    } catch {
+        return $false
     }
 }
 
@@ -168,6 +202,7 @@ Set-EnvDefault 'ENABLE_DOCS' '1'
 $BackendPort = [int]$env:BACKEND_PORT
 $FrontendPort = [int]$env:FRONTEND_PORT
 $Python = Resolve-Python
+$Node = Resolve-Node
 
 # The orchestrator refuses to start in token mode with no credentials, so that
 # an unconfigured deployment can never serve an open API. For a local run we
@@ -176,8 +211,7 @@ $Python = Resolve-Python
 if ($env:AUTH_MODE -eq 'token' -and -not $env:API_TOKENS) {
     $DevToken = & $Python.Exe @($Python.Prefix + @('-c', 'import secrets; print(secrets.token_urlsafe(32))'))
     if ($DevToken -is [array]) { $DevToken = $DevToken[-1] }
-    $DevToken = [string]$DevToken
-    $DevToken = $DevToken.Trim()
+    $DevToken = ([string]$DevToken).Trim()
     if (-not $DevToken) { throw 'Failed to mint a local API token.' }
     $env:API_TOKENS = "${DevToken}:local-dev:admin"
     $env:API_TOKEN = $DevToken
@@ -194,8 +228,8 @@ if ($env:AUTH_MODE -eq 'token' -and -not $env:API_TOKENS) {
     }
 }
 
-$BackendProc = $null
-$FrontendProc = $null
+$script:BackendProc = $null
+$script:FrontendProc = $null
 $BackendOut = Join-Path $LogDir 'backend.log'
 $BackendErr = Join-Path $LogDir 'backend.err.log'
 $FrontendOut = Join-Path $LogDir 'frontend.log'
@@ -204,12 +238,15 @@ $FrontendErr = Join-Path $LogDir 'frontend.err.log'
 function Stop-Hub {
     Write-Host ""
     Write-Host "Stopping…"
-    foreach ($proc in @($script:FrontendProc, $script:BackendProc)) {
-        if ($proc -and -not $proc.HasExited) {
-            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
-        }
-    }
+    Stop-ProcessTree $script:FrontendProc
+    Stop-ProcessTree $script:BackendProc
+    Stop-ListenersOnPort $script:BackendPort
+    Stop-ListenersOnPort $script:FrontendPort
 }
+
+# Used by Stop-Hub after Ctrl-C; must be script-scoped.
+$script:BackendPort = $BackendPort
+$script:FrontendPort = $FrontendPort
 
 try {
     Write-Host "AI Test Platform"
@@ -230,24 +267,22 @@ try {
         '--host', '127.0.0.1',
         '--port', "$BackendPort"
     )
-    $BackendProc = Start-LoggedProcess -FilePath $Python.Exe -ArgumentList $uvicornArgs `
+    $script:BackendProc = Start-LoggedProcess -FilePath $Python.Exe -ArgumentList $uvicornArgs `
         -WorkingDirectory (Join-Path $Root 'backend') `
         -StdOut $BackendOut -StdErr $BackendErr
 
     $ready = $false
     for ($i = 0; $i -lt 30; $i++) {
-        try {
-            $null = Invoke-WebRequest -Uri "http://127.0.0.1:$BackendPort/api/v1/health" `
-                -UseBasicParsing -TimeoutSec 2
+        if (Test-BackendReady $BackendPort) {
             $ready = $true
             Write-Host "  orchestrator ready"
             break
-        } catch {
-            Start-Sleep -Milliseconds 500
         }
+        Start-Sleep -Milliseconds 500
     }
 
-    if ($BackendProc.HasExited) {
+    $script:BackendProc.Refresh()
+    if ($script:BackendProc.HasExited) {
         Write-Host "Orchestrator failed to start. Last lines:" -ForegroundColor Red
         Show-LogTail @($BackendOut, $BackendErr)
         exit 1
@@ -261,11 +296,12 @@ try {
 
     Write-Host "Starting UI on :$FrontendPort"
     $frontendDir = Join-Path $Root 'frontend'
-    $npm = Resolve-Npm 'npm'
-    if (-not (Test-Path (Join-Path $frontendDir 'node_modules'))) {
+    $nextBin = Join-Path $frontendDir 'node_modules\next\dist\bin\next'
+    if (-not (Test-Path -LiteralPath $nextBin)) {
         Write-Host "  installing frontend dependencies (first run)…"
-        $install = Start-LoggedProcess -FilePath $npm `
-            -ArgumentList @('install', '--no-audit', '--no-fund') `
+        $npmCli = Resolve-NpmCli $Node
+        $install = Start-LoggedProcess -FilePath $Node `
+            -ArgumentList @($npmCli, 'install', '--no-audit', '--no-fund') `
             -WorkingDirectory $frontendDir `
             -StdOut $FrontendOut -StdErr $FrontendErr -Wait
         if ($install.ExitCode -ne 0) {
@@ -273,21 +309,25 @@ try {
             Show-LogTail @($FrontendOut, $FrontendErr)
             exit $install.ExitCode
         }
+        if (-not (Test-Path -LiteralPath $nextBin)) {
+            Write-Host "npm install finished but Next.js is missing at $nextBin" -ForegroundColor Red
+            exit 1
+        }
     }
 
     # package.json uses bash ${PORT:-3100}, which cmd.exe will not expand.
-    # Invoke next with an explicit --port so the UI binds correctly on Windows.
+    # Call next through node.exe so we never wrap npm.cmd / npx.cmd.
     $env:PORT = "$FrontendPort"
     $env:API_TARGET = "http://127.0.0.1:$BackendPort"
     $env:UI_AUTH_MODE = 'shared'
-    $npx = Resolve-Npm 'npx'
-    $FrontendProc = Start-LoggedProcess -FilePath $npx `
-        -ArgumentList @('next', 'dev', '--turbopack', '--port', "$FrontendPort") `
+    $script:FrontendProc = Start-LoggedProcess -FilePath $Node `
+        -ArgumentList @($nextBin, 'dev', '--turbopack', '--port', "$FrontendPort") `
         -WorkingDirectory $frontendDir `
         -StdOut $FrontendOut -StdErr $FrontendErr
 
     Start-Sleep -Seconds 3
-    if ($FrontendProc.HasExited) {
+    $script:FrontendProc.Refresh()
+    if ($script:FrontendProc.HasExited) {
         Write-Host "UI failed to start. Last lines:" -ForegroundColor Red
         Show-LogTail @($FrontendOut, $FrontendErr)
         exit 1
@@ -300,7 +340,10 @@ try {
     Write-Host ""
     Write-Host "Ctrl-C to stop."
 
-    while (-not $BackendProc.HasExited -or -not $FrontendProc.HasExited) {
+    while ($true) {
+        $script:BackendProc.Refresh()
+        $script:FrontendProc.Refresh()
+        if ($script:BackendProc.HasExited -and $script:FrontendProc.HasExited) { break }
         Start-Sleep -Seconds 1
     }
 } finally {
