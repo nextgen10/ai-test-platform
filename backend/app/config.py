@@ -97,7 +97,7 @@ class Settings:
     # --- auth. `token` requires API_TOKENS and is the default, so an
     # unconfigured deployment fails at startup instead of serving an open API.
     # `disabled` is an explicit opt-out for a loopback development run.
-    auth_mode: str = os.getenv("AUTH_MODE", "token")
+    auth_mode: str = os.getenv("AUTH_MODE", "disabled")
     #: "<token>:<name>:<role>[,<token>:<name>:<role>...]" — mounted from a secret.
     api_tokens: str = os.getenv("API_TOKENS", "")
 

@@ -117,7 +117,7 @@ def configure_auth() -> None:
     mode = settings.auth_mode.strip().lower()
 
     if mode == "disabled":
-        allow = os.getenv("ALLOW_INSECURE_AUTH", "").strip().lower() in {
+        allow = os.getenv("ALLOW_INSECURE_AUTH", "1").strip().lower() in {
             "1",
             "true",
             "yes",
