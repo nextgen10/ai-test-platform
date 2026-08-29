@@ -20,10 +20,9 @@ from pathlib import Path
 
 from app.config import settings
 from app.services import cli_errors, hub_registry
+from app.services.job_service import resolve_copilot_bin
 
 logger = logging.getLogger("chat-orchestrator")
-
-COPILOT_BIN = os.getenv("COPILOT_BIN", "copilot")
 
 #: How much prior conversation to replay. The CLI is invoked fresh per message,
 #: so history has to be re-sent; this bounds how large that gets.
@@ -142,7 +141,7 @@ def _agent_exists(agent_id: str) -> bool:
 
 def _build_copilot_cmd(config: ChatConfig, prompt_text: str) -> list[str]:
     """Construct the ``copilot`` CLI command with the right flags."""
-    cmd = [COPILOT_BIN, "-s", "--no-color"]
+    cmd = [resolve_copilot_bin(), "-s", "--no-color"]
 
     if config.agent_id:
         cmd.extend(["--agent", config.agent_id])
@@ -289,8 +288,8 @@ async def execute_streaming(config: ChatConfig) -> AsyncIterator[str]:
     except FileNotFoundError:
         shutil.rmtree(work, ignore_errors=True)
         yield (
-            f"The GitHub Copilot CLI (`{COPILOT_BIN}`) is not installed or not on "
-            f"PATH. Install it, or set `ENGINE=mock` to work offline.\n\n"
+            f"The GitHub Copilot CLI (`{resolve_copilot_bin()}`) is not installed or not on "
+            f"PATH. Install it, or set `ENGINE=mock` (Settings → Mock) to work offline.\n\n"
             f"`npm install -g @github/copilot`"
         )
         return

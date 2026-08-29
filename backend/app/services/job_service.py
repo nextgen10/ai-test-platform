@@ -130,8 +130,19 @@ def _workflow_or_default(workflow_id: str) -> dict[str, Any]:
 
 
 def copilot_bin() -> str:
-    """Name of the Copilot CLI binary, for readiness checks and executors."""
+    """Configured Copilot CLI name (or path), before PATH lookup."""
     return os.getenv("COPILOT_BIN", "copilot")
+
+
+def resolve_copilot_bin() -> str:
+    """Path to actually invoke.
+
+    ``create_subprocess_exec`` / ``Popen`` on Windows do not honor PATHEXT, so
+    a bare ``copilot`` fails even when ``copilot.cmd`` is on PATH. ``which``
+    returns the real file; if nothing is installed we keep the configured name
+    so the FileNotFoundError message stays familiar.
+    """
+    return shutil.which(copilot_bin()) or copilot_bin()
 
 
 def platform_token_configured() -> bool:

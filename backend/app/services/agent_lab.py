@@ -24,6 +24,7 @@ from typing import Any
 
 from app.config import settings
 from app.services import hub_registry
+from app.services.job_service import resolve_copilot_bin
 
 logger = logging.getLogger("ai-test-platform.agent-lab")
 
@@ -263,7 +264,7 @@ def _copilot_run(
         if source.is_dir():
             shutil.copytree(source, github / kind, dirs_exist_ok=True)
 
-    cmd = [os.getenv("COPILOT_BIN", "copilot"), "--agent", agent_id, "--no-color"]
+    cmd = [resolve_copilot_bin(), "--agent", agent_id, "--no-color"]
 
     if skill_id:
         skill_dir = settings.agent_hub_dir / "skills" / skill_id

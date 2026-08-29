@@ -44,8 +44,13 @@ from typing import Any
 DEFAULT_WORKSPACE = Path(os.getenv("WORKSPACE", "/workspace"))
 DEFAULT_APP_DIR = Path(os.getenv("APP_DIR", "/app"))
 MAX_REVIEW_ATTEMPTS = int(os.getenv("MAX_REVIEW_ATTEMPTS", "2"))
-COPILOT_BIN = os.getenv("COPILOT_BIN", "copilot")
 COPILOT_MODEL = os.getenv("COPILOT_MODEL", "")
+
+
+def _copilot_bin() -> str:
+    """Resolved CLI path. On Windows a bare `copilot` is not executable."""
+    configured = os.getenv("COPILOT_BIN", "copilot")
+    return shutil.which(configured) or configured
 AGENT_TIMEOUT_SECONDS = int(os.getenv("AGENT_TIMEOUT_SECONDS", "300"))
 MODEL_FALLBACK_TRIGGERED = False
 
@@ -162,14 +167,14 @@ def build_copilot_command(agent: str, prompt: str, workspace: Path) -> list[str]
     if template:
         return shlex.split(
             template.format(
-                bin=COPILOT_BIN,
+                bin=_copilot_bin(),
                 agent=agent,
                 prompt=shlex.quote(prompt),
                 model=COPILOT_MODEL or "default",
             )
         )
 
-    cmd = [COPILOT_BIN, "--agent", agent, "--prompt", prompt]
+    cmd = [_copilot_bin(), "--agent", agent, "--prompt", prompt]
     if COPILOT_MODEL:
         model_clean = COPILOT_MODEL.strip().lower()
         aliases = {
@@ -206,7 +211,7 @@ def build_copilot_command(agent: str, prompt: str, workspace: Path) -> list[str]
 def run_copilot_agent(agent: str, prompt: str, cwd: Path) -> str:
     sync_github_tokens()
     cmd = build_copilot_command(agent, prompt, cwd)
-    log(f"  exec: {COPILOT_BIN} --agent {agent}")
+    log(f"  exec: {_copilot_bin()} --agent {agent}")
 
     # Pass through only what the CLI needs. The runner's own secrets stay out of
     # the agent's environment where practical.
@@ -223,7 +228,7 @@ def run_copilot_agent(agent: str, prompt: str, cwd: Path) -> str:
         )
     except FileNotFoundError:
         raise RuntimeError(
-            f"Copilot CLI not found (looked for {COPILOT_BIN!r}). Install it, set "
+            f"Copilot CLI not found (looked for {_copilot_bin()!r}). Install it, set "
             f"$COPILOT_BIN, or run with --engine mock."
         ) from None
     except subprocess.TimeoutExpired:
@@ -1667,7 +1672,7 @@ def main() -> int:
     if args.engine == "copilot":
         try:
             version = subprocess.run(
-                [COPILOT_BIN, "--version"], capture_output=True, text=True, timeout=30
+                [_copilot_bin(), "--version"], capture_output=True, text=True, timeout=30
             )
             metadata["copilot_cli_version"] = (version.stdout or version.stderr).strip()[:120]
         except (FileNotFoundError, subprocess.TimeoutExpired, OSError):

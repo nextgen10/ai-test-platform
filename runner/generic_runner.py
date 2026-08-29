@@ -41,8 +41,13 @@ import yaml
 import agent_io
 from workflow_graph import Stage, WorkflowGraphError, build_stages, plan_waves, should_run
 
-COPILOT_BIN = os.getenv("COPILOT_BIN", "copilot")
 ENGINE = os.getenv("ENGINE", "copilot")
+
+
+def _copilot_bin() -> str:
+    """Resolved CLI path. On Windows a bare `copilot` is not executable."""
+    configured = os.getenv("COPILOT_BIN", "copilot")
+    return shutil.which(configured) or configured
 AGENT_HUB_DIR = Path(os.getenv("AGENT_HUB_DIR", "/app/agent-hub"))
 
 #: Per-agent ceiling. The orchestrator applies its own overall timeout on top,
@@ -455,7 +460,7 @@ class GenericWorkflowRunner:
 
     def _invoke_cli(self, agent_id: str, prompt: str, skill_path: Path | None) -> str:
         """One Copilot CLI invocation. Raises on anything that is not agent output."""
-        cmd = [COPILOT_BIN, "--agent", agent_id, "--no-color"]
+        cmd = [_copilot_bin(), "--agent", agent_id, "--no-color"]
         if skill_path:
             cmd.extend(["--skill-path", str(skill_path)])
         # Grant exactly the tools the agent declares, rather than everything.
@@ -478,7 +483,7 @@ class GenericWorkflowRunner:
             )
         except FileNotFoundError as exc:
             raise WorkflowError(
-                f"Copilot CLI not found (looked for {COPILOT_BIN!r}). Install it, "
+                f"Copilot CLI not found (looked for {_copilot_bin()!r}). Install it, "
                 f"set $COPILOT_BIN, or run with ENGINE=mock."
             ) from exc
         except subprocess.TimeoutExpired as exc:

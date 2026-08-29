@@ -216,7 +216,8 @@ try {
     Write-Host "  executor : $($env:EXECUTOR)"
     Write-Host "  engine   : $($env:ENGINE)"
     if ($env:ENGINE -eq 'mock') {
-        Write-Host "             (deterministic stand-in — set ENGINE=copilot for real generation)"
+        Write-Host "             (deterministic stand-in — Copilot CLI is not required)"
+        Write-Host "             (set ENGINE=copilot and install @github/copilot for real generation)"
     }
     Write-Host ""
 

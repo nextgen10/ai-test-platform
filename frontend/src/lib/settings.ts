@@ -21,7 +21,9 @@ const SETTINGS_KEY = 'ai_test_platform_user_settings';
 const NEVER_PERSIST = ['githubToken', 'github_token', 'token', 'apiToken'] as const;
 
 export const DEFAULT_SETTINGS: UserSettings = {
-    generationEngine: 'copilot',
+    // Match start.sh / start.ps1. A new machine has no Copilot CLI, and the
+    // generate page used to send `copilot` anyway, which fails immediately.
+    generationEngine: 'mock',
     copilotModel: '',
 };
 

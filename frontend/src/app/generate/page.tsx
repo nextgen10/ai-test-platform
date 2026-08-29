@@ -277,7 +277,7 @@ export default function GeneratePage() {
     const [viewMode, setViewMode] = useState<'editor' | 'preview' | 'split'>('editor');
     const [imageModalOpen, setImageModalOpen] = useState(false);
 
-    const [generationEngine, setGenerationEngine] = useState<'mock' | 'copilot'>('copilot');
+    const [generationEngine, setGenerationEngine] = useState<'mock' | 'copilot'>('mock');
 
     useEffect(() => {
         const saved = getSavedSettings();

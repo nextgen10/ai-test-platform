@@ -26,7 +26,7 @@ Before setting up on a brand new machine, ensure you have the required tools ins
 
 | Software | Version | Purpose | Verification Command |
 | :--- | :--- | :--- | :--- |
-| **Python** | `3.11+` (3.12 recommended) | FastAPI orchestrator & runner execution | `python3 --version` |
+| **Python** | `3.11+` (3.12 recommended) | FastAPI orchestrator & runner execution | `python3 --version` (Windows: `python --version`) |
 | **Node.js** | `20.x` or `22.x LTS` | Next.js frontend web interface | `node --version` |
 | **npm** | `10.x+` | Frontend package manager | `npm --version` |
 | **Container Engine** | **Podman** or **Docker Desktop** | Building runner, backend & UI container images | `podman --version` or `docker --version` |
@@ -151,16 +151,170 @@ minikube version
 
 ---
 
-### Windows (WSL2)
+### Windows
 
-Run inside **WSL2 (Ubuntu 22.04 / 24.04)**:
+Two ways to run on Windows:
+
+| Path | When to use | Copilot CLI on the host? |
+| :--- | :--- | :--- |
+| **Native** (`.\start.ps1`) | Day-to-day UI and API development | No. Default `ENGINE=mock` |
+| **Kubernetes** (Minikube) | Production-like stack: Postgres, two orchestrator replicas, a runner Job per run | No. The runner image is what jobs use |
+
+Do **not** turn on Docker Desktop’s built-in Kubernetes cluster. This repo’s deploy scripts load images with `minikube image load` and expect the `minikube` context.
+
+**Hardware:** 16 GB RAM is a comfortable floor for Kubernetes (Docker Desktop + a 4 GB Minikube VM + image builds). Native mode is lighter.
+
+#### Install tools (PowerShell)
+
+1. Enable WSL2 (Admin PowerShell; reboot if asked). Kubernetes and Docker Desktop use it even if you stay on native `start.ps1` for daily work:
 
 ```powershell
-# In Windows PowerShell (Run as Administrator):
-wsl --install -d Ubuntu
+wsl --install
 ```
 
-Once inside your WSL Ubuntu shell, follow the **Linux (Ubuntu / Debian)** instructions above. If using Docker Desktop, enable **WSL2 Integration** in Docker Desktop Settings → Resources → WSL Integration.
+2. Install **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**.  
+   Settings → General → **Use the WSL 2 based engine**. Start Docker and wait until it is running.
+
+3. Install Python 3.12+, Node.js 22 LTS, kubectl, and Minikube. [winget](https://learn.microsoft.com/windows/package-manager/winget/) covers the cluster tools:
+
+```powershell
+winget install -e --id Python.Python.3.12
+winget install -e --id OpenJS.NodeJS.LTS
+winget install -e --id Kubernetes.kubectl
+winget install -e --id Kubernetes.minikube
+```
+
+4. Confirm (new terminal so PATH updates):
+
+```powershell
+python --version
+node --version
+npm --version
+docker version
+kubectl version --client
+minikube version
+```
+
+Git is required to clone the repo. **[Git for Windows](https://git-scm.com/download/win)** also installs **Git Bash**, which you need for `./k8s/deploy.sh` and `./k8s/cluster.sh` (those scripts are bash, not PowerShell).
+
+#### Native stack (`.\start.ps1`)
+
+No containers. Same ports as `./start.sh` on macOS/Linux: UI `:3100`, orchestrator `:8100`.
+
+```powershell
+cd ai-test-platform
+Copy-Item .env.example .env
+# Leave ENGINE=mock for a first run. You do not need Copilot CLI or a GitHub token.
+
+cd backend
+python -m pip install -r requirements.txt
+cd ..\frontend
+npm install
+cd ..
+
+.\start.ps1
+```
+
+If execution policy blocks the script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+Overrides still win over `.env`:
+
+```powershell
+$env:ENGINE = 'mock'
+.\start.ps1
+```
+
+- **Web Dashboard**: [http://localhost:3100](http://localhost:3100)
+- **API Swagger Docs**: [http://localhost:8100/docs](http://localhost:8100/docs)
+- **Logs**: `logs\backend.log`, `logs\backend.err.log`, `logs\frontend.log`, `logs\frontend.err.log`
+
+`start.ps1` starts Next with an explicit `--port` because `package.json` uses bash `${PORT:-3100}`, which `cmd.exe` will not expand.
+
+**Copilot CLI is optional.** Install it only for real generation:
+
+```powershell
+npm install -g @github/copilot
+```
+
+Then set `ENGINE=copilot`, put a Copilot-enabled `COPILOT_GITHUB_TOKEN` in `.env`, and choose Copilot in **Settings**. A first-run browser defaults to **Mock**. If a previous attempt stored Copilot in localStorage, switch Settings back to Mock or you will see `Copilot CLI not found`.
+
+#### Kubernetes on Windows (Minikube)
+
+Use **Minikube + Docker Desktop**, not Docker Desktop Kubernetes. Run the bash helpers from **Git Bash** or **WSL**, not from `cmd` / PowerShell.
+
+**1. Start Minikube** (PowerShell or Git Bash):
+
+```powershell
+minikube start --driver=docker --memory=4096 --cpus=3
+kubectl get nodes
+kubectl config current-context   # must be minikube
+```
+
+**2. Build the three images** (PowerShell is fine):
+
+```powershell
+docker build -t ai-test-runner:dev -f runner/Dockerfile .
+docker build -t ai-test-orchestrator:dev -f backend/Dockerfile .
+docker build -t ai-test-ui:dev -f frontend/Dockerfile frontend/
+```
+
+**3. Deploy** from Git Bash or WSL in the repo root:
+
+```bash
+./k8s/deploy.sh
+```
+
+That loads the images into Minikube, creates namespace `ai-testing`, Postgres, secrets, and the UI + orchestrator. **Save the operator/author tokens** it prints. The cluster UI is `UI_AUTH_MODE=session`; you paste one of those tokens at login. They are not printed again.
+
+A missing Copilot token warning is expected if you are staying on mock. Recover a lost token:
+
+```powershell
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
+  (kubectl -n ai-testing get secret orchestrator-auth -o jsonpath="{.data.API_TOKENS}")
+))
+```
+
+**4. Open the app** — Git Bash / WSL:
+
+```bash
+./k8s/cluster.sh up
+```
+
+Or two PowerShell windows (leave them open):
+
+```powershell
+kubectl -n ai-testing port-forward svc/ai-test-ui 3100:80
+kubectl -n ai-testing port-forward svc/ai-test-orchestrator 8100:80
+```
+
+- **Web UI**: [http://localhost:3100](http://localhost:3100)
+- **API**: [http://localhost:8100/docs](http://localhost:8100/docs) (docs may be disabled in the cluster)
+
+**5. First jobs without Copilot.** The manifests set `ENGINE=copilot`. Switch the orchestrator, and keep **Settings → Mock** in the UI:
+
+```powershell
+kubectl -n ai-testing set env deployment/ai-test-orchestrator ENGINE=mock
+kubectl -n ai-testing rollout status deployment/ai-test-orchestrator
+```
+
+Jobs then run as Kubernetes pods using the runner image. You still do not install Copilot CLI on Windows.
+
+After you change code, rebuild the image you touched and re-run `./k8s/deploy.sh` so Minikube gets the new tarball.
+
+#### Windows troubleshooting
+
+| Symptom | Likely cause | Fix |
+| :--- | :--- | :--- |
+| `Copilot CLI not found` on native start | UI or `.env` requested `ENGINE=copilot` | `.\start.ps1` with `ENGINE=mock`; Settings → Mock |
+| `deploy.sh` / `cluster.sh` fail in PowerShell | Scripts are bash | Use Git Bash or WSL |
+| `ImagePullBackOff` | Image is only on Docker Desktop, not in Minikube | Re-run `./k8s/deploy.sh` |
+| Minikube cannot talk to Docker | Docker Desktop not running | Start Docker, wait until it is healthy, retry `minikube start` |
+| Login loop on the cluster UI | Session auth; no shared token | Paste an operator token from `deploy.sh` / `orchestrator-auth` |
+| Wrong cluster | Docker Desktop Kubernetes is on | `kubectl config use-context minikube`; leave Desktop K8s off |
 
 ---
 
@@ -183,14 +337,16 @@ If you intend to run real AI generation (`ENGINE=copilot`):
 cd ai-test-platform
 
 # Create local environment file:
-cp .env.example .env
+cp .env.example .env          # macOS / Linux / Git Bash
+# Copy-Item .env.example .env   # Windows PowerShell
 ```
 
 Edit `.env` and configure your settings:
 
 ```dotenv
-# Execution Engine: "mock" (offline standalone simulation) or "copilot" (real AI agents)
-ENGINE=copilot
+# Execution Engine: "mock" (offline, no Copilot CLI) or "copilot" (real AI agents)
+# First run on a new machine: ENGINE=mock
+ENGINE=mock
 
 # Orchestrator Runner Mode: "local", "docker", or "kubernetes"
 EXECUTOR=local
@@ -213,7 +369,7 @@ Runs the FastAPI backend and Next.js frontend with hot reload directly on your m
 ```bash
 # 1. Install Backend Dependencies
 cd backend
-python3 -m pip install -r requirements.txt
+python3 -m pip install -r requirements.txt   # Windows: python -m pip …
 cd ..
 
 # 2. Install Frontend Dependencies
@@ -222,12 +378,13 @@ npm install
 cd ..
 
 # 3. Launch both Orchestrator (:8100) and UI (:3100)
-./start.sh
+./start.sh          # macOS / Linux
+# .\start.ps1       # Windows PowerShell (see §2 Windows)
 ```
 
 - **Web Dashboard**: [http://localhost:3100](http://localhost:3100)
 - **API Swagger Docs**: [http://localhost:8100/docs](http://localhost:8100/docs)
-- **Log Outputs**: `logs/backend.log` and `logs/frontend.log`
+- **Log Outputs**: `logs/backend.log` and `logs/frontend.log` (Windows also writes `*.err.log`)
 
 ---
 
@@ -240,9 +397,11 @@ Deploys PostgreSQL, FastAPI orchestrator with `EXECUTOR=kubernetes`, Next.js UI,
 # On macOS:
 minikube start --driver=vfkit --memory=4096 --cpus=3 --container-runtime=containerd
 
-# On Linux / WSL:
+# On Linux / WSL / Windows (Docker Desktop):
 minikube start --driver=docker --memory=4096 --cpus=3
 ```
+
+On Windows, leave Docker Desktop Kubernetes **off** and keep `kubectl` on the `minikube` context. Run `./k8s/deploy.sh` and `./k8s/cluster.sh` from **Git Bash or WSL**, not PowerShell. Full Windows walkthrough is in **§2 Windows**.
 
 #### Step 2: Build Container Images
 ```bash
@@ -262,7 +421,7 @@ podman build -t ai-test-ui:dev -f frontend/Dockerfile frontend/
 ```bash
 ./k8s/deploy.sh
 ```
-*This loads all images into Minikube, provisions the `ai-testing` namespace, starts PostgreSQL, applies RBAC & storage claims, and deploys the services.*
+*This loads all images into Minikube, provisions the `ai-testing` namespace, starts PostgreSQL, applies RBAC & storage claims, and deploys the services. Save the operator/author tokens it prints — the cluster UI requires a login. The manifests set `ENGINE=copilot`; for a first run without Copilot: `kubectl -n ai-testing set env deployment/ai-test-orchestrator ENGINE=mock`.*
 
 #### Step 4: Open Port-Forwards & Access Platform
 ```bash
@@ -330,6 +489,12 @@ The GitHub account behind the run has no Copilot requests left. Every workflow f
 ### 4. macOS DNS / Port-Forward Hanging
 - Ensure you started Minikube with `--driver=vfkit`. If Minikube was previously started with `--driver=podman`, wipe it with `minikube delete` and start with `minikube start --driver=vfkit --memory=4096 --cpus=3 --container-runtime=containerd`.
 
+### 5. Windows: Copilot CLI not found
+The UI used to default to the Copilot engine. A new machine has no CLI. Use `.\start.ps1` (it sets `ENGINE=mock`), choose **Settings → Mock**, or `$env:ENGINE='mock'; .\start.ps1`. Install `@github/copilot` only when you want real generation.
+
+### 6. Windows: `deploy.sh` is not a valid PowerShell command
+`k8s/deploy.sh` and `k8s/cluster.sh` are bash. Open Git Bash or WSL in the repo root and run `./k8s/deploy.sh`. See **§2 Windows**.
+
 ---
 
 ## 8. Repository Structure
@@ -360,6 +525,7 @@ ai-test-platform/
 │   ├── cluster.sh             # Cluster lifecycle controller (up, down, status, logs)
 │   └── *.yaml                 # Deployments, Services, RBAC, Storage & NetworkPolicies
 ├── start.sh                   # Instant native runner for local development
+├── start.ps1                  # Same native runner for Windows PowerShell
 └── .env.example               # Template environment configuration
 ```
 
