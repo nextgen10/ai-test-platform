@@ -21,8 +21,11 @@ const securityHeaders = [
   },
 ];
 
+const sessionBasePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
+  ...(sessionBasePath ? { basePath: sessionBasePath } : {}),
 
   // A build and a running `next dev` otherwise fight over `.next`, which fails
   // in confusing ways (a missing turbopack runtime, a phantom `_document`).

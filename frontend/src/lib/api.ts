@@ -6,8 +6,9 @@
  */
 
 import { errorFromResponse } from './api-errors';
+import { withBasePath } from './base-path';
 
-export const API_BASE = '/api/v1';
+export const API_BASE = withBasePath('/api/v1');
 
 /**
  * Shortest requirement `POST /jobs` will accept.

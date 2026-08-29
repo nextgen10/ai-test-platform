@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Chip, Stack } from '@mui/material';
 import { usePathname, useRouter } from 'next/navigation';
+import { withBasePath } from '@/lib/base-path';
 
 type Session = {
     mode: 'session' | 'shared';
@@ -15,7 +16,7 @@ export default function AuthStatus() {
     const [session, setSession] = useState<Session | null>(null);
 
     useEffect(() => {
-        fetch('/api/auth/session')
+        fetch(withBasePath('/api/auth/session'))
             .then((r) => r.json())
             .then((body: Session) => {
                 setSession(body);
@@ -39,7 +40,7 @@ export default function AuthStatus() {
     }
 
     const logout = async () => {
-        await fetch('/api/auth/login', { method: 'DELETE' });
+        await fetch(withBasePath('/api/auth/login'), { method: 'DELETE' });
         router.push(session.mode === 'session' ? '/login' : '/');
         router.refresh();
     };

@@ -4,6 +4,7 @@ import React, { Suspense, useState } from 'react';
 import { Box, Button, Paper, TextField, Typography } from '@mui/material';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/PageHeader';
+import { withBasePath } from '@/lib/base-path';
 
 function LoginForm() {
     const router = useRouter();
@@ -18,7 +19,7 @@ function LoginForm() {
         setBusy(true);
         setError(null);
         try {
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch(withBasePath('/api/auth/login'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token }),
