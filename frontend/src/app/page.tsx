@@ -797,11 +797,42 @@ export default function AgentHubLanding() {
 
       <Box sx={{ py: 4, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
         <Container maxWidth="xl" sx={gutter}>
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'flex-start', sm: 'flex-end' },
+              gap: 2,
+            }}
+          >
             <UnifiedBrand />
-            <Typography variant="caption" color="text.secondary">
-              &copy; 2026 Agent HUB Platform. Enterprise multi-agent orchestration.
-            </Typography>
+            <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+              <Typography
+                variant="overline"
+                sx={{ display: 'block', color: 'text.secondary', lineHeight: 1, letterSpacing: '0.14em', mb: 0.75 }}
+              >
+                Designed by
+              </Typography>
+              <Typography
+                sx={{
+                  fontWeight: 300,
+                  fontSize: '0.9375rem',
+                  letterSpacing: '-0.01em',
+                  lineHeight: 1.2,
+                  color: 'text.primary',
+                  display: 'inline-block',
+                  pb: 0.5,
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.main',
+                }}
+              >
+                Aniket Marwadi
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25 }}>
+                &copy; 2026 Agent HUB Platform
+              </Typography>
+            </Box>
           </Box>
         </Container>
       </Box>
