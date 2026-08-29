@@ -181,10 +181,15 @@ function Panel({
 }
 
 export default function AgentHubLanding() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const router = useRouter();
   const theme = useTheme();
-  const accents = getAccents(theme.palette.mode);
-  const isLight = theme.palette.mode === 'light';
+  
+  const mode = mounted ? theme.palette.mode : 'light';
+  const accents = getAccents(mode);
+  const isLight = mode === 'light';
   const hero = isLight
     ? {
         bg: '#FFFFFF',
