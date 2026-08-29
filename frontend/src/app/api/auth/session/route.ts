@@ -14,12 +14,14 @@ export async function GET() {
     const mode = UI_AUTH_MODE === 'session' ? 'session' : 'shared';
 
     if (!token) {
-        return NextResponse.json({ mode, user: null });
+        // let it pass through to check if backend is running in disabled mode
     }
 
     try {
+        const headers: Record<string, string> = {};
+        if (token) headers.authorization = `Bearer ${token}`;
         const upstream = await fetch(`${API_TARGET}/api/v1/me`, {
-            headers: { authorization: `Bearer ${token}` },
+            headers,
             cache: 'no-store',
         });
         if (!upstream.ok) {

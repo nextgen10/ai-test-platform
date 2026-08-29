@@ -42,18 +42,17 @@ async function proxy(request: NextRequest, segments: string[]): Promise<Response
     const target = `${API_TARGET}/api/v1/${segments.map(encodeURIComponent).join('/')}${request.nextUrl.search}`;
     const token = bearerFor(request);
 
-    if (!token) {
-        return NextResponse.json(
-            { detail: 'Sign in with an API token to use the Hub.' },
-            { status: 401, headers: { 'WWW-Authenticate': 'Bearer' } },
-        );
+    if (token) {
+        // We'll set the header below
     }
 
     const headers = new Headers();
     request.headers.forEach((value, key) => {
         if (!STRIPPED_REQUEST_HEADERS.has(key.toLowerCase())) headers.set(key, value);
     });
-    headers.set('authorization', `Bearer ${token}`);
+    if (token) {
+        headers.set('authorization', `Bearer ${token}`);
+    }
 
     const hasBody = !['GET', 'HEAD'].includes(request.method);
     const body = hasBody ? await request.arrayBuffer() : undefined;
