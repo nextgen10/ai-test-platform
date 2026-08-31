@@ -1,4 +1,31 @@
+import os from "node:os";
 import type { NextConfig } from "next";
+
+/**
+ * Next.js 15 only allowlists localhost for `/_next/*` in `next dev`.
+ * Opening the printed Network URL (LAN IP) then loads HTML with no JS, so
+ * the UI looks like it never launched. Allow every current IPv4 address plus
+ * optional extras from ALLOWED_DEV_ORIGINS.
+ */
+function lanDevOrigins(): string[] {
+  const extra = (process.env.ALLOWED_DEV_ORIGINS ?? "")
+    .split(",")
+    .map((value) => value.trim().replace(/^https?:\/\//, "").split(":")[0])
+    .filter(Boolean);
+
+  const ips: string[] = [];
+  try {
+    for (const addrs of Object.values(os.networkInterfaces())) {
+      for (const addr of addrs ?? []) {
+        if (addr.family === "IPv4" && !addr.internal) ips.push(addr.address);
+      }
+    }
+  } catch {
+    // Restricted environments (CI, sandboxes) cannot list interfaces.
+  }
+
+  return [...new Set([...ips, ...extra])];
+}
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
@@ -22,10 +49,13 @@ const securityHeaders = [
 ];
 
 const sessionBasePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+const allowedDevOrigins = lanDevOrigins();
 
 const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   ...(sessionBasePath ? { basePath: sessionBasePath } : {}),
+  // Omit when empty: an empty array switches Next from "warn" to "block".
+  ...(allowedDevOrigins.length ? { allowedDevOrigins } : {}),
 
   // A build and a running `next dev` otherwise fight over `.next`, which fails
   // in confusing ways (a missing turbopack runtime, a phantom `_document`).

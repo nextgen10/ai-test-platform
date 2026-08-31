@@ -335,6 +335,15 @@ try {
 
     Write-Host ""
     Write-Host "  UI       http://localhost:$FrontendPort"
+    try {
+        $lanIps = [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) |
+            Where-Object { $_.AddressFamily -eq 'InterNetwork' -and $_.ToString() -notlike '127.*' } |
+            ForEach-Object { $_.ToString() } |
+            Select-Object -Unique
+        foreach ($ip in $lanIps) {
+            Write-Host "  Network  http://${ip}:$FrontendPort"
+        }
+    } catch { }
     Write-Host "  API docs http://localhost:$BackendPort/docs"
     Write-Host "  logs     $LogDir\"
     Write-Host ""
