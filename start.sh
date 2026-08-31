@@ -126,8 +126,8 @@ FRONTEND_PID=$!
 sleep 3
 echo ""
 echo "  UI       http://localhost:$FRONTEND_PORT"
-# Real LAN address — do not pass --hostname 0.0.0.0; Next then prints
-# Network as http://0.0.0.0:3100, which a browser cannot open.
+# Next may also print Network as http://0.0.0.0:3100 when it binds all
+# interfaces. That is not a URL — use the addresses below.
 while IFS= read -r lan_ip; do
     [[ -n "$lan_ip" ]] && echo "  Network  http://$lan_ip:$FRONTEND_PORT"
 done < <(
@@ -135,7 +135,8 @@ done < <(
         command -v ipconfig >/dev/null && ipconfig getifaddr en0
         command -v ipconfig >/dev/null && ipconfig getifaddr en1
         hostname -I 2>/dev/null
-    } 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -v '^127\.' | uniq
+        ifconfig 2>/dev/null | awk '/inet /{print $2}'
+    } 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -v '^127\.' | grep -v '^169\.254\.' | uniq
 )
 echo "  API docs http://localhost:$BACKEND_PORT/docs"
 echo "  logs     $LOG_DIR/"

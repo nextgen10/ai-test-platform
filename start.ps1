@@ -321,7 +321,7 @@ try {
     $env:API_TARGET = "http://127.0.0.1:$BackendPort"
     $env:UI_AUTH_MODE = 'shared'
     $script:FrontendProc = Start-LoggedProcess -FilePath $Node `
-        -ArgumentList @($nextBin, 'dev', '--turbopack', '--port', "$FrontendPort") `
+        -ArgumentList @($nextBin, 'dev', '--turbopack', '--hostname', '0.0.0.0', '--port', "$FrontendPort") `
         -WorkingDirectory $frontendDir `
         -StdOut $FrontendOut -StdErr $FrontendErr
 
@@ -337,12 +337,17 @@ try {
     Write-Host "  UI       http://localhost:$FrontendPort"
     try {
         $lanIps = [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) |
-            Where-Object { $_.AddressFamily -eq 'InterNetwork' -and $_.ToString() -notlike '127.*' } |
+            Where-Object {
+                $_.AddressFamily -eq 'InterNetwork' -and
+                $_.ToString() -notlike '127.*' -and
+                $_.ToString() -notlike '169.254.*'
+            } |
             ForEach-Object { $_.ToString() } |
             Select-Object -Unique
         foreach ($ip in $lanIps) {
             Write-Host "  Network  http://${ip}:$FrontendPort"
         }
+        Write-Host "           Do not open http://0.0.0.0 — that is a bind address, not a URL."
     } catch { }
     Write-Host "  API docs http://localhost:$BackendPort/docs"
     Write-Host "  logs     $LogDir\"

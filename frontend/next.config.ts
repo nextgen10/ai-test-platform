@@ -2,10 +2,10 @@ import os from "node:os";
 import type { NextConfig } from "next";
 
 /**
- * Next.js 15 only allowlists localhost for `/_next/*` in `next dev`.
- * Opening the printed Network URL (LAN IP) then loads HTML with no JS, so
- * the UI looks like it never launched. Allow every current IPv4 address plus
- * optional extras from ALLOWED_DEV_ORIGINS.
+ * Next.js 15: setting `allowedDevOrigins` switches from warn → block.
+ * Listing only some NICs therefore 403s `/_next` JS on the Network URL
+ * (VPN, Docker, a second Wi-Fi, Windows `family: 4`). `*.*.*.*` matches any
+ * IPv4 in Next's CSRF wildcard checker so the LAN origin always loads.
  */
 function lanDevOrigins(): string[] {
   const extra = (process.env.ALLOWED_DEV_ORIGINS ?? "")
@@ -13,18 +13,22 @@ function lanDevOrigins(): string[] {
     .map((value) => value.trim().replace(/^https?:\/\//, "").split(":")[0])
     .filter(Boolean);
 
-  const ips: string[] = [];
+  const origins = ["*.*.*.*", "*.local"];
   try {
+    origins.push(os.hostname());
     for (const addrs of Object.values(os.networkInterfaces())) {
       for (const addr of addrs ?? []) {
-        if (addr.family === "IPv4" && !addr.internal) ips.push(addr.address);
+        const family = String(addr.family);
+        if ((family === "IPv4" || family === "4") && !addr.internal) {
+          origins.push(addr.address);
+        }
       }
     }
   } catch {
     // Restricted environments (CI, sandboxes) cannot list interfaces.
   }
 
-  return [...new Set([...ips, ...extra])];
+  return [...new Set([...origins, ...extra])];
 }
 
 const securityHeaders = [
@@ -54,8 +58,7 @@ const allowedDevOrigins = lanDevOrigins();
 const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   ...(sessionBasePath ? { basePath: sessionBasePath } : {}),
-  // Omit when empty: an empty array switches Next from "warn" to "block".
-  ...(allowedDevOrigins.length ? { allowedDevOrigins } : {}),
+  allowedDevOrigins,
 
   // A build and a running `next dev` otherwise fight over `.next`, which fails
   // in confusing ways (a missing turbopack runtime, a phantom `_document`).
