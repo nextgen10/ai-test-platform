@@ -217,16 +217,21 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                 </Button>
             ))}
 
-            {useCases && useCases.length > 0 && (
-                <Button
-                    onClick={handleOpenUseCases}
-                    endIcon={<ChevronDown size={14} style={{ transform: isUseCasesOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />}
-                    variant="text"
-                    sx={navButtonSx(isUseCasesOpen)}
-                >
-                    Use Cases
-                </Button>
-            )}
+            <Button
+                onClick={handleOpenUseCases}
+                endIcon={
+                    <Box component="span" sx={{ width: 14, height: 14, display: 'inline-flex', flexShrink: 0 }}>
+                        <ChevronDown
+                            size={14}
+                            style={{ transform: isUseCasesOpen ? 'rotate(180deg)' : 'none' }}
+                        />
+                    </Box>
+                }
+                variant="text"
+                sx={navButtonSx(isUseCasesOpen)}
+            >
+                Use Cases
+            </Button>
         </Box>
     );
 
@@ -312,6 +317,9 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                 disableScrollLock
                 disableAutoFocus
                 disableEnforceFocus
+                disableRestoreFocus
+                keepMounted
+                transitionDuration={0}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 slotProps={{
@@ -320,6 +328,8 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                         sx: {
                             mt: 0,
                             width: 360,
+                            minWidth: 360,
+                            maxWidth: 360,
                             maxHeight: 'min(480px, calc(100vh - 72px))',
                             p: 0.5,
                             borderRadius: 2,
@@ -329,6 +339,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                             boxShadow: (t) => t.palette.mode === 'light'
                                 ? '0 2px 6px rgba(0,0,0,0.06)'
                                 : 'none',
+                            overflowX: 'hidden',
                         },
                     },
                 }}

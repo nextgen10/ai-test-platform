@@ -379,7 +379,8 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
                         textTransform: 'none',
                         fontWeight: weight.medium,
                         boxShadow: 'none',
-                        transition: motion.transition,
+                        // Colour only — `all` animates width/padding when menus open.
+                        transition: `background-color ${motion.duration.fast} ${motion.easing}, color ${motion.duration.fast} ${motion.easing}, border-color ${motion.duration.fast} ${motion.easing}, opacity ${motion.duration.fast} ${motion.easing}`,
                         '&:hover': { boxShadow: 'none' },
                         '&.Mui-focusVisible': focusVisible,
                     },
@@ -418,7 +419,7 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
                     root: {
                         borderRadius: shape.md,
                         color: c.icon.primary,
-                        transition: motion.transition,
+                        transition: `background-color ${motion.duration.fast} ${motion.easing}, color ${motion.duration.fast} ${motion.easing}`,
                         '&:hover': { backgroundColor: c.background.hover },
                         '&.Mui-focusVisible': focusVisible,
                     },
@@ -458,8 +459,45 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
                 },
             },
             MuiDialog: { styleOverrides: { paper: { border: hairline, borderRadius: shape.md, boxShadow: raisedShadow } } },
-            MuiPopover: { styleOverrides: { paper: { border: hairline, borderRadius: shape.md, boxShadow: raisedShadow } } },
-            MuiMenu: { styleOverrides: { paper: { border: hairline, borderRadius: shape.md, boxShadow: raisedShadow } } },
+            MuiModal: {
+                defaultProps: { disableScrollLock: true },
+            },
+            MuiPopover: {
+                defaultProps: { disableScrollLock: true, transitionDuration: 0 },
+                styleOverrides: { paper: { border: hairline, borderRadius: shape.md, boxShadow: raisedShadow } },
+            },
+            MuiMenu: {
+                defaultProps: {
+                    disableScrollLock: true,
+                    transitionDuration: 0,
+                    disableAutoFocusItem: true,
+                },
+                styleOverrides: {
+                    paper: {
+                        border: hairline,
+                        borderRadius: shape.md,
+                        boxShadow: raisedShadow,
+                        overflow: 'auto',
+                    },
+                    list: { paddingTop: 4, paddingBottom: 4 },
+                },
+            },
+            MuiSelect: {
+                defaultProps: {
+                    MenuProps: {
+                        disableScrollLock: true,
+                        transitionDuration: 0,
+                        disableAutoFocusItem: true,
+                    },
+                },
+                styleOverrides: {
+                    select: {
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                    },
+                },
+            },
             MuiMenuItem: {
                 styleOverrides: {
                     root: {
@@ -488,16 +526,32 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
                 styleOverrides: {
                     root: {
                         borderRadius: shape.md,
+                        overflow: 'visible',
                         backgroundColor: c.surface.primary,
                         '& .MuiOutlinedInput-notchedOutline': { borderColor: c.border.light },
                         '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: c.border.primary },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderWidth: 2, borderColor: c.focus.ring },
+                        // 2px on focus swallows the floating label in the notch.
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderWidth: 1, borderColor: c.focus.ring },
                         '&.Mui-error .MuiOutlinedInput-notchedOutline': { borderColor: c.border.brand },
                     },
                     input: { fontSize: '0.875rem' },
                 },
             },
-            MuiInputLabel: { styleOverrides: { root: { fontSize: '0.875rem', color: c.text.secondary, '&.Mui-focused': { color: c.focus.ring } } } },
+            MuiInputLabel: {
+                styleOverrides: {
+                    root: {
+                        fontSize: '0.875rem',
+                        color: c.text.secondary,
+                        '&.Mui-focused': { color: c.focus.ring },
+                        '&.MuiInputLabel-shrink': {
+                            backgroundColor: c.surface.primary,
+                            paddingInline: 4,
+                            marginLeft: -4,
+                            zIndex: 1,
+                        },
+                    },
+                },
+            },
             MuiFormHelperText: { styleOverrides: { root: { fontSize: '0.75rem', marginLeft: 0 } } },
             MuiCheckbox: { styleOverrides: { root: { color: c.border.light, borderRadius: shape.sm, '&.Mui-checked': { color: c.primary.main } } } },
             MuiRadio: { styleOverrides: { root: { color: c.border.light, '&.Mui-checked': { color: c.primary.main } } } },

@@ -265,6 +265,13 @@ export default function SettingsPage() {
                             value={settings.copilotModel}
                             onChange={(e) => setSettingsState((prev) => ({ ...prev, copilotModel: e.target.value }))}
                             disabled={loading}
+                            SelectProps={{
+                                renderValue: (value) => {
+                                    const id = String(value ?? '');
+                                    if (!id) return 'Default (Platform Config)';
+                                    return models.find((m) => m.id === id)?.name ?? id;
+                                },
+                            }}
                             sx={{ mb: 2.5 }}
                             InputProps={{
                                 startAdornment: (

@@ -249,9 +249,6 @@ export default function AgentHubLanding() {
   };
 
   const navLinks = [
-    ...(useCases.length === 0
-      ? [{ id: 'use-cases', label: 'Use Cases', icon: <Layers size={15} />, onClick: () => scrollToSection('use-cases') }]
-      : []),
     { id: 'platform', label: 'Platform', icon: <GitBranch size={15} />, onClick: () => scrollToSection('platform') },
     { id: 'team', label: 'Team', icon: <Users size={15} />, onClick: () => scrollToSection('team') },
     { id: 'docs', label: 'Docs', icon: <BookOpen size={15} />, onClick: () => router.push('/docs') },
@@ -300,17 +297,6 @@ export default function AgentHubLanding() {
           },
         }}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 3,
-            bgcolor: 'primary.main',
-            display: { xs: 'none', md: 'block' },
-          }}
-        />
         <Container maxWidth="xl" sx={{ ...gutter, position: 'relative', zIndex: 1, pt: { xs: 3, md: 4 }, pb: 0 }}>
           <AnimatedSection delay={0.05}>
             <Box

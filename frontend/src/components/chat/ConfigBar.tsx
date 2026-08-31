@@ -85,14 +85,28 @@ export const ConfigBar: React.FC = () => {
     borderRadius: 2,
     bgcolor: isLight ? '#ffffff' : '#2a2a2a',
     '& .MuiSelect-select': {
-      display: 'flex',
-      alignItems: 'center',
       overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
     },
   };
 
+  const selectFrame = (width: number) => ({
+    width: { xs: '100%', sm: width },
+    minWidth: { xs: 0, sm: width },
+    maxWidth: { xs: '100%', sm: width },
+    flex: { xs: '1 1 calc(50% - 8px)', sm: '0 0 auto' },
+    '& .MuiInputLabel-shrink': {
+      bgcolor: isLight ? '#ffffff' : '#2a2a2a',
+    },
+  });
+
   const workflowName = (id: string) =>
     catalog?.workflows.find((w) => w.id === id)?.name ?? id;
+  const agentName = (id: string) =>
+    catalog?.agents.find((a) => a.id === id)?.name ?? id;
+  const modelName = (id: string) =>
+    models.find((m) => m.id === id)?.name ?? id;
 
   return (
     <Box
@@ -101,7 +115,8 @@ export const ConfigBar: React.FC = () => {
         borderColor: isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)',
         bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
         px: { xs: 1.5, sm: 2.5 },
-        py: 1,
+        pt: 1.5,
+        pb: 1,
       }}
     >
       <Box
@@ -109,11 +124,11 @@ export const ConfigBar: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           gap: { xs: 1, sm: 1.5 },
-          flexWrap: 'wrap',
+          flexWrap: { xs: 'wrap', md: 'nowrap' },
         }}
       >
         {/* Agent */}
-        <FormControl size="small" sx={{ minWidth: { xs: 130, sm: 160 } }}>
+        <FormControl size="small" sx={selectFrame(168)}>
           <InputLabel id="agent-select-label" sx={{ fontSize: '0.82rem' }}>
             Agent
           </InputLabel>
@@ -126,6 +141,7 @@ export const ConfigBar: React.FC = () => {
               updateConfig({ agentId: val, ...(val ? { workflowId: null } : {}) });
             }}
             disabled={runMode}
+            renderValue={(value) => (value ? agentName(String(value)) : '')}
             sx={selectSx}
           >
             <MenuItem value="">
@@ -145,14 +161,7 @@ export const ConfigBar: React.FC = () => {
         </FormControl>
 
         {/* Workflow */}
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: { xs: 140, sm: 220 },
-            width: { xs: '100%', sm: 260 },
-            maxWidth: { xs: '100%', sm: 280 },
-          }}
-        >
+        <FormControl size="small" sx={selectFrame(240)}>
           <InputLabel id="workflow-select-label" sx={{ fontSize: '0.82rem' }}>
             Workflow
           </InputLabel>
@@ -166,25 +175,22 @@ export const ConfigBar: React.FC = () => {
             // the console unable to run half the registry — the one thing it
             // exists to do. The bespoke page is offered as a link below instead.
             onChange={(e) => updateConfig({ workflowId: e.target.value || null })}
-            renderValue={(value) => {
-              if (!value) return '';
-              return (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, pr: 1 }}>
-                  <Box sx={{ display: 'flex', flexShrink: 0 }}>
-                    <WorkflowIcon size={14} color="#00759e" />
-                  </Box>
-                  <Typography component="span" noWrap sx={{ fontSize: '0.82rem', lineHeight: 1.3 }}>
-                    {workflowName(String(value))}
-                  </Typography>
-                </Box>
-              );
-            }}
+            renderValue={(value) => (value ? workflowName(String(value)) : '')}
             MenuProps={{
+              disableScrollLock: true,
+              transitionDuration: 0,
+              disableAutoFocusItem: true,
               slotProps: {
                 paper: {
                   sx: {
-                    minWidth: 280,
-                    maxWidth: 'min(420px, calc(100vw - 24px))',
+                    width: '240px !important',
+                    minWidth: '240px !important',
+                    maxWidth: '240px !important',
+                    boxSizing: 'border-box',
+                    '& .MuiMenuItem-root': {
+                      whiteSpace: 'normal',
+                      alignItems: 'flex-start',
+                    },
                   },
                 },
               },
@@ -195,7 +201,12 @@ export const ConfigBar: React.FC = () => {
               <em>None — chat with the agent</em>
             </MenuItem>
             {(catalog?.workflows ?? []).map((wf) => (
-              <MenuItem key={wf.id} value={wf.id} disabled={wf.available === false} sx={{ alignItems: 'flex-start', whiteSpace: 'normal' }}>
+              <MenuItem
+                key={wf.id}
+                value={wf.id}
+                disabled={wf.available === false}
+                sx={{ alignItems: 'flex-start', whiteSpace: 'normal', py: 1 }}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, minWidth: 0, width: '100%' }}>
                   <Box sx={{ mt: 0.35, flexShrink: 0 }}>
                     <WorkflowIcon size={14} color="#00759e" />
@@ -203,7 +214,10 @@ export const ConfigBar: React.FC = () => {
                   <ListItemText
                     primary={wf.name}
                     secondary={wf.available === false ? 'Unavailable' : undefined}
-                    primaryTypographyProps={{ fontSize: '0.85rem', sx: { whiteSpace: 'normal', wordBreak: 'break-word' } }}
+                    primaryTypographyProps={{
+                      fontSize: '0.85rem',
+                      sx: { whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word' },
+                    }}
                     secondaryTypographyProps={{ fontSize: '0.7rem' }}
                   />
                 </Box>
@@ -213,7 +227,7 @@ export const ConfigBar: React.FC = () => {
         </FormControl>
 
         {/* Model */}
-        <FormControl size="small" sx={{ minWidth: { xs: 130, sm: 160 } }}>
+        <FormControl size="small" sx={selectFrame(176)}>
           <InputLabel id="model-select-label" sx={{ fontSize: '0.82rem' }}>
             Copilot Model
           </InputLabel>
@@ -222,6 +236,7 @@ export const ConfigBar: React.FC = () => {
             value={config.model || ''}
             label="Copilot Model"
             onChange={(e) => updateConfig({ model: e.target.value || null })}
+            renderValue={(value) => (value ? modelName(String(value)) : '')}
             sx={selectSx}
           >
             <MenuItem value="">
@@ -240,7 +255,7 @@ export const ConfigBar: React.FC = () => {
         </FormControl>
 
         {/* Engine — per request, never server state */}
-        <FormControl size="small" sx={{ minWidth: 130 }}>
+        <FormControl size="small" sx={selectFrame(148)}>
           <InputLabel id="engine-select-label" sx={{ fontSize: '0.82rem' }}>
             Engine
           </InputLabel>
@@ -251,6 +266,11 @@ export const ConfigBar: React.FC = () => {
             onChange={(e) =>
               updateConfig({ engine: (e.target.value as 'mock' | 'copilot') || null })
             }
+            renderValue={(value) => {
+              if (value === 'copilot') return 'Copilot (live)';
+              if (value === 'mock') return 'Mock (offline)';
+              return '';
+            }}
             sx={selectSx}
           >
             <MenuItem value="">
@@ -261,16 +281,18 @@ export const ConfigBar: React.FC = () => {
           </Select>
         </FormControl>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
-          {effectiveEngine === 'mock' && (
-            <Tooltip title="Responses are deterministic stand-ins, not real generation.">
-              <Chip
-                label="Mock"
-                size="small"
-                sx={{ fontSize: '0.68rem', height: 22, fontWeight: 500 }}
-              />
-            </Tooltip>
-          )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto', flexShrink: 0, minHeight: 32 }}>
+          <Box sx={{ width: 52, display: 'flex', justifyContent: 'flex-end' }}>
+            {effectiveEngine === 'mock' && (
+              <Tooltip title="Responses are deterministic stand-ins, not real generation.">
+                <Chip
+                  label="Mock"
+                  size="small"
+                  sx={{ fontSize: '0.68rem', height: 22, fontWeight: 500 }}
+                />
+              </Tooltip>
+            )}
+          </Box>
 
           {hasActiveConfig && (
             <Tooltip title="Clear the agent, workflow, model and engine selection">
@@ -338,7 +360,7 @@ export const ConfigBar: React.FC = () => {
             flexWrap: 'wrap',
           }}
         >
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={selectFrame(168)}>
             <InputLabel id="skill-select-label" sx={{ fontSize: '0.82rem' }}>
               Skill Context
             </InputLabel>
@@ -348,6 +370,9 @@ export const ConfigBar: React.FC = () => {
               label="Skill Context"
               onChange={(e) => updateConfig({ skillId: e.target.value || null })}
               disabled={runMode}
+              renderValue={(value) =>
+                value ? (catalog?.skills.find((s) => s.id === value)?.name ?? String(value)) : ''
+              }
               sx={selectSx}
             >
               <MenuItem value="">
@@ -364,7 +389,7 @@ export const ConfigBar: React.FC = () => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+          <FormControl size="small" sx={selectFrame(180)}>
             <InputLabel id="prompt-select-label" sx={{ fontSize: '0.82rem' }}>
               Prompt Template
             </InputLabel>
@@ -374,6 +399,9 @@ export const ConfigBar: React.FC = () => {
               label="Prompt Template"
               onChange={(e) => updateConfig({ promptId: e.target.value || null })}
               disabled={runMode}
+              renderValue={(value) =>
+                value ? (catalog?.prompts.find((p) => p.id === value)?.name ?? String(value)) : ''
+              }
               sx={selectSx}
             >
               <MenuItem value="">

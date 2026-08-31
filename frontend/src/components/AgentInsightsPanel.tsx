@@ -87,11 +87,11 @@ export default function AgentInsightsPanel() {
                     </Box>
                 </Box>
 
-                <FormControl size="small">
+                <FormControl size="small" sx={{ width: 148, flexShrink: 0 }}>
                     <Select
                         value={days}
                         onChange={(e) => setDays(Number(e.target.value))}
-                        sx={{ fontSize: '0.8rem', minWidth: 120 }}
+                        sx={{ fontSize: '0.8rem', width: '100%' }}
                     >
                         <MenuItem value={7}>Last 7 days</MenuItem>
                         <MenuItem value={30}>Last 30 days</MenuItem>

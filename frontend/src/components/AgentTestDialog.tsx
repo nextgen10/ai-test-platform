@@ -109,7 +109,7 @@ export default function AgentTestDialog({
                 </Typography>
 
                 <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
-                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <FormControl size="small" sx={{ width: 200, flexShrink: 0 }}>
                         <InputLabel id="test-engine-label">Engine</InputLabel>
                         <Select
                             labelId="test-engine-label"
