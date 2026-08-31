@@ -20,22 +20,12 @@ export default function AuthStatus() {
             .then((r) => r.json())
             .then((body: Session) => {
                 setSession(body);
-                if (body.mode === 'session' && !body.user && pathname !== '/login' && pathname !== '/') {
-                    const next = encodeURIComponent(pathname || '/dashboard');
-                    router.replace(`/login?next=${next}`);
-                }
             })
             .catch(() => setSession({ mode: 'shared', user: null }));
     }, [pathname, router]);
 
-    if (!session?.user) {
-        if (session?.mode === 'session' && pathname !== '/login') {
-            return (
-                <Button size="small" onClick={() => router.push('/login')} sx={{ textTransform: 'none' }}>
-                    Sign in
-                </Button>
-            );
-        }
+    // Demo / local shared auth: no Sign in, Sign out, or session chip.
+    if (!session?.user || session.mode !== 'session') {
         return null;
     }
 

@@ -38,7 +38,7 @@ fi
 : "${ENGINE:=mock}"
 : "${BACKEND_PORT:=8100}"
 : "${FRONTEND_PORT:=3100}"
-: "${AUTH_MODE:=token}"
+: "${AUTH_MODE:=disabled}"
 : "${ENABLE_DOCS:=1}"
 export EXECUTOR ENGINE AUTH_MODE ENABLE_DOCS
 

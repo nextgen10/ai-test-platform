@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    if (upstream.status === 401) {
-        return NextResponse.json({ detail: 'That token is not valid.' }, { status: 401 });
-    }
+    // Demo: do not surface a token-invalid toast from this route.
+    // if (upstream.status === 401) {
+    //     return NextResponse.json({ detail: 'That token is not valid.' }, { status: 401 });
+    // }
     if (!upstream.ok) {
         return NextResponse.json({ detail: 'Login failed.' }, { status: 502 });
     }

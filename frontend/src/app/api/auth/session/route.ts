@@ -10,12 +10,9 @@ const UI_AUTH_MODE = (process.env.UI_AUTH_MODE ?? 'shared').toLowerCase();
 export async function GET() {
     const cookieStore = await cookies();
     const session = cookieStore.get('hub_session')?.value ?? '';
-    const token = session || (UI_AUTH_MODE === 'shared' ? API_TOKEN : '');
+    // Demo: ignore leftover hub_session; only attach the shared API_TOKEN.
+    const token = UI_AUTH_MODE === 'shared' ? API_TOKEN : session;
     const mode = UI_AUTH_MODE === 'session' ? 'session' : 'shared';
-
-    if (!token) {
-        // let it pass through to check if backend is running in disabled mode
-    }
 
     try {
         const headers: Record<string, string> = {};

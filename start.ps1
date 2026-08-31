@@ -196,7 +196,7 @@ Set-EnvDefault 'EXECUTOR' 'local'
 Set-EnvDefault 'ENGINE' 'mock'
 Set-EnvDefault 'BACKEND_PORT' '8100'
 Set-EnvDefault 'FRONTEND_PORT' '3100'
-Set-EnvDefault 'AUTH_MODE' 'token'
+Set-EnvDefault 'AUTH_MODE' 'disabled'
 Set-EnvDefault 'ENABLE_DOCS' '1'
 
 $BackendPort = [int]$env:BACKEND_PORT

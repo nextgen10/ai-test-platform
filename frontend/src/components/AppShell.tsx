@@ -54,8 +54,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         onClick: () => router.push(item.path),
     }));
 
-    // Chat page takes full viewport below nav without outer container margins
+    // Chat, Test Design, and Workflow Builder fill the viewport below the
+    // chrome; other pages scroll normally inside a padded container.
     const isChat = pathname === '/chat';
+    const isGenerate = pathname === '/generate';
+    const isWorkflowBuilder = pathname === '/use-cases/workflow-builder';
+    const isImmersive = isChat || isGenerate || isWorkflowBuilder;
 
     // Check if current route is a bespoke use case. Workflows that launch in
     // the Console live at `/chat?workflow=…`; that must not paint a use-case
@@ -71,12 +75,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             sx={{
                 display: 'flex',
                 flexDirection: 'column',
-                height: isChat ? '100vh' : undefined,
+                height: isImmersive ? '100vh' : undefined,
                 minHeight: '100vh',
                 bgcolor: 'background.default',
                 color: 'text.primary',
                 overflowX: 'hidden',
-                overflow: isChat ? 'hidden' : undefined,
+                overflow: isImmersive ? 'hidden' : undefined,
             }}
         >
             <UnifiedNavBar
@@ -167,7 +171,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </Box>
             )}
 
-            {isChat ? (
+            {isImmersive ? (
                 <Box
                     component="main"
                     sx={{

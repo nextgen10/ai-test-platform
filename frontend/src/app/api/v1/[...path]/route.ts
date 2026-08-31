@@ -8,9 +8,9 @@
  *
  * The browser therefore only ever talks to this origin.
  *
- * Auth: prefer the httpOnly `hub_session` cookie (the token the user logged
- * in with). In UI_AUTH_MODE=shared (local start.sh) fall back to API_TOKEN so
- * a loopback run still works without a login form.
+ * Demo: do not attach a leftover hub_session cookie. A stale cookie 401s every
+ * call when it does not match the current orchestrator. Attach API_TOKEN only
+ * when it is set (local start.sh in token mode). AUTH_MODE=disabled needs none.
  */
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -31,9 +31,7 @@ const STRIPPED_RESPONSE_HEADERS = new Set([
     'content-length', 'set-cookie',
 ]);
 
-function bearerFor(request: NextRequest): string {
-    const session = request.cookies.get('hub_session')?.value?.trim() ?? '';
-    if (session) return session;
+function bearerFor(_request: NextRequest): string {
     if (UI_AUTH_MODE !== 'session' && API_TOKEN) return API_TOKEN;
     return '';
 }
@@ -41,10 +39,6 @@ function bearerFor(request: NextRequest): string {
 async function proxy(request: NextRequest, segments: string[]): Promise<Response> {
     const target = `${API_TARGET}/api/v1/${segments.map(encodeURIComponent).join('/')}${request.nextUrl.search}`;
     const token = bearerFor(request);
-
-    if (token) {
-        // We'll set the header below
-    }
 
     const headers = new Headers();
     request.headers.forEach((value, key) => {
@@ -73,12 +67,14 @@ async function proxy(request: NextRequest, segments: string[]): Promise<Response
         );
     }
 
-    if (upstream.status === 401) {
-        return NextResponse.json(
-            { detail: 'Your session is not valid. Sign in again.' },
-            { status: 401, headers: { 'WWW-Authenticate': 'Bearer' } },
-        );
-    }
+    // Demo: pass the orchestrator response through. Do not rewrite 401 into
+    // "Your session is not valid. Sign in again."
+    // if (upstream.status === 401) {
+    //     return NextResponse.json(
+    //         { detail: 'Your session is not valid. Sign in again.' },
+    //         { status: 401, headers: { 'WWW-Authenticate': 'Bearer' } },
+    //     );
+    // }
 
     const responseHeaders = new Headers();
     upstream.headers.forEach((value, key) => {

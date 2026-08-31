@@ -301,13 +301,28 @@ export default function WorkflowBuilderPage() {
     // ----------------------------------------------------------------- view
 
     return (
-        <Box sx={{ maxWidth: 1200, mx: 'auto', py: 2 }}>
+        <Box
+            sx={{
+                flex: 1,
+                minHeight: 0,
+                height: { xs: 'auto', md: '100%' },
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: { xs: 'visible', md: 'hidden' },
+                width: '100%',
+                maxWidth: 1200,
+                mx: 'auto',
+                px: { xs: 2, sm: 3, md: 4 },
+                py: 2,
+            }}
+        >
             <style>{`
                 @keyframes wb-spin { to { transform: rotate(360deg); } }
                 .spin { animation: wb-spin 1s linear infinite; }
                 @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
             `}</style>
 
+            <Box sx={{ flexShrink: 0 }}>
             <PageHeader
                 title={workflow?.name ?? 'Workflow Builder'}
                 subtitle={
@@ -347,13 +362,41 @@ export default function WorkflowBuilderPage() {
                     {workflow?.unavailable_reason ?? 'This workflow is currently marked unavailable.'}
                 </Alert>
             )}
+            </Box>
 
-            <Grid container spacing={3}>
+            <Box
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: { xs: 'visible', md: generated ? 'auto' : 'hidden' },
+                }}
+            >
+            <Grid
+                container
+                spacing={3}
+                sx={{
+                    flex: generated ? '0 0 auto' : 1,
+                    minHeight: { md: generated ? undefined : 0 },
+                    alignItems: 'stretch',
+                }}
+            >
                 {/* ------------------------------------------------- brief */}
-                <Grid size={{ xs: 12, md: 7 }}>
+                <Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', minHeight: { md: 0 } }}>
                     <Paper
                         elevation={0}
-                        sx={{ p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
+                        sx={{
+                            p: 3,
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            height: { md: '100%' },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            minHeight: 0,
+                            overflow: 'hidden',
+                        }}
                     >
                         <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5 }}>
                             What should the new workflow do?
@@ -385,15 +428,25 @@ export default function WorkflowBuilderPage() {
 
                         <TextField
                             multiline
-                            minRows={9}
-                            maxRows={20}
                             fullWidth
                             placeholder="A workflow that takes a URL, has one agent fetch and clean the page text, and a second agent write a one-page summary…"
                             value={brief}
                             onChange={(e) => setBrief(e.target.value)}
                             disabled={running || starting}
                             helperText={`${brief.trim().length} characters — the platform needs at least 20.`}
-                            sx={{ mb: 2 }}
+                            sx={{
+                                mb: 2,
+                                flex: 1,
+                                minHeight: 160,
+                                '& .MuiInputBase-root': {
+                                    height: '100%',
+                                    alignItems: 'flex-start',
+                                },
+                                '& textarea': {
+                                    height: '100% !important',
+                                    overflow: 'auto !important',
+                                },
+                            }}
                         />
 
                         {(running || starting) && <LinearProgress sx={{ mb: 2, borderRadius: 2 }} />}
@@ -432,7 +485,7 @@ export default function WorkflowBuilderPage() {
                 </Grid>
 
                 {/* ------------------------------------------------ stages */}
-                <Grid size={{ xs: 12, md: 5 }}>
+                <Grid size={{ xs: 12, md: 5 }} sx={{ display: 'flex', minHeight: { md: 0 } }}>
                     <Paper
                         elevation={0}
                         sx={{
@@ -440,8 +493,12 @@ export default function WorkflowBuilderPage() {
                             borderRadius: 2,
                             border: '1px solid',
                             borderColor: 'divider',
-                            height: '100%',
+                            height: { md: '100%' },
                             bgcolor: isLight ? '#f9f9f7' : '#1c1c1c',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            minHeight: 0,
+                            overflow: 'auto',
                         }}
                     >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -514,7 +571,7 @@ export default function WorkflowBuilderPage() {
             {generated && (
                 <Paper
                     elevation={0}
-                    sx={{ mt: 3, p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}
+                    sx={{ mt: 3, p: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider', flexShrink: 0 }}
                 >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 1 }}>
                         <Box>
@@ -734,6 +791,7 @@ export default function WorkflowBuilderPage() {
                     )}
                 </Paper>
             )}
+            </Box>
         </Box>
     );
 }

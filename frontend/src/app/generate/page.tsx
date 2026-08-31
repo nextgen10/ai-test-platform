@@ -440,13 +440,17 @@ export default function GeneratePage() {
     return (
         <Box
             sx={{
-                height: { xs: 'auto', md: 'calc(100vh - 96px)' },
+                flex: 1,
+                minHeight: 0,
+                height: { xs: 'auto', md: '100%' },
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden',
+                overflow: { xs: 'visible', md: 'hidden' },
                 width: '100%',
                 maxWidth: 1400,
                 mx: 'auto',
+                px: { xs: 2, sm: 3, md: 4 },
+                py: { xs: 2, md: 2 },
             }}
         >
             {/* Studio Compact Header */}
