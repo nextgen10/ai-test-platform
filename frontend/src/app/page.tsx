@@ -22,7 +22,7 @@ import {
 import { useRouter } from 'next/navigation';
 
 import ThemeToggle from '@/components/ThemeToggle';
-import { UnifiedNavBar, UnifiedBrand } from '@/components/UnifiedNavBar';
+import { UnifiedNavBar, UnifiedBrand, NAV_CHROME_GUTTER } from '@/components/UnifiedNavBar';
 import ProductName from '@/components/ProductName';
 import HubPlatformFlow from '@/components/landing/HubPlatformFlow';
 import ConsolePreview from '@/components/landing/ConsolePreview';
@@ -801,45 +801,52 @@ export default function AgentHubLanding() {
       </Box>
 
       <Box sx={{ py: 4, borderTop: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Container maxWidth="xl" sx={gutter}>
+        <Box
+          sx={{
+            ...NAV_CHROME_GUTTER,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'flex-end' },
+            gap: 2,
+            width: '100%',
+          }}
+        >
+          <UnifiedBrand />
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              justifyContent: 'space-between',
-              alignItems: { xs: 'flex-start', sm: 'flex-end' },
-              gap: 2,
+              textAlign: { xs: 'left', sm: 'right' },
+              // IconButton in the nav is 40px with 8px padding; inset this
+              // column so “Designed by” shares the toggle’s right edge.
+              pr: { sm: 1 },
             }}
           >
-            <UnifiedBrand />
-            <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-              <Typography
-                variant="overline"
-                sx={{ display: 'block', color: 'text.secondary', lineHeight: 1, letterSpacing: '0.14em', mb: 0.75 }}
-              >
-                Designed by
-              </Typography>
-              <Typography
-                sx={{
-                  fontWeight: 300,
-                  fontSize: '0.9375rem',
-                  letterSpacing: '-0.01em',
-                  lineHeight: 1.2,
-                  color: 'text.primary',
-                  display: 'inline-block',
-                  pb: 0.5,
-                  borderBottom: '2px solid',
-                  borderColor: 'primary.main',
-                }}
-              >
-                Aniket Marwadi
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25 }}>
-                &copy; 2026 Agent HUB Platform
-              </Typography>
-            </Box>
+            <Typography
+              variant="overline"
+              sx={{ display: 'block', color: 'text.secondary', lineHeight: 1, letterSpacing: '0.14em', mb: 0.75 }}
+            >
+              Designed by
+            </Typography>
+            <Typography
+              sx={{
+                fontWeight: 300,
+                fontSize: '0.9375rem',
+                letterSpacing: '-0.01em',
+                lineHeight: 1.2,
+                color: 'text.primary',
+                display: 'inline-block',
+                pb: 0.5,
+                borderBottom: '2px solid',
+                borderColor: 'primary.main',
+              }}
+            >
+              Aniket Marwadi
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25 }}>
+              &copy; 2026 Agent HUB Platform
+            </Typography>
           </Box>
-        </Container>
+        </Box>
       </Box>
     </Box>
   );

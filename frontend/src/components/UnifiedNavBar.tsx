@@ -85,6 +85,9 @@ export const UnifiedBrand: React.FC<{ onClick?: () => void; showProductName?: bo
     );
 };
 
+/** Horizontal inset shared by the nav bar and the landing footer so the UBS mark lines up. */
+export const NAV_CHROME_GUTTER = { px: { xs: 2, md: 3 } } as const;
+
 /**
  * Agent HUB navigation. Solid surface, hairline, text links — the ubs.com header,
 
@@ -250,7 +253,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                         alignItems: 'stretch',
                         justifyContent: 'space-between',
                         gap: 1.5,
-                        px: { xs: 2, md: 3 },
+                        ...NAV_CHROME_GUTTER,
                         width: '100%',
                         maxWidth: '100%',
                         position: 'relative',
