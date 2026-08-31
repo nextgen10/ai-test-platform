@@ -32,6 +32,7 @@ import { useChatContext } from '@/contexts/ChatContext';
 import { hubApi } from '@/lib/hub-api';
 import { api } from '@/lib/api';
 import { getSessionGithubToken, setSessionGithubToken } from '@/lib/settings';
+import { selectMenuProps } from '@/theme';
 import { useRouter } from 'next/navigation';
 
 interface PlatformInfo {
@@ -96,6 +97,7 @@ export const ConfigBar: React.FC = () => {
     minWidth: { xs: 0, sm: width },
     maxWidth: { xs: '100%', sm: width },
     flex: { xs: '1 1 calc(50% - 8px)', sm: '0 0 auto' },
+    '& .MuiInputBase-root': { width: '100%' },
     '& .MuiInputLabel-shrink': {
       bgcolor: isLight ? '#ffffff' : '#2a2a2a',
     },
@@ -136,6 +138,7 @@ export const ConfigBar: React.FC = () => {
             labelId="agent-select-label"
             value={config.agentId || ''}
             label="Agent"
+            fullWidth
             onChange={(e) => {
               const val = e.target.value || null;
               updateConfig({ agentId: val, ...(val ? { workflowId: null } : {}) });
@@ -177,16 +180,11 @@ export const ConfigBar: React.FC = () => {
             onChange={(e) => updateConfig({ workflowId: e.target.value || null })}
             renderValue={(value) => (value ? workflowName(String(value)) : '')}
             MenuProps={{
-              disableScrollLock: true,
-              transitionDuration: 0,
-              disableAutoFocusItem: true,
+              ...selectMenuProps,
               slotProps: {
                 paper: {
                   sx: {
-                    width: '240px !important',
-                    minWidth: '240px !important',
-                    maxWidth: '240px !important',
-                    boxSizing: 'border-box',
+                    ...selectMenuProps.slotProps.paper.sx,
                     '& .MuiMenuItem-root': {
                       whiteSpace: 'normal',
                       alignItems: 'flex-start',
@@ -235,6 +233,7 @@ export const ConfigBar: React.FC = () => {
             labelId="model-select-label"
             value={config.model || ''}
             label="Copilot Model"
+            fullWidth
             onChange={(e) => updateConfig({ model: e.target.value || null })}
             renderValue={(value) => (value ? modelName(String(value)) : '')}
             sx={selectSx}
@@ -263,6 +262,7 @@ export const ConfigBar: React.FC = () => {
             labelId="engine-select-label"
             value={config.engine || ''}
             label="Engine"
+            fullWidth
             onChange={(e) =>
               updateConfig({ engine: (e.target.value as 'mock' | 'copilot') || null })
             }
@@ -368,6 +368,7 @@ export const ConfigBar: React.FC = () => {
               labelId="skill-select-label"
               value={config.skillId || ''}
               label="Skill Context"
+              fullWidth
               onChange={(e) => updateConfig({ skillId: e.target.value || null })}
               disabled={runMode}
               renderValue={(value) =>
@@ -397,6 +398,7 @@ export const ConfigBar: React.FC = () => {
               labelId="prompt-select-label"
               value={config.promptId || ''}
               label="Prompt Template"
+              fullWidth
               onChange={(e) => updateConfig({ promptId: e.target.value || null })}
               disabled={runMode}
               renderValue={(value) =>

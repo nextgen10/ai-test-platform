@@ -280,6 +280,31 @@ export const shape = {
     none: 0, sm: 1, md: 2, lg: 2, xl: 6, pill: 9999, circle: '50%',
 } as const;
 
+/**
+ * Select menus must match the closed field, not a hardcoded px width.
+ * MUI already sets the paper's inline min-width to the trigger. `width: 0`
+ * makes that the used width so long labels wrap instead of stretching the
+ * list — which is what made dropdowns miss the box on other fonts/zoom.
+ */
+export const selectMenuProps = {
+    disableScrollLock: true,
+    transitionDuration: 0 as const,
+    disableAutoFocusItem: true,
+    marginThreshold: 0,
+    anchorOrigin: { vertical: 'bottom' as const, horizontal: 'left' as const },
+    transformOrigin: { vertical: 'top' as const, horizontal: 'left' as const },
+    slotProps: {
+        paper: {
+            sx: {
+                boxSizing: 'border-box' as const,
+                width: '0 !important',
+                maxWidth: 'none !important',
+                overflowX: 'hidden',
+            },
+        },
+    },
+};
+
 /** UBS motion: a firm ease-out, short. */
 export const motion = {
     duration: { fast: '0.15s', base: '0.2s', slow: '0.3s' },
@@ -484,11 +509,7 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
             },
             MuiSelect: {
                 defaultProps: {
-                    MenuProps: {
-                        disableScrollLock: true,
-                        transitionDuration: 0,
-                        disableAutoFocusItem: true,
-                    },
+                    MenuProps: selectMenuProps,
                 },
                 styleOverrides: {
                     select: {
