@@ -36,7 +36,19 @@ against what the requirement actually specifies, and say so in your rationale.
 ## Output
 
 Write JSON only — no Markdown fences, no prose — to
-`/workspace/output/evaluation.json`, in exactly this shape:
+`/workspace/output/evaluation.json`.
+
+**Before you write, confirm all of the following:**
+- [ ] `scores` has **exactly 5 entries** — one for each id: `"coverage"`, `"completeness"`, `"traceability"`, `"correctness"`, `"uniqueness"` — no more, no fewer
+- [ ] Every score entry has `"id"`, `"name"`, `"score"` (number 0–100), and `"rationale"` (at least 10 characters)
+- [ ] `"overall"` contains `"score"` (number 0–100, weighted as specified), `"rating"` (one of `"bad"`, `"average"`, `"good"`, `"very_good"`), and `"verdict"`
+- [ ] `gaps` is an array; each item has `"detail"` and optionally `"area"` and `"severity"` (`"low"`, `"medium"`, `"high"`)
+- [ ] `recommendations` is an array; each item has `"detail"` and optionally `"action"` and `"target_ids"` (array of strings)
+- [ ] Both `gaps` and `recommendations` are empty arrays `[]` if the suite is genuinely sound
+- [ ] The output is strict JSON — no Markdown fences, no trailing commas, no comments
+
+
+The document has exactly this shape:
 
 ```json
 {

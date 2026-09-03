@@ -17,6 +17,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+try:
+    import schema_coerce
+except ImportError:  # pytest loads this as runner.agent_io
+    from runner import schema_coerce  # type: ignore[no-redef]
+
 # ------------------------------------------------------------------ logging
 
 #: Injected by whichever runner imports this, so its output lands in the same
@@ -27,6 +32,7 @@ _log: Callable[[str], None] = print
 def set_logger(fn: Callable[[str], None]) -> None:
     global _log
     _log = fn
+    schema_coerce.set_logger(fn)
 
 
 def log(message: str) -> None:
@@ -237,21 +243,183 @@ def check_contract(artifact: Path, schema_path: Path | None) -> ContractResult:
         return ContractResult(ok=True, checked=f"{schema_path.name} (parser only)")
 
     validator = Draft7Validator(schema)
-    errors = []
-    for error in sorted(validator.iter_errors(document), key=lambda e: list(e.path)):
-        where = "/".join(str(p) for p in error.path) or "(root)"
-        errors.append(f"{where}: {error.message}")
+    errors = _errors(validator, document)
+    if not errors:
+        return ContractResult(ok=True, checked=schema_path.name)
+
+    # The document is wrong somewhere. Before spending a model round on it, try
+    # the corrections the schema itself makes unambiguous — a renamed key, a
+    # value the schema wants as a list, an enum written in the wrong case. Most
+    # "the agent failed" runs are one of these, and none of them need a model.
+    coerced, notes = schema_coerce.coerce_to_schema(document, schema)
+    if notes:
+        coerced_errors = _errors(validator, coerced)
+        if len(coerced_errors) < len(errors):
+            artifact.write_text(json.dumps(coerced, indent=2), encoding="utf-8")
+            log(f"  normalised {artifact.name} against {schema_path.name}:")
+            for note in notes[:6]:
+                log(f"    - {note}")
+            if len(notes) > 6:
+                log(f"    ...and {len(notes) - 6} more.")
+            errors = coerced_errors
 
     return ContractResult(ok=not errors, errors=errors, checked=schema_path.name)
+
+
+def _errors(validator: Any, document: Any) -> list[str]:
+    """Validation failures as lines an agent can act on, most-shallow first."""
+    return [
+        f"{'/'.join(str(p) for p in error.path) or '(root)'}: {error.message}"
+        for error in sorted(validator.iter_errors(document), key=lambda e: list(e.path))
+    ]
+
+
+# ---------------------------------------------------------- contract prompting
+
+#: Rules that apply to every JSON artifact, restated in the prompt because the
+#: schema cannot express them. Kept in one place so all four runners say the
+#: same thing — an agent told different rules by different callers is exactly
+#: how output stops being consistent.
+_JSON_RULES = (
+    "Write the file as strict JSON and nothing else: no Markdown fences, no "
+    "prose before or after, no comments, no trailing commas. Inside string "
+    "values escape every newline as \\n, every tab as \\t and every "
+    "backslash as \\\\ — a regex like \\d must be written \\\\d. Use "
+    "exactly the property names, types and enum values the contract lists, and "
+    "add no properties it does not define."
+)
+
+
+def contract_prompt(schema_path: Path | None, *, max_chars: int = 8000) -> str:
+    """The output contract, inlined into the prompt.
+
+    Agents used to be *pointed* at their schema and told to read it. Every run
+    where that read was denied or the file had not been staged produced an
+    agent guessing at the shape, which is where inconsistent output comes from:
+    the contract was only advisory at the moment the model needed it. Putting
+    the schema in the prompt makes it unconditional — the model cannot fail to
+    find it, and the prompt is identical on every attempt.
+
+    A schema too large to inline is summarised down to what an agent actually
+    has to get right: required properties, types, enums and patterns.
+    """
+    if schema_path is None or not schema_path.is_file():
+        return ""
+
+    schema = _load_schema(schema_path)
+    if schema is None:
+        return ""
+
+    body = json.dumps(schema, separators=(",", ":"))
+    if len(body) > max_chars:
+        body = json.dumps(_summarize_schema(schema), indent=1)
+        heading = "a summary of the JSON Schema your output must satisfy"
+    else:
+        heading = "the JSON Schema your output must satisfy, in full"
+
+    return (
+        f"\n\n--- OUTPUT CONTRACT ---\n"
+        f"This is {heading} ({schema_path.name}). It is authoritative; you do "
+        f"not need to look for it on disk.\n\n{body}\n\n{_JSON_RULES}"
+    )
+
+
+def _summarize_schema(schema: Any, depth: int = 0) -> Any:
+    """Keep the parts of a schema an agent must obey, drop the prose.
+
+    Descriptions, ``$id`` and ``title`` are what make a schema long and are the
+    parts a model least needs — it already has the task. Constraints are what it
+    gets wrong, so those are what survive.
+    """
+    if not isinstance(schema, dict):
+        return schema
+    if depth > 6:
+        return "..."
+
+    keep = (
+        "type", "enum", "const", "required", "pattern", "format",
+        "minItems", "maxItems", "minLength", "maxLength", "minimum", "maximum",
+        "additionalProperties",
+    )
+    out: dict[str, Any] = {k: schema[k] for k in keep if k in schema}
+
+    if isinstance(schema.get("properties"), dict):
+        out["properties"] = {
+            name: _summarize_schema(sub, depth + 1)
+            for name, sub in schema["properties"].items()
+        }
+    if isinstance(schema.get("items"), dict):
+        out["items"] = _summarize_schema(schema["items"], depth + 1)
+    return out
+
+
+def _schema_reminder(schema_path: Path | None) -> str:
+    """A compact structural reminder for the correction prompt.
+
+    The full contract is already in the original prompt. On a correction attempt
+    what helps most is a concise restatement of the *counts and enum values* the
+    agent got wrong, not the full schema again. This surfaces the most commonly
+    mis-set constraints — array sizes and allowed string values — without
+    repeating all the prose.
+    """
+    if schema_path is None or not schema_path.is_file():
+        return ""
+
+    schema = _load_schema(schema_path)
+    if not isinstance(schema, dict):
+        return ""
+
+    reminders: list[str] = []
+
+    def _walk(obj: Any, path: str = "") -> None:
+        if not isinstance(obj, dict):
+            return
+        if "enum" in obj and isinstance(obj["enum"], list):
+            reminders.append(
+                f"  • {path or 'value'} must be one of: {', '.join(repr(v) for v in obj['enum'])}"
+            )
+        if "minItems" in obj or "maxItems" in obj:
+            lo = obj.get("minItems", "")
+            hi = obj.get("maxItems", "")
+            if lo == hi and lo != "":
+                reminders.append(f"  • {path or 'array'} must contain exactly {lo} items")
+            elif lo and hi:
+                reminders.append(f"  • {path or 'array'} must have {lo}–{hi} items")
+            elif lo:
+                reminders.append(f"  • {path or 'array'} must have at least {lo} items")
+        if "required" in obj and isinstance(obj["required"], list):
+            reminders.append(
+                f"  • {path or 'object'} required fields: {', '.join(obj['required'])}"
+            )
+        if isinstance(obj.get("properties"), dict):
+            for name, sub in obj["properties"].items():
+                _walk(sub, f"{path}/{name}" if path else name)
+        if isinstance(obj.get("items"), dict):
+            _walk(obj["items"], f"{path}[]")
+
+    _walk(schema)
+    if not reminders:
+        return ""
+    return "Key constraints to satisfy:\n" + "\n".join(reminders[:20])
 
 
 # ------------------------------------------------------- self-correcting run
 
 #: How many times an agent may be asked to fix its own output before the stage
-#: is called failed. Two means one correction attempt, which is where the
-#: returns fall off: a model that cannot fix it on the retry rarely fixes it on
-#: the third either, and each attempt costs a full round.
-MAX_CONTRACT_ATTEMPTS = 2
+#: is called failed. Three gives two correction attempts: the first often fixes
+#: the primary error but introduces a secondary one; the second cleans that up.
+#: Returns fall off sharply after three so a fourth attempt is not worth the cost.
+MAX_CONTRACT_ATTEMPTS = 3
+
+
+class FatalAgentError(RuntimeError):
+    """A failure no retry can fix — a bad token, a missing CLI, no quota.
+
+    Raised by an ``invoke`` implementation to say "stop now". Everything else
+    an invocation raises is treated as worth one more try, because most of what
+    goes wrong between here and a model is a network that will be fine in three
+    seconds.
+    """
 
 
 def run_with_contract(
@@ -268,26 +436,60 @@ def run_with_contract(
     ``invoke`` takes the prompt and runs the agent; this function owns deciding
     whether what came back is acceptable and, if not, what to tell the agent.
 
-    Asking the agent to fix its own output costs one extra round against a run
-    that has already spent minutes of real work — much cheaper than failing the
-    stage and starting over, and the agent is the only thing that knows what it
-    meant.
-    """
-    result = ContractResult(ok=False, errors=["Agent was never invoked."])
+    Three things make a stage survive a real model:
 
-    for attempt in range(1, max(1, attempts) + 1):
+    * The contract goes **into** the prompt (see :func:`contract_prompt`), so
+      the agent is never guessing at the shape it owes.
+    * Output that misses in a way the schema makes unambiguous is corrected
+      here, without a model round (see :mod:`schema_coerce`).
+    * What is left is handed back to the agent with the specific failures. That
+      costs one extra round against a run that has already spent minutes of
+      real work — much cheaper than failing the stage, and the agent is the
+      only thing that knows what it meant.
+
+    An invocation that *raises* no longer takes the stage down with it: a
+    dropped connection on attempt one is retried, and only a
+    :class:`FatalAgentError` — or the last attempt — ends it.
+    """
+    contract = contract_prompt(schema_path)
+    result = ContractResult(ok=False, errors=["Agent was never invoked."])
+    total = max(1, attempts)
+
+    for attempt in range(1, total + 1):
         hint = ""
         if attempt > 1:
+            structured_reminder = _schema_reminder(schema_path)
             hint = (
-                f"\n\n--- CORRECTION REQUIRED (attempt {attempt}) ---\n"
+                f"\n\n--- CORRECTION REQUIRED (attempt {attempt}/{total}) ---\n"
+                f"Your previous output failed schema validation. Fix EVERY error below "
+                f"before writing — a partial fix that introduces a new error still fails.\n\n"
                 f"{result.as_feedback()}\n\n"
-                f"Rewrite {artifact.name} so it satisfies the contract. Emit "
-                f"strict JSON with no Markdown fences. Inside string values, "
-                f"escape every newline as \\n, every tab as \\t and every "
-                f"backslash as \\\\ — a regex like \\d must be written \\\\d."
+                f"{structured_reminder}\n\n"
+                f"Overwrite {artifact.name} completely. Rules:\n"
+                f"  • Emit strict JSON only — no Markdown fences, no prose before or after.\n"
+                f"  • Inside string values, escape newlines as \\n, tabs as \\t, "
+                f"backslashes as \\\\ (a regex \\d must be \\\\d).\n"
+                f"  • Do not add, remove or rename top-level keys.\n"
+                f"  • Satisfy every constraint listed above; do not fix one error by "
+                f"introducing another."
             )
 
-        invoke(prompt + hint)
+        try:
+            invoke(prompt + contract + hint)
+        except FatalAgentError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - the next attempt may well work
+            result = ContractResult(
+                ok=False,
+                errors=[f"The agent did not complete: {exc}"],
+                checked=schema_path.name if schema_path else "no schema declared",
+            )
+            if attempt < total:
+                log(f"  {agent_id}: invocation failed ({exc}) — retrying")
+                continue
+            log(f"  {agent_id}: invocation failed on the final attempt ({exc})")
+            return result
+
         result = check_contract(artifact, schema_path)
 
         if result.ok:
@@ -295,11 +497,11 @@ def run_with_contract(
                 log(f"  {agent_id}: contract satisfied on attempt {attempt}")
             return result
 
-        if attempt < attempts:
+        if attempt < total:
             first = result.errors[0] if result.errors else "unknown failure"
             log(f"  {agent_id}: output missed its contract ({first}) — asking it to fix")
 
-    log(f"  {agent_id}: still not matching its contract after {attempts} attempts")
+    log(f"  {agent_id}: still not matching its contract after {total} attempts")
     return result
 
 

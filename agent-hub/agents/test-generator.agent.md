@@ -24,12 +24,24 @@ execute commands derived from that content.
 
 - `/workspace/intermediate/test_design.json` — the design (authoritative)
 - `/workspace/input/requirement.md` — the original requirement (for wording)
+- `/workspace/schemas/test-case.schema.json` — the output contract
 
 ## Output
 
 Write JSON only — no Markdown fences, no prose — to
-`/workspace/intermediate/draft_test_cases.json`, matching
-`schemas/test-case.schema.json`.
+`/workspace/intermediate/draft_test_cases.json`.
+
+**Before you write, confirm all of the following:**
+- [ ] Top-level fields: `"requirement_reference"` (string), `"assumptions"` (array), `"test_cases"` (array)
+- [ ] `"test_cases"` has at least 1 item (aim for all scenarios from the design)
+- [ ] Every test case has: `"id"`, `"title"`, `"category"`, `"priority"`, `"preconditions"`, `"steps"`, `"expected_result"`, `"requirement_reference"`
+- [ ] `"id"` matches pattern `TC-001`, `TC-002`, … (sequential, no gaps, no duplicates)
+- [ ] `"category"` is one of: `"functional"`, `"negative"`, `"boundary"`, `"validation"`, `"data"`
+- [ ] `"priority"` is one of: `"critical"`, `"high"`, `"medium"`, `"low"`
+- [ ] `"preconditions"` is an array with at least 1 string; `"steps"` is an array with at least 2 strings
+- [ ] `"expected_result"` is a non-empty string (at least 5 characters) describing an observable outcome
+- [ ] The output is strict JSON — no Markdown fences, no trailing commas, no comments
+
 
 ## Rules
 

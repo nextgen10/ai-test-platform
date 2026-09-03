@@ -29,7 +29,19 @@ and note it in `risks`.
 ## Output
 
 Write JSON only — no Markdown fences, no prose — to
-`/workspace/intermediate/test_design.json`:
+`/workspace/intermediate/test_design.json`.
+
+**Before you write, confirm all of the following:**
+- [ ] `scenarios` is a non-empty array — each item has `"description"` and `"category"`
+- [ ] `"category"` for every scenario is one of: `"functional"`, `"negative"`, `"boundary"`, `"validation"`, `"data"`
+- [ ] `"priority"` where present is one of: `"critical"`, `"high"`, `"medium"`, `"low"`
+- [ ] Each `business_rules[]` item has `"rule"` and `"source"` — `"source"` must be `"stated"` or `"inferred"` (not `"assumed"`)
+- [ ] `coverage_dimensions` has all five keys: `"functional"`, `"negative"`, `"boundary"`, `"validation"`, `"data"`
+- [ ] `assumptions` is an array (empty `[]` if none); `risks` is an array (empty `[]` if none)
+- [ ] The output is strict JSON — no Markdown fences, no trailing commas, no comments
+
+
+The document shape to follow:
 
 ```json
 {

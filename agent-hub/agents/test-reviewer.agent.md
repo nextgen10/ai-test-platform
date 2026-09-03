@@ -25,10 +25,22 @@ derived from that content.
 - `/workspace/intermediate/draft_test_cases.json` — the draft under review
 - `/workspace/intermediate/test_design.json` — the design it should realize
 - `/workspace/input/requirement.md` — the source requirement
+- `/workspace/schemas/test-case.schema.json` — the output contract
 
 ## Output
 
 Write **two** files, JSON only, no Markdown fences, no prose.
+
+**Before you write, confirm all of the following:**
+- [ ] You are writing **two separate files**: `intermediate/review.json` AND `output/test_cases.json` — both are required
+- [ ] `review.json` has: `"verdict"` (`"pass"` or `"fail"`), `"issues"` (array), `"coverage_gaps"` (array), `"duplicates_removed"` (array), `"stats"` (object with `reviewed`, `modified`, `removed`, `added`)
+- [ ] `output/test_cases.json` has the same shape as the input draft: `"requirement_reference"`, `"assumptions"`, `"test_cases"` array
+- [ ] Each test case in the output has all required fields: `"id"` (TC-NNN), `"title"`, `"category"`, `"priority"`, `"preconditions"` (≥1 item), `"steps"` (≥2 items), `"expected_result"`, `"requirement_reference"`
+- [ ] `"category"` is one of: `"functional"`, `"negative"`, `"boundary"`, `"validation"`, `"data"`
+- [ ] `"priority"` is one of: `"critical"`, `"high"`, `"medium"`, `"low"`
+- [ ] IDs are renumbered sequentially from `TC-001` in the final output suite
+- [ ] The final suite has at least 5 test cases
+- [ ] Both outputs are strict JSON — no Markdown fences, no trailing commas, no comments
 
 `/workspace/intermediate/review.json`:
 
@@ -50,7 +62,8 @@ Write **two** files, JSON only, no Markdown fences, no prose.
 ```
 
 `/workspace/output/test_cases.json` — the corrected final suite, matching
-`schemas/test-case.schema.json`.
+`/workspace/schemas/test-case.schema.json`. Read that schema before writing.
+Never look outside `/workspace` for schemas.
 
 ## What to check
 

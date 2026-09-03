@@ -3,7 +3,7 @@
   "$id": "https://agenthub.local/schemas/test-case.schema.json",
   "title": "Generated Test Case Suite",
   "type": "object",
-  "required": ["test_cases"],
+  "required": ["requirement_reference", "assumptions", "test_cases"],
   "additionalProperties": false,
   "properties": {
     "requirement_reference": {
@@ -21,7 +21,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "additionalProperties": false,
+        "additionalProperties": true,
         "required": [
           "id",
           "title",
