@@ -33,8 +33,8 @@
           "rule": { "type": "string", "minLength": 1 },
           "source": {
             "type": "string",
-            "description": "Where the rule came from — 'stated' when the requirement says it, 'assumed' when the agent inferred it.",
-            "enum": ["stated", "inferred", "assumed"]
+            "description": "Where the rule came from — 'stated' when the requirement says it, 'inferred' when the agent reasoned it from context.",
+            "enum": ["stated", "inferred"]
           }
         }
       }

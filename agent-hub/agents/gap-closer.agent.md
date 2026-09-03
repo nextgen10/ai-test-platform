@@ -43,7 +43,17 @@ governs *what a good test case looks like*.
 ## Output
 
 Write JSON only — no Markdown fences, no prose — to
-`/workspace/output/test_cases.json`, in the same shape as the suite you read.
+`/workspace/output/test_cases.json`.
+
+**Before you write, confirm all of the following:**
+- [ ] You are writing **two separate files**: `output/test_cases.json` AND `intermediate/gap_closure.json` — both are required
+- [ ] Top-level fields in `test_cases.json`: `"requirement_reference"` (string), `"assumptions"` (array), `"test_cases"` (array)
+- [ ] Every test case has: `"id"` (TC-NNN), `"title"`, `"category"`, `"priority"`, `"preconditions"` (≥1 item), `"steps"` (≥2 items), `"expected_result"`, `"requirement_reference"`
+- [ ] `"category"` is one of: `"functional"`, `"negative"`, `"boundary"`, `"validation"`, `"data"`
+- [ ] `"priority"` is one of: `"critical"`, `"high"`, `"medium"`, `"low"`
+- [ ] IDs are renumbered **last**, sequentially from `TC-001`, with new cases appended after preserved ones
+- [ ] The final suite has at least 5 test cases, at least 3 categories represented
+- [ ] Both outputs are strict JSON — no Markdown fences, no trailing commas, no comments
 
 Also write an audit record to `/workspace/intermediate/gap_closure.json`:
 
