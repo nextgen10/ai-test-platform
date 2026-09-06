@@ -98,6 +98,12 @@ spec:
                 secretKeyRef:
                   name: orchestrator-db
                   key: DATABASE_URL
+            - name: COPILOT_GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: copilot-auth
+                  key: COPILOT_GITHUB_TOKEN
+                  optional: true
           resources:
             requests:
               cpu: 200m
@@ -132,6 +138,8 @@ spec:
               mountPath: /hub
             - name: tmp
               mountPath: /tmp
+            - name: home
+              mountPath: /home/orchestrator
             - name: job-runtime
               mountPath: /job-runtime
       volumes:
@@ -142,6 +150,8 @@ spec:
           persistentVolumeClaim:
             claimName: ai-test-hub
         - name: tmp
+          emptyDir: {}
+        - name: home
           emptyDir: {}
         # Per-job credentials. In memory, never on disk, and gone with the pod —
         # and separate from the artifacts PVC, which the API serves.

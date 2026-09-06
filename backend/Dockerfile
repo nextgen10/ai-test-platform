@@ -16,6 +16,14 @@ RUN pip install --no-cache-dir -r /srv/requirements.txt \
     # Both are the production configuration, so both are in the image.
     && pip install --no-cache-dir kubernetes==31.0.0 "psycopg[binary]==3.2.3" jsonschema==4.23.0
 
+ARG COPILOT_CLI_VERSION=1.0.79
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && npm install -g "@github/copilot@${COPILOT_CLI_VERSION}" \
+    && npm cache clean --force
+
 COPY backend/app /srv/app
 COPY backend/migrations /srv/migrations
 COPY schemas /srv/schemas
