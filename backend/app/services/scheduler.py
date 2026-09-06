@@ -27,6 +27,9 @@ logger = logging.getLogger("ai-test-platform.scheduler")
 #: How often to look for due schedules and undelivered webhooks.
 TICK_SECONDS = float(os.getenv("SCHEDULER_TICK_SECONDS", "20"))
 
+#: How often the artifact retention pass runs, in seconds.
+_RETENTION_EVERY_SECONDS = float(os.getenv("ARTIFACT_RETENTION_EVERY_SECONDS", "3600"))
+
 #: Give up on a webhook after this many attempts.
 MAX_WEBHOOK_ATTEMPTS = int(os.getenv("WEBHOOK_MAX_ATTEMPTS", "5"))
 
@@ -252,7 +255,9 @@ class SchedulerLoop:
             self._thread.join(timeout=timeout)
 
     def _run(self) -> None:
+        ticks = 0
         while not self._stop.wait(TICK_SECONDS):
+            ticks += 1
             try:
                 fire_due_schedules()
             except Exception:  # noqa: BLE001
@@ -261,6 +266,18 @@ class SchedulerLoop:
                 deliver_pending_webhooks()
             except Exception:  # noqa: BLE001
                 logger.exception("webhook delivery pass failed")
+
+            # Retention is a housekeeping pass, not a per-tick concern: it walks
+            # the artifact tree, and doing that every 20 seconds would cost more
+            # than it reclaims. Hourly is far more often than a 30-day window
+            # needs, and cheap when there is nothing to remove.
+            if ticks % max(1, int(_RETENTION_EVERY_SECONDS / TICK_SECONDS)) == 0:
+                try:
+                    from app.services import retention
+
+                    retention.prune()
+                except Exception:  # noqa: BLE001
+                    logger.exception("artifact retention pass failed")
 
 
 _loop: SchedulerLoop | None = None

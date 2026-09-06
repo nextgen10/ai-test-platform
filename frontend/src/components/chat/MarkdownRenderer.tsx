@@ -88,7 +88,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = React.memo(
     const isLight = theme.palette.mode === 'light';
     const rendered = useMemo(() => parseMarkdown(content, isLight), [content, isLight]);
 
-    return <Box sx={{ width: '100%', wordBreak: 'break-word' }}>{rendered}</Box>;
+    return (
+    // maxWidth/minWidth pin this to the column it is in. Without them a
+    // wide table or code line sets the width and drags the whole console
+    // layout sideways.
+    <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, wordBreak: 'break-word' }}>
+      {rendered}
+    </Box>
+  );
   }
 );
 
@@ -109,6 +116,8 @@ const CodeBlock: React.FC<{ language: string; code: string; isLight: boolean }> 
     <Box
       sx={{
         my: 1.5,
+        maxWidth: '100%',
+        minWidth: 0,
         borderRadius: 2,
         overflow: 'hidden',
         border: '1px solid',
@@ -418,7 +427,10 @@ const MarkdownTable: React.FC<{ lines: string[]; isLight: boolean }> = ({ lines,
         border: '1px solid',
         borderColor: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)',
         bgcolor: isLight ? '#ffffff' : '#2a2a2a',
-        overflow: 'hidden',
+        maxWidth: '100%',
+        // A TableContainer is meant to scroll. `hidden` made a wide markdown
+        // table clip and force its parent wider instead of scrolling itself.
+        overflowX: 'auto',
       }}
     >
       <Table size="small">

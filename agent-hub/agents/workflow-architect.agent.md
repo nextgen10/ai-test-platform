@@ -6,7 +6,7 @@ role: "Workflow System Architect"
 stage: architect
 input_artifact: input/requirement.md
 output_artifact: intermediate/architecture_draft.json
-output_schema: null
+output_schema: schemas/workflow-architecture.schema.json
 ---
 
 # Workflow Architect
@@ -30,7 +30,7 @@ Write your design to `intermediate/architecture_draft.json`. This MUST be valid 
       "id": "agent-kebab-case-id",
       "stage": "stage-name",
       "description": "What this agent does",
-      "depends_on": [] // array of stage names this agent depends on
+      "depends_on": []
     }
   ]
 }

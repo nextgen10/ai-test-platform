@@ -14,7 +14,7 @@ import {
   CircularProgress,
   useTheme,
 } from '@mui/material';
-import { Play, Bot, ExternalLink } from 'lucide-react';
+import { Play, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import PageHeader from '@/components/PageHeader';
 import { api, type Workflow } from '@/lib/api';
@@ -86,15 +86,6 @@ export default function BespokeUseCaseTemplatePage() {
       <PageHeader
         title={workflow?.name ?? 'Bespoke Use Case'}
         subtitle={workflow?.description ?? 'Describe what this multi-agent workflow accomplishes.'}
-        actions={
-          <Button
-            variant="outlined"
-            startIcon={<Bot size={16} />}
-            onClick={() => router.push(`/chat?workflow=${encodeURIComponent(WORKFLOW_ID)}`)}
-          >
-            Open in Agent Console
-          </Button>
-        }
       />
 
       {error && (

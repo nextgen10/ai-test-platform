@@ -8,7 +8,6 @@ import {
     ChevronRight, FlaskConical, AlarmClock,
 } from 'lucide-react';
 
-import AuthStatus from '@/components/AuthStatus';
 import ThemeToggle from '@/components/ThemeToggle';
 import { UnifiedNavBar } from '@/components/UnifiedNavBar';
 import ProductName from '@/components/ProductName';
@@ -56,9 +55,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     // Chat, Test Design, and Workflow Builder fill the viewport below the
     // chrome; other pages scroll normally inside a padded container.
-    const isChat = pathname === '/chat';
-    const isGenerate = pathname === '/generate';
-    const isWorkflowBuilder = pathname === '/use-cases/workflow-builder';
+    const isChat = pathname === '/chat' || pathname.startsWith('/chat/');
+    const isGenerate = pathname === '/generate' || pathname.startsWith('/generate/');
+    const isWorkflowBuilder = pathname === '/use-cases/workflow-builder' || pathname.startsWith('/use-cases/workflow-builder/');
     const isImmersive = isChat || isGenerate || isWorkflowBuilder;
 
     // Check if current route is a bespoke use case. Workflows that launch in
@@ -86,10 +85,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <UnifiedNavBar
                 items={items}
                 useCases={useCases}
+                // Fixed, not sticky, on every page that scrolls.
+                //
+                // `position: sticky` cannot work here: the root Box above sets
+                // `overflowX: hidden`, and an ancestor with any non-visible
+                // overflow becomes the sticky containing block — so the bar
+                // stuck to the top of *that* box and scrolled away with it.
+                // Removing the guard would let a wide table drag the page
+                // sideways instead, so pin the bar rather than unpick it. The
+                // component renders its own spacer when pinned, so nothing
+                // slides underneath.
+                //
+                // Immersive routes need no pinning: that shell is 100vh with
+                // `overflow: hidden`, the page itself never scrolls, and only
+                // the panels inside it do.
+                pinned={!isImmersive}
                 onLogoClick={() => router.push('/')}
                 actions={
                     <Stack direction="row" spacing={0.5} alignItems="center">
-                        <AuthStatus />
                         <ThemeToggle />
                     </Stack>
                 }

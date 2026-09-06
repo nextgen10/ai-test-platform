@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Box, Paper, Typography, Button, Chip, Divider,
     CircularProgress, Stack, alpha, useTheme,
     Tabs, Tab, Card, CardContent, Table, TableBody, TableCell, TableHead, TableRow,
 } from '@mui/material';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
     Bot, ArrowRight, ShieldCheck,
     Layers, CheckCircle2, Copy, Check,
@@ -175,14 +175,21 @@ const QUALITY_GATES = [
 
 function DocsContent() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const theme = useTheme();
     const isLight = theme.palette.mode === 'light';
 
     // Tabs: 0=Agents, 1=Skills, 2=Evaluation
-    const tabParam = searchParams.get('tab');
-    const initialTab = tabParam === 'skills' ? 1 : tabParam === 'evaluation' ? 2 : 0;
-    const [mainTab, setMainTab] = useState<number>(initialTab);
+    const [mainTab, setMainTab] = useState<number>(0);
+
+    // Read from `window.location`, not `useSearchParams`: that hook forces a
+    // Suspense boundary, and a suspended subtree hydrates after its parent —
+    // after the theme effect has swapped the palette — so the page hydrates in
+    // one theme against server HTML rendered in the other.
+    useEffect(() => {
+        const tabParam = new URLSearchParams(window.location.search).get('tab');
+        if (tabParam === 'skills') setMainTab(1);
+        else if (tabParam === 'evaluation') setMainTab(2);
+    }, []);
 
     // Agents State
     const [agents, setAgents] = useState<AgentInfo[]>([]);
@@ -868,13 +875,5 @@ function DocsContent() {
 }
 
 export default function DocsPage() {
-    return (
-        <Suspense fallback={
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                <CircularProgress />
-            </Box>
-        }>
-            <DocsContent />
-        </Suspense>
-    );
+    return <DocsContent />;
 }

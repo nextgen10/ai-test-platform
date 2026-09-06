@@ -1,31 +1,24 @@
 """Authentication and authorisation for the orchestrator API.
 
-Every route sits behind one of the role dependencies below.  Roles are ordered,
-so a dependency asks for a *minimum*:
+This demo serves the application open: ``AUTH_MODE`` defaults to ``disabled``,
+every caller is treated as an admin, and nothing asks for a token.
+
+``AUTH_MODE=token`` is still implemented for tests and for a deployment that
+opts back in. Roles are ordered, so a dependency asks for a *minimum*:
 
     reader   read the catalog, jobs, artifacts, logs
     operator + submit, approve, reject, cancel and reprocess jobs; use chat
     author   + create, update and delete hub entities
     admin    + everything
 
-Credentials are bearer tokens supplied through ``API_TOKENS``, which the
-deployment mounts from a secret::
+Credentials in token mode come from ``API_TOKENS``::
 
     API_TOKENS="tok_abc:ci-pipeline:operator,tok_def:qa-lead:author"
-
-That is deliberately a small mechanism, not an identity provider.  It gives the
-platform a real authorisation boundary today and leaves one seam — swap
-:func:`_principal_for_token` for an OIDC token check — when an IdP arrives.
-
-Running with no tokens at all is possible (``AUTH_MODE=disabled``) but must be
-chosen explicitly: the default refuses to start rather than serving an open
-registry that can write agent prompts.
 """
 from __future__ import annotations
 
 import hmac
 import logging
-import os
 from dataclasses import dataclass
 from enum import IntEnum
 
@@ -117,23 +110,8 @@ def configure_auth() -> None:
     mode = settings.auth_mode.strip().lower()
 
     if mode == "disabled":
-        allow = os.getenv("ALLOW_INSECURE_AUTH", "1").strip().lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        if not allow:
-            raise AuthConfigError(
-                "AUTH_MODE=disabled requires ALLOW_INSECURE_AUTH=1. Refusing to "
-                "start an open API. For a loopback run, set that flag, or leave "
-                "AUTH_MODE=token and let start.sh mint a credential."
-            )
         _TOKENS = {}
-        logger.warning(
-            "AUTH_MODE=disabled — every endpoint is open, including hub writes "
-            "that become agent prompts. Acceptable for a loopback dev run only; "
-            "never for a deployment reachable by anyone else."
-        )
+        logger.info("AUTH_MODE=disabled — the API is open; no token is required.")
         return
 
     if mode != "token":

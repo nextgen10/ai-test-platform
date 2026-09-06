@@ -4,14 +4,16 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     Box, Paper, Typography, Button, Chip, CircularProgress, Table, TableBody,
     TableCell, TableHead, TableRow, Tabs, Tab, Alert, Collapse, IconButton,
-    Divider, alpha, useTheme, LinearProgress, Stack,
+    Divider, alpha, useTheme, LinearProgress, Stack, Skeleton,
 } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import {
     ChevronLeft, ChevronDown, ChevronRight, Download, RefreshCw, XCircle,
-    CheckCircle2, Loader2, Circle, Activity, ShieldCheck, 
+    CheckCircle2, Loader2, Circle, Activity, ShieldCheck,
     FileSpreadsheet,
     SkipForward,
+    SquareArrowOutUpRight,
+    UserCheck,
 } from 'lucide-react';
 
 import WorkflowStepper from '@/components/WorkflowStepper';
@@ -23,26 +25,9 @@ import {
     formatTimestamp, STATUS_COLOR,
     type Job, type JobBreakdown, type TestSuite, type ValidationReport, type Workflow,
 } from '@/lib/api';
-
-/**
- * Phases for the bespoke test-generation chain.
- *
- * Only a fallback: any workflow onboarded as data describes its own stages, and
- * `derivePhases` reads them from the workflow definition. This page used to
- * render these four regardless of what actually ran.
- */
-const BESPOKE_PHASES = [
-    { key: 'ocr-extractor', label: 'Document OCR & visual extraction' },
-    { key: 'test-designer', label: 'Requirement analysis & scenario design' },
-    { key: 'test-generator', label: 'Test case generation' },
-    { key: 'test-reviewer', label: 'Review & validation' },
-];
-
-/** Turn a stage or agent id into something readable, e.g. `gap-closer` → `Gap closer`. */
-function humanise(value: string): string {
-    const spaced = value.replace(/[-_]/g, ' ').trim();
-    return spaced.charAt(0).toUpperCase() + spaced.slice(1);
-}
+// Shared with the stepper and the Workflow Builder, so every view of a run
+// agrees on which stages exist and how far each one got.
+import { BESPOKE_WORKFLOW_ID, derivePhases } from '@/lib/phases';
 
 const PRIORITY_COLOR: Record<string, 'error' | 'warning' | 'info' | 'default'> = {
     critical: 'error',
@@ -50,124 +35,6 @@ const PRIORITY_COLOR: Record<string, 'error' | 'warning' | 'info' | 'default'> =
     medium: 'info',
     low: 'default',
 };
-
-type PhaseState = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
-
-interface DerivedPhaseInfo {
-    phases: { key: string; label: string }[];
-    states: Record<string, { state: PhaseState; detail: string }>;
-}
-
-/**
- * The stages this job actually ran, and how each one turned out.
- *
- * Which stages exist comes from the workflow when one is supplied, and from the
- * run's own provenance otherwise — so a workflow onboarded yesterday shows its
- * own pipeline rather than the test-generation one.
- */
-function derivePhases(job: Job, workflow?: Workflow | null): DerivedPhaseInfo {
-    const bespoke = !workflow || workflow.runner === 'bespoke';
-
-    // Prefer what the run recorded; fall back to what the workflow declares;
-    // fall back again to the bespoke chain for older rows with neither.
-    const recorded = (job.provenance?.stages ?? []) as { agent_id?: string; stage?: string }[];
-
-    let phases: { key: string; label: string }[];
-    if (recorded.length > 0) {
-        phases = recorded.map((s) => ({
-            key: String(s.agent_id ?? s.stage ?? ''),
-            label: humanise(String(s.stage ?? s.agent_id ?? '')),
-        }));
-    } else if (workflow && workflow.agents?.length && !bespoke) {
-        phases = workflow.agents.map((a) => ({
-            key: a.id,
-            label: a.description || humanise(a.stage || a.id),
-        }));
-    } else {
-        phases = BESPOKE_PHASES;
-    }
-
-    const result: Record<string, { state: PhaseState; detail: string }> = {};
-    for (const phase of phases) result[phase.key] = { state: 'pending', detail: '' };
-
-    // OCR only applies to the bespoke chain, and only when it was actually used.
-    if (bespoke && 'ocr-extractor' in result) {
-        const usedOcr =
-            (job.events ?? []).some((e) => (e.event_metadata?.phase as string) === 'ocr-extractor') ||
-            (job.provenance?.phases ?? []).some((p) => p.name === 'ocr-extractor');
-        if (!usedOcr) {
-            result['ocr-extractor'] = { state: 'skipped', detail: 'text input — skipped' };
-        }
-    }
-
-    const tidy = (detail: string): string => {
-        if (detail.includes('categories=')) {
-            const match = detail.match(/^(\d+\s+test\s+cases)/i);
-            return match ? match[1] : 'Passed';
-        }
-        return detail;
-    };
-
-    for (const event of job.events ?? []) {
-        const name = (event.event_metadata?.phase as string) ?? '';
-        if (!(name in result)) continue;
-        if (event.event_type === 'phase.started') {
-            result[name] = { state: 'running', detail: '' };
-        } else if (event.event_type === 'phase.completed') {
-            result[name] = {
-                state: 'completed',
-                detail: tidy((event.event_metadata?.detail as string) ?? ''),
-            };
-        }
-    }
-
-    // The bespoke runner writes `phases`; the generic one writes `stages`.
-    for (const record of job.provenance?.phases ?? []) {
-        if (!(record.name in result)) continue;
-        const detail = tidy(record.detail || '');
-        const duration = record.duration_ms ? formatDuration(record.duration_ms) : '';
-        result[record.name] = {
-            state: record.status === 'failed' ? 'failed' : 'completed',
-            detail: duration ? (detail ? `${detail} · ${duration}` : duration) : detail,
-        };
-    }
-
-    for (const record of recorded as {
-        agent_id?: string;
-        stage?: string;
-        status?: string;
-        duration_ms?: number;
-        detail?: string;
-        resumed?: boolean;
-        attempts?: number;
-    }[]) {
-        const key = String(record.agent_id ?? record.stage ?? '');
-        if (!(key in result)) continue;
-
-        const bits: string[] = [];
-        if (record.resumed) bits.push('resumed');
-        if (record.duration_ms) bits.push(formatDuration(record.duration_ms));
-        if ((record.attempts ?? 1) > 1) bits.push(`${record.attempts} attempts`);
-        if (record.status === 'skipped' && record.detail) bits.push(record.detail);
-
-        const state: PhaseState =
-            record.status === 'failed'
-                ? 'failed'
-                : record.status === 'skipped'
-                  ? 'skipped'
-                  : 'completed';
-
-        result[key] = { state, detail: bits.join(' · ') };
-    }
-
-    if (!ACTIVE_STATUSES.includes(job.status) && job.status !== 'COMPLETED') {
-        for (const phase of phases) {
-            if (result[phase.key].state === 'running') result[phase.key].state = 'failed';
-        }
-    }
-
-    return { phases, states: result };
-}
 
 function LiveJobSidePanel({
     job,
@@ -180,13 +47,14 @@ function LiveJobSidePanel({
 }) {
     const theme = useTheme();
     const isLight = theme.palette.mode === 'light';
-    const { phases: PHASES, states } = derivePhases(job, workflow);
+    const { phases: PHASES, states, unknown } = derivePhases(job, workflow);
     const resolved = PHASES.filter((p) => states[p.key].state === 'completed' || states[p.key].state === 'skipped').length;
     // 'skipped' phases (e.g. OCR extraction on a text-only job) are resolved
     // before the job even starts, so they must not count as "real" progress —
     // otherwise the indeterminate/starting spinner below never shows.
     const completedCount = PHASES.filter((p) => states[p.key].state === 'completed').length;
     const running = ACTIVE_STATUSES.includes(job.status);
+    const artifact = job.summary?.artifact;
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'sticky', top: 80, minWidth: 0, width: '100%' }}>
@@ -204,11 +72,17 @@ function LiveJobSidePanel({
 
                 <LinearProgress
                     variant={running && completedCount === 0 ? 'indeterminate' : 'determinate'}
-                    value={(resolved / PHASES.length) * 100}
+                    value={PHASES.length ? (resolved / PHASES.length) * 100 : 0}
                     sx={{ mb: 2, height: 6, borderRadius: 2 }}
                 />
 
                 <Stack spacing={1.2} sx={{ mb: 2 }}>
+                    {unknown && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                            <Skeleton variant="circular" width={15} height={15} />
+                            <Skeleton variant="text" width={160} height={16} />
+                        </Box>
+                    )}
                     {PHASES.map((phase) => {
                         const { state, detail } = states[phase.key];
                         return (
@@ -219,6 +93,8 @@ function LiveJobSidePanel({
                                     <SkipForward size={15} color={theme.palette.text.disabled} style={{ flexShrink: 0 }} />
                                 ) : state === 'failed' ? (
                                     <XCircle size={15} color={theme.palette.error.main} style={{ flexShrink: 0 }} />
+                                ) : state === 'blocked' ? (
+                                    <UserCheck size={15} color={theme.palette.warning.main} style={{ flexShrink: 0 }} />
                                 ) : state === 'running' ? (
                                     <Box
                                         sx={{
@@ -289,10 +165,10 @@ function LiveJobSidePanel({
                     </Box>
                     <Box>
                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.68rem', fontWeight: 500 }}>
-                            Test Cases
+                            {typeof job.summary?.total === 'number' ? 'Test Cases' : 'Artifact'}
                         </Typography>
-                        <Typography variant="body2" fontWeight={500} sx={{ mt: 0.25 }}>
-                            {job.summary?.total ?? '—'}
+                        <Typography variant="body2" fontWeight={500} sx={{ mt: 0.25 }} noWrap title={artifact}>
+                            {typeof job.summary?.total === 'number' ? job.summary.total : (artifact ?? '—')}
                         </Typography>
                     </Box>
                     <Box>
@@ -770,7 +646,12 @@ export default function JobDetailPage() {
         return () => clearInterval(timer);
     }, [job, load]);
 
-    const isBespoke = !workflow || workflow.runner === 'bespoke';
+    // Until the catalog lands, guess from the job's workflow id — treating an
+    // unknown workflow as bespoke drew the test-generation tabs and stages
+    // over a builder run.
+    const isBespoke =
+        workflow?.runner === 'bespoke' ||
+        (!workflow && job?.workflow === BESPOKE_WORKFLOW_ID);
 
     const availableTabs = React.useMemo(() => {
         const tabs: { key: string, label: string, disabled?: boolean }[] = [];
@@ -834,6 +715,18 @@ export default function JobDetailPage() {
 
     const active = ACTIVE_STATUSES.includes(job.status);
 
+    // A reprocess is two agents — gap-closer, then the evaluator re-scoring the
+    // amended suite. The gap-closer rewrites the results first, so the output
+    // updates a full agent before the job is done and the run *looks* finished
+    // while it is still working. One run was cancelled by hand for exactly that
+    // reason, so say which pass is running and mark the output provisional.
+    const reprocessing = active && job.reprocess_count > 0;
+    const runningPhase = reprocessing
+        ? [...(job.events ?? [])]
+              .reverse()
+              .find((e) => e.event_type === 'phase.started')?.message
+        : undefined;
+
     return (
         <Box sx={{ maxWidth: 1560, mx: 'auto', pb: 6, width: '100%', minWidth: 0 }}>
             {/* Unified Single-Line Top Bar */}
@@ -869,6 +762,27 @@ export default function JobDetailPage() {
 
                 {/* Right: Action Buttons */}
                 <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
+                    {/* A workflow with its own page knows how to present its result —
+                        the builder installs what it generated, rather than leaving a
+                        raw artifact for someone to find and interpret. This is the
+                        only route back to it, so it belongs on the run, not just in
+                        the Use Cases menu. */}
+                    {workflow?.has_custom_ui && workflow.custom_ui_route && (
+                        <Button
+                            variant="contained"
+                            disableElevation
+                            size="small"
+                            startIcon={<SquareArrowOutUpRight size={15} />}
+                            onClick={() =>
+                                router.push(
+                                    `${workflow.custom_ui_route}?job=${encodeURIComponent(job.id)}`,
+                                )
+                            }
+                            sx={{ textTransform: 'none', fontWeight: 500, height: 36, borderRadius: 2 }}
+                        >
+                            Open in {workflow.name}
+                        </Button>
+                    )}
                     <Button
                         variant="outlined"
                         size="small"
@@ -894,11 +808,28 @@ export default function JobDetailPage() {
                             }}
                             sx={{ textTransform: 'none', fontWeight: 500, height: 36, borderRadius: 2 }}
                         >
-                            Cancel
+                            {reprocessing ? 'Cancel reprocess' : 'Cancel'}
                         </Button>
                     )}
                 </Box>
             </Box>
+
+            {reprocessing && (
+                <Alert
+                    severity="info"
+                    icon={<RefreshCw size={16} />}
+                    sx={{ mb: 2.5, borderRadius: 2 }}
+                >
+                    <Box sx={{ fontWeight: 500, mb: 0.25 }}>
+                        Reprocess in progress — these results are not final
+                    </Box>
+                    {runningPhase
+                        ? `Currently running: ${runningPhase}. `
+                        : 'The amended suite is being re-scored. '}
+                    The test cases below have already been amended by the gap-closer;
+                    the evaluation updates when the run finishes.
+                </Alert>
+            )}
 
             <WorkflowStepper job={job} workflow={workflow} />
 
@@ -983,7 +914,7 @@ export default function JobDetailPage() {
                                 borderRadius: 2,
                                 border: '1px solid',
                                 borderColor: 'divider',
-                                bgcolor: theme.palette.mode === 'dark' ? '#1c1c1c' : '#1c1c1c',
+                                bgcolor: 'var(--col-background-ui-30)',
                                 maxHeight: 560,
                                 overflow: 'auto',
                                 width: '100%',
@@ -997,7 +928,7 @@ export default function JobDetailPage() {
                                     m: 0,
                                     fontFamily: 'monospace',
                                     fontSize: '0.8rem',
-                                    color: '#f9f9f7',
+                                    color: 'text.primary',
                                     whiteSpace: 'pre-wrap',
                                     wordBreak: 'break-word',
                                 }}
@@ -1019,9 +950,25 @@ export default function JobDetailPage() {
                                 </TableHead>
                                 <TableBody>
                                     {artifacts.map((artifact) => (
-                                        <TableRow key={artifact.path} hover>
+                                        <TableRow
+                                            key={artifact.path}
+                                            hover
+                                            selected={artifact.path === workflow?.output?.primary_artifact}
+                                        >
                                             <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {artifact.path}
+                                                {/* Every run writes intermediates beside its deliverable.
+                                                    The workflow already declares which one it owes, so say
+                                                    so rather than leaving the reader to guess from paths. */}
+                                                {artifact.path === workflow?.output?.primary_artifact && (
+                                                    <Chip
+                                                        size="small"
+                                                        label="Result"
+                                                        color="primary"
+                                                        variant="outlined"
+                                                        sx={{ ml: 1, height: 18, fontSize: '0.68rem' }}
+                                                    />
+                                                )}
                                             </TableCell>
                                             <TableCell align="right">{artifact.size_bytes} B</TableCell>
                                             <TableCell align="right">

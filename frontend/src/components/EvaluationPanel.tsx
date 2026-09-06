@@ -35,28 +35,17 @@ function getRatingFromScore4(score: number): Rating {
     return 'bad';
 }
 
+// Evaluation scores are on 0-100 — evaluation.schema.json declares it and the
+// evaluator's profile says so twice. Two things used to go wrong here. A score
+// of 4 or less was read as though it were already on the 1-4 scale, so the
+// worst result the evaluator can give (3 out of 100) displayed as 3.0/4, a good
+// one. And the rest were snapped to whole points, so 88 and 100 both showed as
+// 4.0/100%. The rating thresholds below are the same 87.5/70/50 those buckets
+// were built from, so labels are unchanged; only the number is now linear.
 function getDimensionMetrics(dim: EvaluationScore): { rating: Rating; score4: number } {
-    let rating: Rating;
-    let score4: number;
-    if (dim.score <= 4) {
-        score4 = Math.round(dim.score * 10) / 10;
-        rating = getRatingFromScore4(score4);
-    } else {
-        if (dim.score >= 87.5) {
-            rating = 'very_good';
-            score4 = 4.0;
-        } else if (dim.score >= 70) {
-            rating = 'good';
-            score4 = 3.0;
-        } else if (dim.score >= 50) {
-            rating = 'average';
-            score4 = 2.0;
-        } else {
-            rating = 'bad';
-            score4 = 1.0;
-        }
-    }
-    return { rating, score4 };
+    const pct = Math.min(100, Math.max(0, Number(dim.score) || 0));
+    const score4 = Math.round((pct / 25) * 10) / 10;
+    return { rating: getRatingFromScore4(score4), score4 };
 }
 
 export default function EvaluationPanel({ job, evaluation, onReprocess }: Props) {
@@ -72,7 +61,7 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
     const dimMetrics = (evaluation.scores ?? []).map(getDimensionMetrics);
     const meanScore4 = dimMetrics.length > 0
         ? dimMetrics.reduce((acc, d) => acc + d.score4, 0) / dimMetrics.length
-        : (overall.score <= 4 ? overall.score : (overall.score / 100) * 4);
+        : Math.min(100, Math.max(0, Number(overall.score) || 0)) / 25;
     
     const scorePct = Math.round((meanScore4 / 4) * 100);
     const rating: Rating = getRatingFromScore4(meanScore4);

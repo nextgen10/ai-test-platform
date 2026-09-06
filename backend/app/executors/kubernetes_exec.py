@@ -16,13 +16,7 @@ from pathlib import Path
 
 from app.config import settings
 from app.executors.base import ExecutionResult
-
-
-def _runtime_value(job_id: str, name: str) -> str | None:
-    path = settings.runtime_for(job_id) / name
-    if not path.is_file():
-        return None
-    return path.read_text(encoding="utf-8").strip() or None
+from app.executors import runtime as exec_runtime
 
 ARTIFACT_PVC = os.getenv("K8S_ARTIFACT_PVC", "ai-test-artifacts")
 
@@ -127,6 +121,13 @@ class KubernetesExecutor:
                                     {"name": "WORKFLOW_ID", "value": workflow},
                                     {"name": "RUNNER_KIND", "value": runner},
                                     {"name": "REPROCESS", "value": "1" if reprocess else "0"},
+                                    # So the runner stops inside activeDeadlineSeconds
+                                    # and writes its record, rather than being killed
+                                    # at it with nothing to show.
+                                    {
+                                        "name": "JOB_TIMEOUT_SECONDS",
+                                        "value": str(settings.job_timeout_seconds),
+                                    },
                                     {"name": "WORKSPACE", "value": "/workspace"},
                                     {
                                         "name": "RUNNER_VERSION",
@@ -209,7 +210,7 @@ class KubernetesExecutor:
         return f"copilot-job-{job_id}"[:63]
 
     def _ensure_job_token_secret(self, core, client, job_id: str) -> str:
-        token = _runtime_value(job_id, "copilot_token")
+        token = exec_runtime.runtime_value(job_id, "copilot_token")
         if not token:
             return settings.k8s_secret_name
         name = self._job_token_secret_name(job_id)
@@ -264,7 +265,7 @@ class KubernetesExecutor:
         core = client.CoreV1Api()
 
         k8s_job_name = self.external_name(job_id, stage, attempt)
-        engine = _runtime_value(job_id, "engine") or settings.engine
+        engine = exec_runtime.resolve_job_engine(job_id)
         token_secret = self._ensure_job_token_secret(core, client, job_id)
         manifest = self.build_manifest(
             job_id, k8s_job_name, stage, reprocess, workflow, runner,

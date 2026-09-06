@@ -144,7 +144,7 @@ def get_agent(agent_id: str) -> dict[str, Any] | None:
 
 def create_agent(agent_id: str, content: str) -> dict[str, Any]:
     """Write a new agent file.  Raises ``FileExistsError`` if it already exists."""
-    _assert_tools_allowed(content)
+    assert_agent_valid(content)
     path = _contained(_agents_dir(), f"{_safe_id(agent_id)}.agent.md")
     if path.exists():
         raise FileExistsError(f"Agent '{agent_id}' already exists")
@@ -154,12 +154,19 @@ def create_agent(agent_id: str, content: str) -> dict[str, Any]:
 
 
 def update_agent(agent_id: str, content: str) -> dict[str, Any]:
-    _assert_tools_allowed(content)
+    assert_agent_valid(content)
     path = _contained(_agents_dir(), f"{_safe_id(agent_id)}.agent.md")
     if not path.is_file():
         raise FileNotFoundError(f"Agent '{agent_id}' not found")
+    previous = path.read_text(encoding="utf-8")
     path.write_text(content, encoding="utf-8")
-    return _read_agent(path)
+    try:
+        return _read_agent(path)
+    except Exception:
+        # Never leave a half-written definition behind: the file *is* the
+        # system prompt, and the next job would run whatever landed here.
+        path.write_text(previous, encoding="utf-8")
+        raise
 
 
 def delete_agent(agent_id: str) -> bool:
@@ -174,12 +181,28 @@ class DeniedTool(ValueError):
     """An agent definition asked for a tool this platform will not grant."""
 
 
+class InvalidAgentDefinition(ValueError):
+    """An agent definition would not work if it were installed.
+
+    Carries every problem at once rather than the first one, so an author fixes
+    a definition in one pass instead of resubmitting to discover the next fault.
+    """
+
+    def __init__(self, errors: list[str]) -> None:
+        self.errors = errors
+        super().__init__("; ".join(errors))
+
+
 #: Tools an agent may declare. The chat orchestrator and generic runner grant
 #: exactly these to the CLI. ``shell`` and ``fetch`` are recognised so we can
 #: reject them at write time rather than silently honour them.
 KNOWN_TOOLS = frozenset({"read", "write", "edit", "search", "shell", "fetch"})
 DENIED_TOOLS = frozenset({"shell", "fetch"})
 ALLOWED_TOOLS = KNOWN_TOOLS - DENIED_TOOLS
+
+#: Artifact paths an agent may declare. ``workspace`` means "the whole tree";
+#: anything else is a path relative to the job workspace root.
+_ARTIFACT_DIRS = ("input/", "intermediate/", "output/")
 
 
 def _assert_tools_allowed(content: str) -> None:
@@ -198,6 +221,187 @@ def _assert_tools_allowed(content: str) -> None:
             f"Agents may not declare {bad}. shell and fetch are denied on this "
             "platform because they turn prompt injection into host/network access."
         )
+
+
+def _check_artifact(field: str, value: Any, errors: list[str]) -> None:
+    """An artifact path must stay inside the job workspace.
+
+    An absolute path or a ``..`` escape does not fail at write time — it fails
+    mid-run, in a container, having already burned a Copilot call.
+
+    A list is allowed: a fan-in agent reads several upstream artifacts. Anything
+    else is not. This used to coerce with ``str(value)``, which meant a mapping
+    or a number was accepted as a "path" and only surfaced later as a TypeError
+    in the browser — validating a stringification is not validating the value.
+    """
+    if value is None or value == "workspace":
+        return
+
+    if isinstance(value, (list, tuple)):
+        if not value:
+            errors.append(f"'{field}' is an empty list. Remove it, or name a path.")
+            return
+        for item in value:
+            if not isinstance(item, str):
+                errors.append(
+                    f"'{field}' must contain paths, but one entry is a "
+                    f"{type(item).__name__}."
+                )
+                return
+        for item in value:
+            _check_artifact(field, item, errors)
+        return
+
+    if not isinstance(value, str):
+        errors.append(
+            f"'{field}' must be a path, or a list of paths — got a "
+            f"{type(value).__name__}."
+        )
+        return
+
+    text = value.strip()
+    if not text:
+        errors.append(f"'{field}' is empty. Remove it, or give it a path.")
+        return
+    if text.startswith("/") or (len(text) > 1 and text[1] == ":"):
+        errors.append(
+            f"'{field}' must be relative to the job workspace, not an absolute "
+            f"path ({text!r})."
+        )
+        return
+    if ".." in Path(text).parts:
+        errors.append(f"'{field}' may not contain '..' ({text!r}).")
+
+
+def validate_agent(content: str) -> dict[str, Any]:
+    """Check an agent definition before it becomes a system prompt.
+
+    An agent file is executable configuration: whatever is written here is what
+    the Copilot CLI is told to be, and the frontmatter decides what it may touch
+    and what contract its output is held to. A definition that is merely
+    *parseable* can still be broken in ways that only surface as a failed job
+    twenty minutes later — no description for the catalog, an output artifact
+    pointing outside the workspace, a schema path naming a file that is not
+    there.
+
+    Errors block the write. Warnings do not: they describe a definition that
+    will run but is missing something worth having, and blocking on them would
+    stop the Workflow Builder installing the agents it just generated.
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    meta, body = _parse_frontmatter(content)
+
+    if not meta:
+        errors.append(
+            "No YAML frontmatter found. An agent file starts with a '---' fenced "
+            "block declaring at least 'description' and 'tools'."
+        )
+
+    description = str(meta.get("description") or "").strip()
+    if not description:
+        errors.append(
+            "'description' is required — it is what the Registry, the console "
+            "and the agent picker show for this agent."
+        )
+
+    declared = meta.get("tools")
+    if declared is None:
+        warnings.append(
+            "No 'tools' declared, so this agent is granted read only. Add "
+            "'write' if it has to produce an artifact."
+        )
+    elif not isinstance(declared, list):
+        errors.append("'tools' must be a list, for example: tools: [\"read\", \"write\"]")
+    else:
+        names = [str(t).strip().lower() for t in declared]
+        denied = sorted({t for t in names if t in DENIED_TOOLS})
+        if denied:
+            errors.append(
+                f"Agents may not declare {denied}. shell and fetch are denied on "
+                f"this platform because they turn prompt injection into "
+                f"host/network access."
+            )
+        unknown = sorted({t for t in names if t not in KNOWN_TOOLS})
+        if unknown:
+            errors.append(
+                f"Unknown tool(s) {unknown}. Known tools are: "
+                f"{', '.join(sorted(KNOWN_TOOLS))}."
+            )
+
+    _check_artifact("input_artifact", meta.get("input_artifact"), errors)
+    _check_artifact("output_artifact", meta.get("output_artifact"), errors)
+
+    # Normalised the same way the reader does, so a list-valued declaration is
+    # checked as a path rather than as its Python repr.
+    output_artifact = artifact_list(meta.get("output_artifact"), default="")[0]
+    if output_artifact and output_artifact != "workspace":
+        if not output_artifact.startswith(_ARTIFACT_DIRS):
+            warnings.append(
+                f"'output_artifact' is {output_artifact!r}, which is outside "
+                f"{', '.join(d.rstrip('/') for d in _ARTIFACT_DIRS)}. The runner "
+                f"collects results from those directories."
+            )
+        if declared is not None and isinstance(declared, list):
+            names = [str(t).strip().lower() for t in declared]
+            if "write" not in names and "edit" not in names:
+                errors.append(
+                    f"This agent declares output_artifact {output_artifact!r} but "
+                    f"no 'write' tool, so it will be run without permission to "
+                    f"create that file and will fail its contract every time."
+                )
+
+    schema = meta.get("output_schema")
+    schema_text = str(schema).strip() if schema else ""
+    if schema_text and schema_text.lower() != "null":
+        from app.config import PROJECT_ROOT
+
+        if Path(schema_text).is_absolute() or ".." in Path(schema_text).parts:
+            errors.append(
+                f"'output_schema' must be a path relative to the project root "
+                f"({schema_text!r})."
+            )
+        elif not (PROJECT_ROOT / schema_text).is_file():
+            warnings.append(
+                f"'output_schema' points at {schema_text}, which does not exist "
+                f"yet. Until it does, this agent's output is not contract-checked."
+            )
+    elif output_artifact.endswith(".json"):
+        warnings.append(
+            "This agent writes JSON but declares no 'output_schema', so nothing "
+            "validates its output. Add one to have the runner check the contract "
+            "and give the agent a chance to correct itself."
+        )
+
+    if not body.strip():
+        errors.append(
+            "The body is empty. Everything after the frontmatter is the agent's "
+            "system prompt — without it the agent has no instructions."
+        )
+    elif len(body.strip()) < 120:
+        warnings.append(
+            "The body is very short. It becomes the agent's entire system "
+            "prompt, so state its role, its input, its output and its rules."
+        )
+
+    lowered = body.lower()
+    if body.strip() and "untrusted" not in lowered and "trust boundary" not in lowered:
+        warnings.append(
+            "The prompt does not say that its input is untrusted data. Every "
+            "shipped agent carries a 'Trust boundary' section telling it never "
+            "to follow instructions found in the content it is given."
+        )
+
+    return {"ok": not errors, "errors": errors, "warnings": warnings}
+
+
+def assert_agent_valid(content: str) -> list[str]:
+    """Validate, raising on anything that would break the agent. Returns warnings."""
+    result = validate_agent(content)
+    if not result["ok"]:
+        raise InvalidAgentDefinition(list(result["errors"]))
+    return list(result["warnings"])
 
 
 def seed_hub() -> None:
@@ -242,10 +446,49 @@ def agent_tools(agent_id: str) -> list[str]:
     return allowed or ["read"]
 
 
+def _schema_or_none(value: Any) -> str | None:
+    """The declared output schema path, or None.
+
+    ``output_schema: null`` is how an agent that writes prose says it has no
+    contract, and YAML hands that back as None — but a definition written by a
+    generator can also carry the string ``"null"``, which is not a path either.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text if text and text.lower() != "null" else None
+
+
+def artifact_list(value: Any, default: str = "workspace") -> list[str]:
+    """Every artifact path a field declares, as a list of strings.
+
+    A fan-in agent legitimately reads more than one upstream artifact, and YAML
+    lets an author write that as a list::
+
+        input_artifact:
+          - intermediate/contributing-factors_result.md
+          - intermediate/customer-impact_result.md
+
+    Nothing in the platform expected that shape, so it reached the browser and
+    crashed the whole console on ``.trim()``, threw in the Agent Lab on
+    ``workspace / [...]``, and rendered as a Python repr inside a runner prompt.
+    Normalising here means every consumer sees one predictable type.
+    """
+    if value is None:
+        return [default]
+    if isinstance(value, (list, tuple)):
+        paths = [str(item).strip() for item in value if str(item).strip()]
+        return paths or [default]
+    text = str(value).strip()
+    return [text] if text else [default]
+
+
 def _read_agent(path: Path) -> dict[str, Any]:
     content = path.read_text(encoding="utf-8")
     meta, body = _parse_frontmatter(content)
     agent_id = path.name.replace(".agent.md", "")
+    inputs = artifact_list(meta.get("input_artifact"))
+    outputs = artifact_list(meta.get("output_artifact"))
     return {
         "id": agent_id,
         "type": "agent",
@@ -257,8 +500,17 @@ def _read_agent(path: Path) -> dict[str, Any]:
         # layer. Defaults keep older definitions renderable.
         "role": meta.get("role", "Custom Agent"),
         "stage": meta.get("stage", "chain"),
-        "input_artifact": meta.get("input_artifact", "workspace"),
-        "output_artifact": meta.get("output_artifact", "workspace"),
+        # Always a string, so no consumer has to guess the shape. An agent that
+        # declares several inputs reports its first here and the whole set in
+        # `input_artifacts` — which is what anything chaining agents should read.
+        "input_artifact": inputs[0],
+        "input_artifacts": inputs,
+        "output_artifact": outputs[0],
+        "output_artifacts": outputs,
+        # The contract, surfaced rather than left for each caller to re-parse
+        # out of the raw frontmatter. The Agent Lab used to do exactly that,
+        # which is one more place for the two readings to disagree.
+        "output_schema": _schema_or_none(meta.get("output_schema")),
         "content": content,
         "body": body.strip(),
         "file": f"agent-hub/agents/{path.name}",

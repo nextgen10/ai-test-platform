@@ -201,15 +201,62 @@ def _write_runtime_files(
             pass
 
 
-def _purge_runtime_files(job_id: str) -> None:
-    """Delete a finished job's credential. Called on every terminal transition."""
-    runtime = settings.runtime_for(job_id)
-    if not runtime.exists():
-        return
+def _submitted_engine(job: Job) -> str | None:
+    """Engine chosen at submit, not the process default and not a later run.
+
+    Reprocess used to delete the runtime directory on COMPLETED, then fall back
+    to ``settings.engine`` (mock in ``start.sh``). A Copilot job would silently
+    gap-close as mock. The create event is the durable record of what the user
+    asked for.
+    """
+    for event in job.events:
+        if event.event_type != "job.created":
+            continue
+        engine = (event.event_metadata or {}).get("engine")
+        if isinstance(engine, str) and engine.strip().lower() in {"mock", "copilot"}:
+            return engine.strip().lower()
+        break
+    return None
+
+
+def _restage_runtime_for_reprocess(job: Job) -> None:
+    """Put engine and model back on disk before a reprocess run.
+
+    The PAT is not in the database (by design). If it was already purged, the
+    executor falls back to the process token. Engine and model must still be
+    restaged or Copilot jobs run as mock.
+    """
+    _write_runtime_files(
+        job.id,
+        engine=_submitted_engine(job),
+        copilot_model=job.copilot_model,
+        github_token=None,
+    )
+
+
+def _job_can_still_execute(job: Job) -> bool:
+    """Completed jobs may be reprocessed once; they still need their runtime."""
+    return job.status == JobStatus.COMPLETED and job.reprocess_count < MAX_REPROCESS
+
+
+def _purge_runtime_credential(job_id: str) -> None:
+    """Delete only the PAT. Engine and model are not secrets."""
+    token_path = settings.runtime_for(job_id) / "copilot_token"
     try:
-        shutil.rmtree(runtime)
+        token_path.unlink(missing_ok=True)
     except OSError:
-        logger.warning("could not purge runtime dir for job %s", job_id, exc_info=True)
+        logger.warning("could not purge credential for job %s", job_id, exc_info=True)
+
+
+def _release_runtime_after_terminal(job: Job) -> None:
+    """Drop the PAT once this job cannot run again.
+
+    Engine and model stay for the whole lifetime of the workspace: a reprocess
+    must use the engine the job was submitted with, not ``settings.engine``.
+    """
+    if _job_can_still_execute(job):
+        return
+    _purge_runtime_credential(job.id)
 
 
 # ----------------------------------------------------------------- transitions
@@ -265,11 +312,11 @@ def transition(
     record_event(db, job, f"status.{target.value.lower()}", message, metadata)
     db.commit()
 
-    # A finished job has no further use for its credential. Purging here rather
-    # than at each call site means every terminal path is covered, including the
-    # ones that fail.
+    # A failed/rejected/exhausted job has no further use for its credential.
+    # A completed job may still be reprocessed, so the PAT stays until that
+    # slot is used. Engine and model are never deleted here.
     if target.is_terminal:
-        _purge_runtime_files(job.id)
+        _release_runtime_after_terminal(job)
         # Same reasoning for the webhook: one place, every terminal path.
         try:
             from app.services.scheduler import notify_job_finished
@@ -352,18 +399,19 @@ def create_job(
     requirement_path.write_text(requirement, encoding="utf-8")
 
     # Engine, model and credential are staged *outside* the workspace: every
-    # file inside it is reachable through the artifacts endpoint.
+    # file inside it is reachable through the artifacts endpoint. Always write
+    # the effective engine so a later reprocess cannot fall back to whatever
+    # the process default happens to be then.
+    effective_engine = engine or settings.engine
     _write_runtime_files(
         job.id,
-        engine=engine,
+        engine=effective_engine,
         copilot_model=copilot_model,
         github_token=github_token,
     )
 
     job.input_location = str(requirement_path)
     job.output_location = str(workspace / "output")
-
-    effective_engine = engine or settings.engine
     event_metadata = {
         "executor": settings.executor,
         "engine": effective_engine,
@@ -404,7 +452,30 @@ def create_job(
 
 #: Lines the runner emits that mark a phase boundary. The runner is the single
 #: source of truth for progress; the orchestrator only transcribes it.
-_PHASE_START = re.compile(r"(?:Phase\s+(\d+)(?:/(\d+))?|Evaluation)\s+([a-zA-Z0-9_-]+)")
+#:
+#: Anchored at the start of the line (after an optional timestamp) so Copilot
+#: stdout dumped into the same log cannot invent stages from prose that happens
+#: to contain the word "Phase".
+#: `Phase n/m <agent>` — the numbered form both runners use. The `n/m` is what
+#: makes it unambiguous, so the agent id may be any word.
+_PHASE_NUMBERED = re.compile(
+    r"^(?:\[[\d:]+\]\s*)?Phase\s+(\d+)/(\d+)\s+([A-Za-z0-9][A-Za-z0-9_-]*)(?=\s|$)"
+)
+
+#: `Phase 0  <agent>` and `Evaluation  <agent>` — the bespoke chain's two
+#: unnumbered lines. With no `n/m` to key on, the name itself has to carry the
+#: evidence, so it must look like an agent id: kebab-case, at least one hyphen.
+#: Prose reaches this log too — the runner tees Copilot's stdout into it — and
+#: "Phase 2 of the design should introduce a reviewer" would otherwise register
+#: a stage called "of", which then sits unfinished for the rest of the run.
+_PHASE_NAMED = re.compile(
+    r"^(?:\[[\d:]+\]\s*)?(?:Phase\s+(\d+)|Evaluation)\s+"
+    r"([A-Za-z0-9]+(?:-[A-Za-z0-9]+)+)(?=\s|$)"
+)
+
+#: How each agent in the *bespoke* chain announces its own result. Every one
+#: reports a different kind of thing — a rating, a count, a gate verdict — so
+#: there is no way to read them generically, and each needs its own pattern.
 _PHASE_DONE = {
     "ocr-extractor": re.compile(r"ocr extraction complete\s*(.+)"),
     "requirement-analyst": re.compile(r"quality:\s*(.+)"),
@@ -414,6 +485,29 @@ _PHASE_DONE = {
     "test-evaluator": re.compile(r"evaluation:\s*(.+)"),
     "gap-closer": re.compile(r"gap closure complete:\s*(.+)"),
 }
+
+#: How the *generic* runner announces a stage boundary. It names the agent in
+#: the line itself, so one pattern closes any stage — including every workflow
+#: onboarded as data, which by definition has no entry in the table above.
+#:
+#: Without this, a declarative workflow emitted `phase.started` for each stage
+#: and never anything else, so the job page showed every stage that had begun as
+#: still running, all at once, for the rest of the run. The final run record
+#: corrected it on completion, which is exactly when nobody needed it any more.
+_STAGE_DONE = re.compile(
+    r"^(?:\[[\d:]+\]\s*)?stage (?P<outcome>complete|failed):\s*(?P<stage>\S+)\s+\((?P<agent>[^)]+)\)"
+    r"(?:\s+(?:in|after)\s+(?P<ms>\d+)ms)?(?::\s*(?P<reason>.+))?$"
+)
+
+#: Stages the generic runner announces but will not run. Both lines also match
+#: `_PHASE_START`, so they are tested first — otherwise a skipped stage is
+#: marked running and never closed.
+_PHASE_SKIPPED = re.compile(
+    r"^(?:\[[\d:]+\]\s*)?Phase\s+\d+(?:/\d+)?\s+([a-zA-Z0-9_-]+)\s*[—-]\s*skipped:\s*(.+)"
+)
+_PHASE_RESUMED = re.compile(
+    r"^(?:\[[\d:]+\]\s*)?Phase\s+\d+(?:/\d+)?\s+([a-zA-Z0-9_-]+)\s+\(already done\)"
+)
 
 #: How often to re-read the runner's log while a job is in flight.
 PROGRESS_POLL_SECONDS = float(os.getenv("PROGRESS_POLL_SECONDS", "2"))
@@ -469,11 +563,30 @@ class ProgressWatcher(threading.Thread):
             self._consume(line)
 
     def _consume(self, line: str) -> None:
-        start = _PHASE_START.search(line)
-        if start:
-            index_str, total_str, name = start.group(1), start.group(2), start.group(3)
-            index = int(index_str) if index_str else 1
-            total = int(total_str) if total_str else 1
+        # Tested before the start patterns, which these lines also match: a
+        # stage announced and then not run must not be left marked as running.
+        skipped = _PHASE_SKIPPED.search(line)
+        if skipped:
+            self._close(skipped.group(1), "skipped", skipped.group(2).strip())
+            return
+
+        resumed = _PHASE_RESUMED.search(line)
+        if resumed:
+            self._close(resumed.group(1), "completed", "resumed from a previous attempt")
+            return
+
+        numbered = _PHASE_NUMBERED.search(line)
+        named = None if numbered else _PHASE_NAMED.search(line)
+        if numbered or named:
+            if numbered:
+                index = int(numbered.group(1))
+                total = int(numbered.group(2))
+                name = numbered.group(3)
+            else:
+                assert named is not None  # narrowed by the branch above
+                index = int(named.group(1)) if named.group(1) else 1
+                total = 1
+                name = named.group(2)
             key = f"start:{name}:{index}"
             if key not in self._seen:
                 self._seen.add(key)
@@ -485,19 +598,41 @@ class ProgressWatcher(threading.Thread):
                 )
             return
 
+        # The generic runner names its own agent, so this closes the right stage
+        # even when several ran concurrently in one wave and `_current` is only
+        # the last of them.
+        done = _STAGE_DONE.search(line)
+        if done:
+            reason = (done.group("reason") or "").strip()
+            duration = f"{done.group('ms')}ms" if done.group("ms") else ""
+            detail = reason or duration or done.group("stage")
+            self._close(
+                done.group("agent").strip(),
+                "completed" if done.group("outcome") == "complete" else "failed",
+                detail,
+            )
+            return
+
         if self._current:
             pattern = _PHASE_DONE.get(self._current)
             if pattern:
-                done = pattern.search(line)
-                if done:
-                    key = f"done:{self._current}"
-                    if key not in self._seen:
-                        self._seen.add(key)
-                        self._emit(
-                            "phase.completed",
-                            f"{self._current} — {done.group(1).strip()}",
-                            {"phase": self._current, "detail": done.group(1).strip()},
-                        )
+                found = pattern.search(line)
+                if found:
+                    self._close(self._current, "completed", found.group(1).strip())
+
+    def _close(self, phase: str, outcome: str, detail: str) -> None:
+        """Emit the terminal event for one stage, at most once."""
+        key = f"done:{phase}"
+        if key in self._seen:
+            return
+        self._seen.add(key)
+        if self._current == phase:
+            self._current = None
+        self._emit(
+            f"phase.{outcome}",
+            f"{phase} — {detail}" if detail else phase,
+            {"phase": phase, "detail": detail, "status": outcome},
+        )
 
     def _emit(self, event_type: str, message: str, metadata: dict[str, Any]) -> None:
         with session_scope() as db:
@@ -681,18 +816,34 @@ def execute_claimed(job_id: str) -> None:
         status = job.status
         approved = job.approved_at is not None
         reprocessing = job.reprocess_count > 0 and job.evaluation is not None
+        workflow = job.workflow if job else ""
+
+    definition = _workflow_or_default(workflow)
+    has_approval_gate = bool(definition.get("approval_gate"))
 
     if status is JobStatus.QUEUED:
         run_job(job_id)
         return
 
-    if status is JobStatus.RUNNING and approved:
-        run_generation(job_id, reprocess=reprocessing)
-        return
+    if status is JobStatus.RUNNING:
+        if has_approval_gate and approved:
+            run_generation(job_id, reprocess=reprocessing)
+            return
+        if not has_approval_gate:
+            _guarded(job_id, _run_declarative_workflow)
+            return
 
-    logger.info(
-        "claimed job %s is %s with nothing owed — releasing it", job_id, status.value
+    logger.warning(
+        "claimed job %s is %s with nothing owed — marking FAILED to prevent worker spin",
+        job_id,
+        status.value,
     )
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        if job is not None and not job.status.is_terminal:
+            job.error_message = f"Job was in state {status.value} with no pending actions."
+            job.completed_at = utcnow()
+            transition(db, job, JobStatus.FAILED, "No pending actions for claimed job")
 
 
 def run_job(job_id: str) -> None:
@@ -740,35 +891,24 @@ def _run_declarative_workflow(job_id: str) -> None:
         transition(db, job, JobStatus.RUNNING, f"Running workflow {workflow}")
 
     result = _run_stage(job_id, "workflow")
+    metadata = _read_runner_metadata(workspace)
 
     with session_scope() as db:
         job = db.get(Job, job_id)
         if job is None or job.status.is_terminal:
             return
+        if metadata:
+            job.provenance = _provenance_from_metadata(metadata)
         if result.exit_code == 124:
             job.error_message = result.detail
             transition(db, job, JobStatus.TIMEOUT, result.detail)
             return
         transition(db, job, JobStatus.VALIDATING, "Runner finished, collecting output")
 
-    metadata = _read_json(workspace / "run_metadata.json") or _read_json(
-        workspace / "output" / "run_metadata.json"
-    )
-
     with session_scope() as db:
         job = db.get(Job, job_id)
         if job is None or job.status.is_terminal:
             return
-
-        if metadata:
-            job.provenance = {
-                key: metadata.get(key)
-                for key in (
-                    "workflow_id", "engine", "stages", "total_duration_ms",
-                    "runner_version", "skill_version",
-                )
-                if key in metadata
-            }
 
         if not result.succeeded:
             # Lead with what the agent actually said. The runner's own exit code
@@ -800,6 +940,24 @@ def _run_declarative_workflow(job_id: str) -> None:
             metadata,
         )
         transition(db, job, JobStatus.COMPLETED, "Workflow completed successfully")
+
+
+def _read_runner_metadata(workspace: Path) -> dict[str, Any] | None:
+    """The generic runner's record, written after every stage and at the end."""
+    return _read_json(workspace / "run_metadata.json") or _read_json(
+        workspace / "output" / "run_metadata.json"
+    )
+
+
+def _provenance_from_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: metadata.get(key)
+        for key in (
+            "workflow_id", "engine", "stages", "total_duration_ms",
+            "runner_version", "skill_version",
+        )
+        if key in metadata
+    }
 
 
 def _collect_primary_output(workspace: Path, workflow: str) -> dict[str, Any] | None:
@@ -988,6 +1146,9 @@ def approve_job(db: Session, job: Job, approved_by: str) -> Job:
         )
     job.approved_at = utcnow()
     job.approved_by = approved_by
+    # Generation is new work, not a retry of the analysis that just succeeded.
+    # See `start_reprocess` for why the counter has to be released here.
+    job.attempt = 0
     transition(db, job, JobStatus.RUNNING, f"Requirement approved by {approved_by}")
     return job
 
@@ -1019,8 +1180,28 @@ def start_reprocess(db: Session, job: Job) -> Job:
     if not job.evaluation:
         raise JobError("No evaluation to reprocess against", status_code=409)
 
+    # Restage *before* the job becomes claimable. Workers read engine from the
+    # runtime directory; if this is missing they fall back to the process
+    # default, which is mock.
+    _restage_runtime_for_reprocess(job)
+
     job.reprocess_count += 1
     job.error_message = None
+    # `attempt` is the queue's crash budget: how many times a worker has picked
+    # this row up *without finishing the work it was picked up for*. It is not a
+    # count of how often the row has ever run.
+    #
+    # Nothing reset it, so the two meanings collapsed — and the normal
+    # lifecycle of a gated workflow needs two claims (analyse, then generate
+    # after approval), which is exactly MAX_ATTEMPTS. A healthy job therefore
+    # reached its crash limit by *succeeding*, and the next claim — this
+    # reprocess — was refused before it ran with "exceeded MAX_ATTEMPTS (2)".
+    # The same arithmetic meant a worker dying during generation was never
+    # retried either: the budget for the most expensive stage was already spent.
+    #
+    # A reprocess is fresh work a person asked for, so it starts with a full
+    # budget.
+    job.attempt = 0
     transition(
         db, job, JobStatus.RUNNING,
         f"Reprocessing to close {len(job.evaluation.get('gaps', []))} gap(s)",

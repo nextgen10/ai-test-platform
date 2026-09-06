@@ -15,20 +15,6 @@ from app.executors.base import ExecutionResult
 from app.executors import runtime as exec_runtime
 
 
-def _runtime_value(job_id: str, name: str) -> str | None:
-    """Read one per-job control file from the runtime directory.
-
-    These live outside the workspace on purpose: everything inside a workspace
-    is downloadable through the artifacts endpoint, and one of these is a
-    credential.
-    """
-    path = settings.runtime_for(job_id) / name
-    if not path.is_file():
-        return None
-    value = path.read_text(encoding="utf-8").strip()
-    return value or None
-
-
 class LocalExecutor:
     name = "local"
 
@@ -44,10 +30,7 @@ class LocalExecutor:
         log_path = workspace / "output" / "execution.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-        job_engine = settings.engine
-        override_engine = _runtime_value(job_id, "engine")
-        if override_engine in {"mock", "copilot"}:
-            job_engine = override_engine
+        job_engine = exec_runtime.resolve_job_engine(job_id)
 
         env = os.environ.copy()
         env.update(
@@ -62,14 +45,17 @@ class LocalExecutor:
                 "PYTHONUNBUFFERED": "1",
                 "STAGE": stage,
                 "REPROCESS": "1" if reprocess else "0",
+                # So the runner can stop inside the limit and write its record,
+                # rather than being killed at it with nothing to show.
+                "JOB_TIMEOUT_SECONDS": str(settings.job_timeout_seconds),
             }
         )
 
-        model = _runtime_value(job_id, "copilot_model")
+        model = exec_runtime.runtime_value(job_id, "copilot_model")
         if model:
             env["COPILOT_MODEL"] = model
 
-        token = _runtime_value(job_id, "copilot_token") or (
+        token = exec_runtime.runtime_value(job_id, "copilot_token") or (
             env.get("COPILOT_GITHUB_TOKEN") or env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")
         )
         if token:

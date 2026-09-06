@@ -1,0 +1,35 @@
+id: incident-postmortem
+name: Incident Post-Mortem Generator
+description: Reads an incident timeline and produces a blameless post-mortem report by extracting the sequence of events, analyzing contributing factors and customer impact in parallel, then merging into a final report with action items.
+version: "1.0"
+runner: generic
+agents:
+  - id: event-extractor
+    stage: extraction
+    optional: false
+    description: Reads the incident timeline and extracts a structured, chronological sequence of events.
+    depends_on: []
+
+  - id: contributing-factors-analyzer
+    stage: factors-analysis
+    optional: false
+    description: Analyzes the extracted event sequence to identify contributing factors and root causes in a blameless manner.
+    depends_on: [extraction]
+
+  - id: customer-impact-analyzer
+    stage: impact-analysis
+    optional: false
+    description: Analyzes the extracted event sequence to assess customer impact, including scope, duration, and severity.
+    depends_on: [extraction]
+
+  - id: postmortem-merger
+    stage: merge
+    optional: false
+    description: Merges the event timeline, contributing factors, and customer impact analyses into a final blameless post-mortem report with actionable follow-up items.
+    depends_on: [factors-analysis, impact-analysis]
+input:
+  type: text
+  label: Incident Timeline
+output:
+  type: markdown
+  primary_artifact: output/postmortem-report.md

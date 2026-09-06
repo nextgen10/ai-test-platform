@@ -30,9 +30,14 @@ function lanIpv4() {
     return [...new Set(ips)];
 }
 
+const devArgs = [nextBin, 'dev', '--hostname', '0.0.0.0', '--port', String(port)];
+if (process.env.TURBOPACK === '1') {
+    devArgs.splice(2, 0, '--turbopack');
+}
+
 const child = spawn(
     process.execPath,
-    [nextBin, 'dev', '--turbopack', '--hostname', '0.0.0.0', '--port', String(port)],
+    devArgs,
     { stdio: 'inherit', cwd: frontendDir, env: process.env },
 );
 

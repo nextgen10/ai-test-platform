@@ -1,10 +1,11 @@
 'use client';
+
 import * as React from 'react';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { getUnifiedTheme } from '@/theme';
-import { ThemeModeProvider, useThemeMode } from '@/contexts/ThemeContext';
+import { ThemeModeProvider, useThemeMode, type ColorMode } from '@/contexts/ThemeContext';
 
 function ThemeRegistryContent({ children }: { children: React.ReactNode }) {
     const { mode } = useThemeMode();
@@ -12,6 +13,7 @@ function ThemeRegistryContent({ children }: { children: React.ReactNode }) {
 
     React.useEffect(() => {
         document.documentElement.setAttribute('data-theme', mode);
+        document.documentElement.style.colorScheme = mode;
     }, [mode]);
 
     return (
@@ -22,10 +24,16 @@ function ThemeRegistryContent({ children }: { children: React.ReactNode }) {
     );
 }
 
-export default function ThemeRegistry({ children }: { children: React.ReactNode }) {
+export default function ThemeRegistry({
+    children,
+    initialMode = 'light',
+}: {
+    children: React.ReactNode;
+    initialMode?: ColorMode;
+}) {
     return (
         <AppRouterCacheProvider>
-            <ThemeModeProvider>
+            <ThemeModeProvider initialMode={initialMode}>
                 <ThemeRegistryContent>{children}</ThemeRegistryContent>
             </ThemeModeProvider>
         </AppRouterCacheProvider>

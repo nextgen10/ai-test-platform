@@ -14,11 +14,13 @@ import {
   useTheme,
   alpha,
 } from '@mui/material';
-import { Plus, MessageSquare, Trash2 } from 'lucide-react';
+import { PanelLeftClose, Plus, MessageSquare, Trash2 } from 'lucide-react';
 import { useChatContext } from '@/contexts/ChatContext';
 
 interface SessionSidebarProps {
   onCloseMobile?: () => void;
+  /** Desktop: collapse this list so it is not a second icon on the console title. */
+  onCollapse?: () => void;
 }
 
 function relativeTime(iso: string): string {
@@ -31,7 +33,7 @@ function relativeTime(iso: string): string {
   return new Date(stamp).toLocaleDateString();
 }
 
-export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile }) => {
+export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile, onCollapse }) => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const {
@@ -80,6 +82,16 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
     <Box
       sx={{
         width: { xs: 280, md: 260 },
+        // A flex item's `min-width` defaults to `auto`, which resolves to its
+        // min-content width — so a long session title made this rail wider than
+        // the 260px declared above, shoved the transcript across, and pushed the
+        // row past a shell that clips horizontally. The nav, the selectors and
+        // this list then disappeared together with no scrollbar to get back.
+        // `noWrap` on the titles cannot prevent that on its own; the ancestor
+        // has to be allowed to shrink, and the overflow has to be clipped here.
+        flexShrink: 0,
+        minWidth: 0,
+        overflow: 'hidden',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -89,6 +101,32 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
       }}
     >
       <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+          {onCollapse && (
+            <Tooltip title="Hide sessions">
+              <IconButton
+                size="small"
+                aria-label="Hide sessions"
+                onClick={onCollapse}
+                sx={{ color: 'text.secondary', p: 0.5, ml: -0.5 }}
+              >
+                <PanelLeftClose size={16} />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 500,
+              color: 'text.secondary',
+              fontSize: '0.72rem',
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}
+          >
+            Sessions
+          </Typography>
+        </Box>
         <Button
           fullWidth
           variant="contained"
@@ -117,23 +155,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
         )}
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 1 }}>
-        <Typography
-          variant="caption"
-          sx={{
-            px: 1,
-            py: 0.5,
-            display: 'block',
-            fontWeight: 500,
-            color: 'text.secondary',
-            fontSize: '0.72rem',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-          }}
-        >
-          Sessions
-        </Typography>
-
+      <Box sx={{ flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: 'auto', p: 1 }}>
         {query && hasMoreSessions && (
           <Typography
             variant="caption"
@@ -162,6 +184,7 @@ export const SessionSidebar: React.FC<SessionSidebarProps> = ({ onCloseMobile })
                     mb: 0.5,
                     px: 1.25,
                     py: 0.75,
+                    minWidth: 0,
                     bgcolor: isActive
                       ? isLight
                         ? alpha(theme.palette.primary.main, 0.1)

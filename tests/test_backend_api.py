@@ -239,3 +239,37 @@ A newly registered user must verify their email within 24 hours.
     stats_res = client.get("/api/v1/stats")
     assert stats_res.status_code == 200
     assert stats_res.json()["total_jobs"] >= 1
+
+
+def test_metrics_are_scrapeable_without_a_credential(anonymous, client):
+    """A scraper is infrastructure, not a user.
+
+    Metrics behind a token are metrics nobody collects: the scrape config is
+    written long before anyone thinks about credentials, and every sample here
+    is a count — no requirement text, no job ids, no principal names.
+    """
+    client.post(
+        "/api/v1/jobs",
+        json={
+            "requirement": (
+                "REQ-METRICS Scrape target\n\n"
+                "The orchestrator must expose queue depth and job state counts "
+                "so an operator can see whether work is draining."
+            ),
+            "workflow": "test-case-generation",
+        },
+    )
+
+    res = anonymous.get("/api/v1/metrics")
+    assert res.status_code == 200
+    # Prometheus drops every sample of a body served without the version.
+    assert "version=0.0.4" in res.headers["content-type"]
+
+    body = res.text
+    assert "# TYPE agent_hub_jobs_total gauge" in body
+    assert "agent_hub_queue_waiting" in body
+    assert "agent_hub_build_info" in body
+    # Every state is present even at zero: a series that only appears once
+    # something fails is a series no alert can be written against.
+    for state in ("QUEUED", "FAILED", "COMPLETED", "AWAITING_APPROVAL"):
+        assert f'agent_hub_jobs_total{{status="{state}"}}' in body

@@ -23,16 +23,18 @@ What it owns:
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import random
 import re
 import shlex
 import shutil
 import subprocess
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Callable, Sequence
 
 try:
     from agent_io import FatalAgentError
@@ -45,7 +47,17 @@ except ImportError:  # pytest loads this as runner.copilot_cli
 #: objects holding two different classes of the same name. Anything catching
 #: what this module raises must name it from here, so it catches the one that
 #: is actually thrown.
-__all__ = ["FatalAgentError", "CliResult", "invoke", "build_command", "allow_tool_flags"]
+__all__ = [
+    "FatalAgentError",
+    "CliResult",
+    "invoke",
+    "build_command",
+    "allow_tool_flags",
+    "classify",
+    "effective_model",
+    "model_was_rejected",
+    "remember_model_rejection",
+]
 
 _log: Callable[[str], None] = print
 
@@ -68,7 +80,41 @@ AGENT_TIMEOUT_SECONDS = int(os.getenv("AGENT_TIMEOUT_SECONDS", "300"))
 #: into a run that hangs around for a quarter of an hour before admitting it.
 MAX_CLI_ATTEMPTS = int(os.getenv("COPILOT_MAX_ATTEMPTS", "3"))
 
+#: How often a still-running invocation writes a line to the job log. Zero
+#: disables it. Without this a five-minute Copilot call looks frozen: the
+#: runner prints nothing between "exec:" and the agent's exit.
+HEARTBEAT_SECONDS = float(os.getenv("COPILOT_HEARTBEAT_SECONDS", "30"))
+
 RETRY_BASE_SECONDS = float(os.getenv("COPILOT_RETRY_BASE_SECONDS", "3"))
+
+#: Too little time left to be worth starting an agent: it would be killed
+#: mid-write, leaving a truncated artifact for the next stage to read.
+MIN_INVOCATION_SECONDS = 20
+
+#: When the run must be finished, as a monotonic timestamp. None means no limit,
+#: which is what the Agent Lab and a hand-run runner want.
+_DEADLINE: float | None = None
+
+
+def set_deadline(seconds: float | None) -> None:
+    """Bound the whole run, not just each invocation.
+
+    Every executor kills the runner at ``JOB_TIMEOUT_SECONDS``, and the retry
+    budget (attempts x contract corrections x per-agent timeout) can be several
+    times that. The run was therefore killed mid-stage with no run record,
+    losing both the artifacts it had produced and any account of why — while
+    the retries it was promised could never have completed.
+
+    Knowing the deadline lets a run stop starting work it cannot finish and
+    fail with its phases intact instead.
+    """
+    global _DEADLINE
+    _DEADLINE = time.monotonic() + seconds if seconds and seconds > 0 else None
+
+
+def remaining_seconds() -> float | None:
+    """Seconds left in the run's budget, or None when it is unbounded."""
+    return None if _DEADLINE is None else _DEADLINE - time.monotonic()
 
 
 def copilot_bin() -> str:
@@ -105,11 +151,15 @@ _TRANSIENT = re.compile(
     re.I,
 )
 
-#: Not worth another attempt: no retry produces a token, a quota or a binary.
+#: Not worth another attempt: no retry produces a token, a quota, a binary — or
+#: an agent definition that was never staged. The last one used to be classified
+#: as unknown and retried, so a staging failure cost every stage three
+#: invocations and two backoffs before saying so.
 _FATAL = re.compile(
     r"authentication failed|no authentication information|not (logged in|"
     r"authenticated)|invalid token|bad credentials|\b401\b|\b403\b|"
-    r"quota|no requests left|permission.*denied.*token",
+    r"quota|no requests left|permission.*denied.*token|"
+    r"no such agent|unknown agent|agent .* not found",
     re.I,
 )
 
@@ -179,10 +229,11 @@ def allow_tool_flags(declared: Sequence[str] | None, *, writes_artifact: bool) -
 
 # ------------------------------------------------------------------- the call
 
-#: Models an account has already rejected. Remembered for the process so the
+#: ``(model, account)`` pairs already refused. Remembered for the process so the
 #: rejection is paid once, not once per stage — the logs used to show the same
-#: five-second "[Model Fallback]" dance before every single agent.
-_REJECTED_MODELS: set[str] = set()
+#: five-second "[Model Fallback]" dance before every single agent — and paired
+#: with the account so it does not outlive the token it belongs to.
+_REJECTED_MODELS: set[tuple[str, str]] = set()
 
 _MODEL_ALIASES = {
     "claude-sonnet-4.5": "claude-sonnet-4.5",
@@ -208,15 +259,68 @@ def effective_model(model: str | None) -> str | None:
     if raw.lower() in _UNSET:
         return None
     resolved = _MODEL_ALIASES.get(raw.lower(), raw)
-    if resolved in _REJECTED_MODELS:
+    if (resolved, _account()) in _REJECTED_MODELS:
         return None
     return resolved
 
 
-def _model_was_rejected(message: str) -> bool:
+def is_explicit_model(model: str | None) -> bool:
+    """True when a specific model was asked for, rather than the account default.
+
+    Distinguishes "we sent no model" from "the model we sent was refused",
+    which :func:`effective_model` cannot: it answers None for both. A run that
+    never named a model was being reported as having fallen back from one.
+    """
+    raw = (model if model is not None else os.getenv("COPILOT_MODEL", "")).strip()
+    return bool(raw) and raw.lower() not in _UNSET
+
+
+def _account() -> str:
+    """A short, non-reversible tag for the token in the process environment.
+
+    A model rejection is a fact about an account, not about the platform, so it
+    is remembered against one. In the runner that is exact — each job syncs its
+    own token before invoking. Callers that hand the token only to the child
+    process share one tag, which is still consistent between remembering a
+    rejection and reading it back.
+    """
+    token = os.getenv("COPILOT_GITHUB_TOKEN") or os.getenv("GH_TOKEN") or ""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()[:12] if token else "-"
+
+
+def _remember_rejection(model: str) -> None:
+    _REJECTED_MODELS.add((model, _account()))
+
+
+def model_was_rejected(message: str) -> bool:
+    """Whether a failure message means "this account cannot use that model".
+
+    Public because the chat console needs the same reading: there, a rejected
+    model is a retry on the account default, not a failed turn.
+    """
     return bool(
-        re.search(r"from --model flag is not available|model .* (is )?not (available|permitted|supported)", message, re.I)
+        re.search(
+            r"from --model flag is not available|"
+            r"model .* (is )?not (available|permitted|supported)",
+            message,
+            re.I,
+        )
     )
+
+
+def remember_model_rejection(model: str) -> None:
+    """Stop offering a model the account has already refused.
+
+    Records it the way :func:`effective_model` reads it — against the account
+    whose token was refused. A bare model name would never match, so the
+    rejection would be remembered and then never consulted.
+    """
+    if model:
+        _remember_rejection(model)
+
+
+#: Kept as the old private name; several call sites predate the public one.
+_model_was_rejected = model_was_rejected
 
 
 @dataclass
@@ -294,10 +398,30 @@ def invoke(
     if env:
         environment.update(env)
 
-    seconds = timeout or AGENT_TIMEOUT_SECONDS
+    configured = timeout or AGENT_TIMEOUT_SECONDS
     last_error = ""
+    total = max(1, MAX_CLI_ATTEMPTS)
+    attempt = 0
+    #: The free pass for dropping a rejected model is given once. Remembering
+    #: the rejection already prevents a second one, but a loop that can add
+    #: attempts is worth making structurally unable to run away.
+    model_dropped = False
 
-    for attempt in range(1, max(1, MAX_CLI_ATTEMPTS) + 1):
+    while attempt < total:
+        attempt += 1
+        seconds = configured
+        budget = remaining_seconds()
+        if budget is not None:
+            if budget < MIN_INVOCATION_SECONDS:
+                raise FatalAgentError(
+                    f"The job's time budget is exhausted; {agent_id!r} was not "
+                    f"started. Raise JOB_TIMEOUT_SECONDS, or narrow the input so "
+                    f"there is less work per agent."
+                )
+            # Better to let the agent be cut short by its own timeout, which is
+            # reported, than by the executor killing the process, which is not.
+            seconds = int(min(seconds, budget))
+
         resolved = effective_model(model)
         cmd = build_command(
             agent_id=agent_id,
@@ -309,30 +433,26 @@ def invoke(
             model=model,
         )
         suffix = f" (model {resolved})" if resolved else ""
-        retry = f" [attempt {attempt}/{MAX_CLI_ATTEMPTS}]" if attempt > 1 else ""
+        retry = f" [attempt {attempt}/{total}]" if attempt > 1 else ""
         log(f"  exec: {copilot_bin()} --agent {agent_id}{suffix}{retry}")
 
         try:
-            proc = subprocess.run(
-                cmd,
-                cwd=str(workspace),
-                env=environment,
-                capture_output=True,
-                text=True,
-                timeout=seconds,
-            )
+            proc = _run_cli(cmd, workspace, environment, seconds, agent_id)
         except FileNotFoundError as exc:
             raise FatalAgentError(
                 f"Copilot CLI not found (looked for {copilot_bin()!r}). Install it, "
                 f"set $COPILOT_BIN, or run with ENGINE=mock."
             ) from exc
         except subprocess.TimeoutExpired:
+            # A full timeout is not a dropped connection. Retrying it used to
+            # turn one hung agent into three sequential 300s waits — a builder
+            # run of four agents could sit there for the whole job budget
+            # looking stuck, then die of TIMEOUT with nothing to show.
             last_error = f"Agent {agent_id!r} exceeded {seconds}s"
-            if attempt < MAX_CLI_ATTEMPTS:
-                log(f"  {last_error} — retrying")
-                _backoff(attempt)
-                continue
-            raise RuntimeError(last_error) from None
+            raise FatalAgentError(
+                f"{last_error}. The agent was not retried — a full timeout is "
+                f"the model not finishing, not a blip."
+            ) from None
 
         if log_output and proc.stdout:
             for line in proc.stdout.splitlines()[-40:]:
@@ -345,9 +465,16 @@ def invoke(
             f"Agent {agent_id!r} exited {proc.returncode} with no output"
         )
 
-        # A rejected model is not a failed run: drop it and go again immediately.
+        # A rejected model is not a failed attempt: the same request without
+        # --model is a different, cheaper one, and it has not been tried yet.
+        # Charging it an attempt meant a run that had spent its budget on
+        # transient failures died reporting "model not available" without ever
+        # asking for the account default.
         if resolved and _model_was_rejected(last_error):
-            _REJECTED_MODELS.add(resolved)
+            _remember_rejection(resolved)
+            if not model_dropped:
+                model_dropped = True
+                attempt -= 1
             log(
                 f"  model {resolved!r} is not available on this account; "
                 f"falling back to the account default for the rest of this run"
@@ -357,7 +484,7 @@ def invoke(
         kind = classify(last_error)
         if kind == "fatal":
             raise FatalAgentError(_tail(last_error))
-        if attempt < MAX_CLI_ATTEMPTS:
+        if attempt < total:
             log(f"  {agent_id}: {kind} failure — retrying ({_tail(last_error, 1)})")
             _backoff(attempt)
             continue
@@ -365,9 +492,51 @@ def invoke(
     raise RuntimeError(f"Agent {agent_id!r} failed: {_tail(last_error)}")
 
 
+def _run_cli(
+    cmd: list[str],
+    workspace: Path,
+    environment: dict[str, str],
+    seconds: int,
+    agent_id: str,
+) -> subprocess.CompletedProcess:
+    """One CLI invocation, with a heartbeat so a long call is not silent."""
+    stop = threading.Event()
+    started = time.monotonic()
+    interval = HEARTBEAT_SECONDS
+
+    def beat() -> None:
+        if interval <= 0:
+            return
+        while not stop.wait(interval):
+            elapsed = int(time.monotonic() - started)
+            log(f"  {agent_id}: still running ({elapsed}s)")
+
+    thread = threading.Thread(target=beat, name=f"heartbeat-{agent_id}", daemon=True)
+    thread.start()
+    try:
+        return subprocess.run(
+            cmd,
+            cwd=str(workspace),
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=seconds,
+        )
+    finally:
+        stop.set()
+
+
 def _backoff(attempt: int) -> None:
-    """Exponential, with jitter so parallel stages do not retry in lockstep."""
-    time.sleep(RETRY_BASE_SECONDS * (2 ** (attempt - 1)) * (0.5 + random.random()))
+    """Exponential, with jitter so parallel stages do not retry in lockstep.
+
+    Never sleeps past the run's deadline: waiting out a budget that has already
+    expired spends the last of it on nothing.
+    """
+    delay = RETRY_BASE_SECONDS * (2 ** (attempt - 1)) * (0.5 + random.random())
+    budget = remaining_seconds()
+    if budget is not None:
+        delay = min(delay, max(0.0, budget - MIN_INVOCATION_SECONDS))
+    time.sleep(delay)
 
 
 def _tail(message: str, lines: int = 10) -> str:
@@ -379,3 +548,20 @@ def reset_model_fallback() -> None:
     """Forget which models were rejected. For tests, and for a long-lived server
     that should not carry one account's rejection into another's run."""
     _REJECTED_MODELS.clear()
+
+
+# ---------------------------------------------------------------- one identity
+
+# This module is reachable under two names: ``copilot_cli`` (the runner directory is
+# on sys.path inside the container, and the backend adds it) and
+# ``runner.copilot_cli`` (the test suite imports it as a package). Python treats
+# those as two separate modules, each with its own copy of everything at module
+# scope — so patching one leaves the other live, an exception raised through one
+# is not caught by the other, and module-level state diverges silently.
+#
+# Registering both names against this single object removes the ambiguity:
+# whichever name a caller uses, it gets this module.
+import sys as _sys
+
+for _alias in ("copilot_cli", "runner.copilot_cli"):
+    _sys.modules.setdefault(_alias, _sys.modules[__name__])

@@ -58,7 +58,7 @@ const LEGACY_BESPOKE_PHASES: Phase[] = [
     { key: 'test-reviewer', label: 'Review & validation' },
 ];
 
-const LEGACY_BESPOKE_WORKFLOW = 'test-case-generation';
+export const BESPOKE_WORKFLOW_ID = 'test-case-generation';
 
 /** The synthetic phase for a workflow that pauses for a human. */
 export const APPROVAL_KEY = '__approval__';
@@ -105,13 +105,21 @@ function buildPhases(job: Job, workflow: Workflow | null | undefined, recorded: 
                 hint: agent.description,
             });
         }
-    } else if (!workflow && recorded.length === 0 && job.workflow === LEGACY_BESPOKE_WORKFLOW) {
+    } else if (!workflow && recorded.length === 0 && job.workflow === BESPOKE_WORKFLOW_ID) {
         for (const phase of LEGACY_BESPOKE_PHASES) push(phase);
     }
 
     for (const record of recorded) {
         const key = String(record.agent_id ?? record.stage ?? '');
         push({ key, label: humanise(String(record.stage ?? record.agent_id ?? key)) });
+    }
+
+    // Live events are the only signal mid-run: the generic runner writes its
+    // provenance record once, at the end. Without this a builder job whose
+    // catalog fetch has not landed yet still has a pipeline to draw.
+    for (const event of job.events ?? []) {
+        const name = String(event.event_metadata?.phase ?? '');
+        push({ key: name, label: humanise(name) });
     }
 
     // The human gate is not an agent, so no stage list contains it. Place it
@@ -123,6 +131,25 @@ function buildPhases(job: Job, workflow: Workflow | null | undefined, recorded: 
     }
 
     return phases;
+}
+
+/**
+ * Map a runner signal onto a declared phase.
+ *
+ * The progress watcher records `agent_id` (`workflow-architect`). Some UIs and
+ * older records key by the workflow's `stage` (`architect`). Both have to
+ * light the same row.
+ */
+function resolvePhaseKey(
+    name: string,
+    phases: Phase[],
+    workflow?: Workflow | null,
+): string | undefined {
+    if (!name) return undefined;
+    if (phases.some((p) => p.key === name)) return name;
+    const agent = (workflow?.agents ?? []).find((a) => a.id === name || a.stage === name);
+    if (agent && phases.some((p) => p.key === agent.id)) return agent.id;
+    return undefined;
 }
 
 /** Collapse the reviewer's stats line into something that fits one row. */
@@ -157,32 +184,37 @@ export function derivePhases(job: Job, workflow?: Workflow | null): DerivedPhase
 
     // Live events first: they are the only signal mid-run.
     for (const event of job.events ?? []) {
-        const name = (event.event_metadata?.phase as string) ?? '';
-        if (!(name in states)) continue;
+        const key = resolvePhaseKey(String(event.event_metadata?.phase ?? ''), phases, workflow);
+        if (!key || !(key in states)) continue;
+        const detail = tidy((event.event_metadata?.detail as string) ?? '');
         if (event.event_type === 'phase.started') {
-            states[name] = { state: 'running', detail: '' };
+            states[key] = { state: 'running', detail: '' };
         } else if (event.event_type === 'phase.completed') {
-            states[name] = {
-                state: 'completed',
-                detail: tidy((event.event_metadata?.detail as string) ?? ''),
-            };
+            states[key] = { state: 'completed', detail };
+        } else if (event.event_type === 'phase.failed') {
+            states[key] = { state: 'failed', detail };
+        } else if (event.event_type === 'phase.skipped') {
+            states[key] = { state: 'skipped', detail };
         }
     }
 
     // The bespoke runner writes `phases`; the generic one writes `stages`.
     // Both are authoritative once present, so they overwrite the live guess.
     for (const record of job.provenance?.phases ?? []) {
-        if (!(record.name in states)) continue;
+        const key = resolvePhaseKey(record.name, phases, workflow);
+        if (!key || !(key in states)) continue;
         const detail = tidy(record.detail || '');
         const duration = record.duration_ms ? formatDuration(record.duration_ms) : '';
-        states[record.name] = {
+        states[key] = {
             state: record.status === 'failed' ? 'failed' : 'completed',
             detail: duration ? (detail ? `${detail} · ${duration}` : duration) : detail,
         };
     }
 
     for (const record of recorded) {
-        const key = String(record.agent_id ?? record.stage ?? '');
+        const key =
+            resolvePhaseKey(String(record.agent_id ?? record.stage ?? ''), phases, workflow) ??
+            String(record.agent_id ?? record.stage ?? '');
         if (!(key in states)) continue;
 
         const bits: string[] = [];

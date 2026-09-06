@@ -182,19 +182,48 @@ Defenses, in depth:
 
 ## Authentication
 
-The orchestrator authenticates with bearer tokens (`AUTH_MODE=token`,
-`API_TOKENS="<token>:<name>:<role>"`). Roles are reader, operator, author, and
-admin. `AUTH_MODE=disabled` requires `ALLOW_INSECURE_AUTH=1` and is loopback-only.
+**There is none, deliberately.** The API serves every caller as an
+administrator (`AUTH_MODE=disabled`), the UI has no sign-in page, the BFF proxy
+forwards no credential, and the Kubernetes deploy mints no tokens. `/login`
+redirects home for the sake of old bookmarks.
 
-The UI never holds a shared cluster token in the browser:
+What the platform is protected by instead is reachability: a namespace with a
+default-deny NetworkPolicy and no ingress, or loopback when run locally. That
+is a deployment decision, not a code one — put an authenticating proxy in front
+of it before exposing it to a network you do not control.
 
-- **Local `./start.sh`** sets `UI_AUTH_MODE=shared` and attaches a minted
-  `API_TOKEN` in the Next.js BFF.
-- **Kubernetes** sets `UI_AUTH_MODE=session`. The visitor pastes their own API
-  token on `/login`; the BFF stores it in an httpOnly cookie and uses it as
-  Bearer on every orchestrator call.
+`AUTH_MODE=token` with `API_TOKENS="<token>:<name>:<role>"` remains implemented
+and tested, because the ownership model underneath it is load-bearing: every
+job and chat session records who created it, and the role ladder (reader,
+operator, author, admin) is what those checks are written against. Nothing
+ships in that mode, and no shipped client can present a credential.
 
-`/docs` and OpenAPI are off unless `ENABLE_DOCS=1` (or auth is disabled).
+`/docs` and OpenAPI are on when `ENABLE_DOCS=1` or auth is disabled.
+
+## Observability
+
+Three endpoints, answering three different questions:
+
+| Endpoint           | Question              | Depends on                        |
+| ------------------ | --------------------- | --------------------------------- |
+| `/api/v1/health`   | Is the process alive? | nothing                           |
+| `/api/v1/ready`    | Can it serve work?    | database, artifacts, hub, engine  |
+| `/api/v1/metrics`  | What is it doing?     | database                          |
+
+`/metrics` is Prometheus text format — jobs by state, queue depth, in-flight
+count, distinct active workers, mean completed duration, and a `build_info`
+series carrying the executor, engine and worker id so two differently
+configured replicas can be told apart on one graph. Every job state is emitted
+even at zero, because a series that only appears once something fails is a
+series no alert can be written against.
+
+It is unauthenticated for the same reason `/health` is: a scraper is
+infrastructure, and it reports counts only — no requirement text, no job ids,
+no principal names.
+
+Every request carries an `X-Request-ID` (generated, or echoed from the caller)
+that appears on every log line for that request and in the body of a 500, so a
+user-reported failure is greppable.
 
 ---
 

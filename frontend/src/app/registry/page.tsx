@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Container,
@@ -45,7 +45,7 @@ import {
   RefreshCw,
   AlertTriangle,
 } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { hubApi, type HubCatalog, type HubEntityType, type HubWorkflow } from '@/lib/hub-api';
 import { MarkdownRenderer } from '@/components/chat/MarkdownRenderer';
 import AgentTestDialog, { type HubAgentSummary } from '@/components/AgentTestDialog';
@@ -78,24 +78,13 @@ const PREVIEW_LANG: Record<HubEntityType, string> = {
 };
 
 export default function RegistryPage() {
-  return (
-    <Suspense
-      fallback={
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 12 }}>
-          <CircularProgress />
-        </Box>
-      }
-    >
-      <RegistryContent />
-    </Suspense>
-  );
+  return <RegistryContent />;
 }
 
 function RegistryContent() {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<TabKey>('agents');
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,11 +117,15 @@ function RegistryContent() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
+    // Read from `window.location`, not `useSearchParams`: that hook forces a
+// Suspense boundary, and a suspended subtree hydrates after its parent —
+// after the theme effect has swapped the palette — so the page hydrates in
+// one theme against server HTML rendered in the other.
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
     if (tabParam && (TAB_KEYS as string[]).includes(tabParam)) {
       setTab(tabParam as TabKey);
     }
-  }, [searchParams]);
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);

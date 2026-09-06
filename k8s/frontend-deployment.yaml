@@ -35,12 +35,10 @@ spec:
             - containerPort: 3100
               name: http
           env:
+            # The only thing the UI needs to know: where the orchestrator is.
+            # There is no login and no token — the proxy forwards no credential.
             - name: API_TARGET
               value: "http://ai-test-orchestrator"
-            # Browser callers must log in with their own API token. The BFF
-            # forwards that cookie; it does not impersonate a shared role.
-            - name: UI_AUTH_MODE
-              value: "session"
           resources:
             requests:
               cpu: 100m

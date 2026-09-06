@@ -162,7 +162,27 @@ def test_a_job_that_keeps_killing_its_worker_is_eventually_failed(operator, queu
     assert "attempted" in (after["error_message"] or "")
 
 
-def test_reclamation_does_not_rewind_an_approved_job(operator, worker):
+def _drive(job_id: str) -> None:
+    """Run whatever the job owes next, here and now.
+
+    Tests used to start a worker and poll for a status change with a wall-clock
+    deadline. That makes the suite's result depend on how busy the machine is —
+    one run reported a failure that sixteen reruns could not reproduce, which is
+    the worst kind of test: it costs a real investigation and yields nothing.
+
+    Claiming and executing synchronously exercises exactly the same code the
+    worker loop calls, and it either works or it does not.
+    """
+    from app.services import job_service
+
+    assert queue.claim(job_id), f"job {job_id} was not claimable"
+    try:
+        job_service.execute_claimed(job_id)
+    finally:
+        queue.release(job_id)
+
+
+def test_reclamation_does_not_rewind_an_approved_job(operator):
     """An approved job knocked back to QUEUED would re-run its analysis stage.
 
     Reclamation therefore clears only the lease and leaves status alone.
@@ -177,13 +197,8 @@ def test_reclamation_does_not_rewind_an_approved_job(operator, worker):
     )
     job_id = response.json()["job_id"]
 
-    import time
-
-    deadline = time.monotonic() + 40
-    while time.monotonic() < deadline:
-        if operator.get(f"/api/v1/jobs/{job_id}").json()["status"] == "AWAITING_APPROVAL":
-            break
-        time.sleep(0.1)
+    _drive(job_id)  # QUEUED -> analysis -> AWAITING_APPROVAL
+    assert operator.get(f"/api/v1/jobs/{job_id}").json()["status"] == "AWAITING_APPROVAL"
 
     operator.post(f"/api/v1/jobs/{job_id}/approve", json={"actor": "x"})
 
@@ -203,9 +218,131 @@ def test_reclamation_does_not_rewind_an_approved_job(operator, worker):
         assert job.status in (JobStatus.RUNNING, JobStatus.COMPLETED)
 
 
+def test_shutdown_hands_in_flight_work_straight_back(queued_job):
+    """A rolling update must not park a job for a whole lease period.
+
+    A replica going away stops renewing, so without this the job waits out
+    JOB_LEASE_SECONDS before any healthy replica may touch it — a planned
+    deploy would be slower to recover from than a crash.
+    """
+    with session_scope() as db:
+        job = db.get(Job, queued_job)
+        job.status = JobStatus.ANALYZING
+        job.lease_owner = queue.WORKER_ID
+        job.lease_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    assert queue.abandon_in_flight() >= 1
+
+    with session_scope() as db:
+        job = db.get(Job, queued_job)
+        # Back to a state `claim_next` actually looks at, with no owner. Left
+        # ANALYZING-with-no-lease it would be invisible to both the claimer and
+        # the reconciler, and would sit there for good.
+        assert job.status is JobStatus.QUEUED
+        assert job.lease_owner is None
+
+    assert queue.claim(queued_job, worker="a-healthy-replica")
+
+
+def test_shutdown_leaves_another_replica_s_work_alone(queued_job):
+    """Only this worker's jobs are handed back — never a peer's live work."""
+    with session_scope() as db:
+        job = db.get(Job, queued_job)
+        job.status = JobStatus.RUNNING
+        job.lease_owner = "another-replica"
+        job.lease_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+    queue.abandon_in_flight()
+
+    with session_scope() as db:
+        job = db.get(Job, queued_job)
+        assert job.lease_owner == "another-replica"
+
+
 def test_queue_endpoint_reports_depth(operator, queued_job):
     _unpark(queued_job)
     body = operator.get("/api/v1/queue").json()
     assert body["waiting"] >= 1
     assert "worker_id" in body
     assert body["lease_seconds"] > 0
+
+
+def test_a_normal_gated_lifecycle_does_not_spend_the_crash_budget(operator):
+    """Succeeding must not exhaust the retry budget.
+
+    `attempt` is how many times a worker took this row without finishing the
+    work it was taken for. A gated workflow needs two claims to succeed —
+    analyse, then generate after approval — which is exactly MAX_ATTEMPTS. With
+    nothing resetting the counter, a healthy job hit its crash limit by working
+    correctly, and the next claim was refused before it ran. Reprocess was the
+    visible casualty; a worker dying during generation was the silent one.
+    """
+    job_id = operator.post(
+        "/api/v1/jobs",
+        json={"workflow": "test-case-generation", "requirement": REQUIREMENT, "engine": "mock"},
+    ).json()["job_id"]
+
+    _drive(job_id)  # analysis, up to the gate
+    assert operator.get(f"/api/v1/jobs/{job_id}").json()["status"] == "AWAITING_APPROVAL"
+
+    operator.post(f"/api/v1/jobs/{job_id}/approve", json={"actor": "tester"})
+
+    # Approval releases new work, so the budget starts again rather than
+    # carrying the analysis claim forward into generation.
+    with session_scope() as db:
+        assert db.get(Job, job_id).attempt == 0
+
+    _drive(job_id)  # generation, after the gate
+
+    with session_scope() as db:
+        job = db.get(Job, job_id)
+        assert job.status is JobStatus.COMPLETED, job.error_message
+        # One claim for generation, not a row sitting at its ceiling.
+        assert job.attempt < queue.MAX_ATTEMPTS
+
+
+def test_reprocess_starts_with_a_full_budget(operator):
+    """A reprocess is work a person asked for, not a retry of a crash."""
+    with session_scope() as db:
+        job = Job(
+            workflow="test-case-generation",
+            created_by="test-operator",
+            status=JobStatus.COMPLETED,
+            attempt=queue.MAX_ATTEMPTS,  # where a normal completed job sits
+            evaluation={"gaps": ["missing boundary cases"], "score": 0.7},
+        )
+        db.add(job)
+        db.flush()
+        job_id = job.id
+
+    try:
+        res = operator.post(f"/api/v1/jobs/{job_id}/reprocess", json={"actor": "tester"})
+        assert res.status_code == 200, res.text
+
+        with session_scope() as db:
+            job = db.get(Job, job_id)
+            assert job.status is JobStatus.RUNNING
+            # Without this the very next claim fails the job before it runs.
+            assert job.attempt == 0
+            assert job.attempt < queue.MAX_ATTEMPTS
+    finally:
+        with session_scope() as db:
+            stale = db.get(Job, job_id)
+            if stale is not None:
+                db.delete(stale)
+
+
+def test_a_genuine_crash_loop_is_still_capped(queued_job):
+    """Releasing the budget must not remove it."""
+    with session_scope() as db:
+        job = db.get(Job, queued_job)
+        job.attempt = queue.MAX_ATTEMPTS
+        job.lease_owner = None
+        job.lease_expires_at = None
+
+    queue.Worker(concurrency=1)._run_claimed(queued_job)
+
+    with session_scope() as db:
+        job = db.get(Job, queued_job)
+        assert job.status is JobStatus.FAILED
+        assert "MAX_ATTEMPTS" in (job.error_message or "")

@@ -6,7 +6,7 @@ role: "Principal Systems Reviewer"
 stage: review-architecture
 input_artifact: intermediate/architecture_draft.json
 output_artifact: intermediate/architecture_approved.json
-output_schema: null
+output_schema: schemas/workflow-architecture.schema.json
 ---
 
 # Architecture Reviewer
@@ -31,7 +31,7 @@ Write the refined design to `intermediate/architecture_approved.json`. This MUST
       "id": "agent-kebab-case-id",
       "stage": "stage-name",
       "description": "What this agent does",
-      "depends_on": [] // array of stage names this agent depends on
+      "depends_on": []
     }
   ]
 }

@@ -24,7 +24,7 @@ _engine_args = {
 }
 
 if settings.database_url.startswith("sqlite"):
-    _engine_args["connect_args"] = {"check_same_thread": False}
+    _engine_args["connect_args"] = {"check_same_thread": False, "timeout": 30}
 else:
     # Production-grade connection pooling for PostgreSQL/MySQL
     _engine_args["pool_size"] = 10
@@ -32,6 +32,16 @@ else:
     _engine_args["pool_recycle"] = 1800
 
 engine = create_engine(settings.database_url, **_engine_args)
+
+if settings.database_url.startswith("sqlite"):
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.close()
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 

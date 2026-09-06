@@ -38,22 +38,20 @@ fi
 : "${ENGINE:=mock}"
 : "${BACKEND_PORT:=8100}"
 : "${FRONTEND_PORT:=3100}"
-: "${AUTH_MODE:=disabled}"
+# Demo is open even if .env still has AUTH_MODE=token.
+AUTH_MODE=disabled
 : "${ENABLE_DOCS:=1}"
 export EXECUTOR ENGINE AUTH_MODE ENABLE_DOCS
 
-# The orchestrator refuses to start in token mode with no credentials, so that
-# an unconfigured deployment can never serve an open API. For a local run we
-# mint one here and hand it to both processes: the browser talks to Next, Next
-# attaches the token, and nothing sensitive reaches the client.
+# This demo is open. Token mode is opt-in (AUTH_MODE=token + API_TOKENS).
 if [[ "$AUTH_MODE" == "token" && -z "${API_TOKENS:-}" ]]; then
     DEV_TOKEN="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(32))')"
     export API_TOKENS="${DEV_TOKEN}:local-dev:admin"
     export API_TOKEN="$DEV_TOKEN"
     echo "  auth     token mode, dev credential generated for this run"
 elif [[ "$AUTH_MODE" == "disabled" ]]; then
-    export ALLOW_INSECURE_AUTH=1
-    echo "  auth     DISABLED — every endpoint is open. Loopback only."
+    unset API_TOKEN || true
+    echo "  auth     off — no login, no token"
 else
     : "${API_TOKEN:=}"
     echo "  auth     token mode, using API_TOKENS from the environment"
@@ -62,7 +60,7 @@ else
         echo "           Set it to one of the tokens listed in API_TOKENS." >&2
     fi
 fi
-export API_TOKEN
+export API_TOKEN="${API_TOKEN:-}"
 
 PYTHON="${PYTHON:-python3}"
 

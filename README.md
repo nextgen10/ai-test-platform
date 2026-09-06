@@ -268,15 +268,11 @@ docker build -t ai-test-ui:dev -f frontend/Dockerfile frontend/
 ./k8s/deploy.sh
 ```
 
-That loads the images into Minikube, creates namespace `ai-testing`, Postgres, secrets, and the UI + orchestrator. **Save the operator/author tokens** it prints. The cluster UI is `UI_AUTH_MODE=session`; you paste one of those tokens at login. They are not printed again.
+That loads the images into Minikube, creates namespace `ai-testing`, Postgres, the Copilot secret, and the UI + orchestrator.
 
-A missing Copilot token warning is expected if you are staying on mock. Recover a lost token:
+**There is no login.** The orchestrator runs open (`AUTH_MODE=disabled`) and the UI has no sign-in page. What protects the namespace is that it is not exposed outside the cluster, plus a default-deny NetworkPolicy — not a bearer token. If you ever put this somewhere reachable, put an authenticating proxy in front of it.
 
-```powershell
-[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(
-  (kubectl -n ai-testing get secret orchestrator-auth -o jsonpath="{.data.API_TOKENS}")
-))
-```
+A missing Copilot token warning is expected if you are staying on mock.
 
 **4. Open the app** — Git Bash / WSL:
 
@@ -313,7 +309,7 @@ After you change code, rebuild the image you touched and re-run `./k8s/deploy.sh
 | `deploy.sh` / `cluster.sh` fail in PowerShell | Scripts are bash | Use Git Bash or WSL |
 | `ImagePullBackOff` | Image is only on Docker Desktop, not in Minikube | Re-run `./k8s/deploy.sh` |
 | Minikube cannot talk to Docker | Docker Desktop not running | Start Docker, wait until it is healthy, retry `minikube start` |
-| Login loop on the cluster UI | Session auth; no shared token | Paste an operator token from `deploy.sh` / `orchestrator-auth` |
+| UI asks you to sign in | Stale image from before auth was removed | Rebuild `ai-test-ui` and re-run `./k8s/deploy.sh`. There is no login |
 | Wrong cluster | Docker Desktop Kubernetes is on | `kubectl config use-context minikube`; leave Desktop K8s off |
 
 ---
@@ -421,7 +417,7 @@ podman build -t ai-test-ui:dev -f frontend/Dockerfile frontend/
 ```bash
 ./k8s/deploy.sh
 ```
-*This loads all images into Minikube, provisions the `ai-testing` namespace, starts PostgreSQL, applies RBAC & storage claims, and deploys the services. Save the operator/author tokens it prints — the cluster UI requires a login. The manifests set `ENGINE=copilot`; for a first run without Copilot: `kubectl -n ai-testing set env deployment/ai-test-orchestrator ENGINE=mock`.*
+*This loads all images into Minikube, provisions the `ai-testing` namespace, starts PostgreSQL, applies RBAC & storage claims, and deploys the services. There is no login — the orchestrator runs open behind the namespace's NetworkPolicy. The manifests set `ENGINE=copilot`; for a first run without Copilot: `kubectl -n ai-testing set env deployment/ai-test-orchestrator ENGINE=mock`.*
 
 #### Step 4: Open Port-Forwards & Access Platform
 ```bash

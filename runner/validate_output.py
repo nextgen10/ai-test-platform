@@ -81,6 +81,23 @@ def _normalize_title(title: str) -> str:
 def validate_business_rules(doc: dict[str, Any], report: ValidationReport) -> None:
     """Layer 3: semantic checks the JSON Schema cannot express."""
     cases = doc.get("test_cases", [])
+
+    # The schema layer normally guarantees the shape this function walks, but it
+    # is skipped when jsonschema is absent. Report the shape as the failure
+    # rather than raising AttributeError on the first `case.get`.
+    if not isinstance(cases, list):
+        report.error(
+            "invalid_test_cases", f"test_cases must be an array, got {type(cases).__name__}"
+        )
+        return
+    malformed = [i for i, case in enumerate(cases) if not isinstance(case, dict)]
+    if malformed:
+        report.error(
+            "invalid_test_case",
+            f"test_cases entries must be objects; entr(ies) {malformed} are not",
+        )
+        return
+
     total = len(cases)
 
     # --- uniqueness of IDs

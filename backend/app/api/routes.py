@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
 from app.access import deny_unless_owner, is_admin
@@ -99,6 +99,25 @@ def ready() -> dict[str, object]:
             status_code=503, detail={"status": "not_ready", "checks": public}
         )
     return {"status": "ready", "checks": public}
+
+
+@router.get("/metrics", tags=["meta"], response_class=PlainTextResponse)
+def metrics(db: Session = Depends(get_db)) -> PlainTextResponse:
+    """Prometheus scrape target: queue depth, job states, mean duration.
+
+    Unauthenticated for the same reason as `/health`: a scraper is
+    infrastructure, not a user, and it runs before anyone thinks to give it a
+    credential. Nothing here is per-job or per-caller — only counts — so an
+    open scrape leaks no requirement text and identifies no user.
+    """
+    from app.services import metrics as metrics_service
+
+    return PlainTextResponse(
+        metrics_service.render(db),
+        # The version suffix is what Prometheus looks for; without it the
+        # scrape is accepted but every sample is dropped as unparseable.
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 @router.get("/me", tags=["meta"])

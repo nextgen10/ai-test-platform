@@ -54,7 +54,8 @@ fi
 : "${ENGINE:=mock}"
 : "${BACKEND_PORT:=8100}"
 : "${FRONTEND_PORT:=8080}"
-: "${AUTH_MODE:=token}"
+# Demo is open even if .env still has AUTH_MODE=token.
+AUTH_MODE=disabled
 : "${ENABLE_DOCS:=1}"
 export EXECUTOR ENGINE AUTH_MODE ENABLE_DOCS
 export PORT="$FRONTEND_PORT"
@@ -90,8 +91,8 @@ if [[ "$AUTH_MODE" == "token" && -z "${API_TOKENS:-}" ]]; then
     export API_TOKEN="$DEV_TOKEN"
     echo "  auth     token mode, dev credential generated for this run"
 elif [[ "$AUTH_MODE" == "disabled" ]]; then
-    export ALLOW_INSECURE_AUTH=1
-    echo "  auth     DISABLED — every endpoint is open. Loopback only."
+    unset API_TOKEN || true
+    echo "  auth     off — no login, no token"
 else
     : "${API_TOKEN:=}"
     echo "  auth     token mode, using API_TOKENS from the environment"
@@ -100,7 +101,7 @@ else
         echo "           Set it to one of the tokens listed in API_TOKENS." >&2
     fi
 fi
-export API_TOKEN
+export API_TOKEN="${API_TOKEN:-}"
 
 cleanup() {
     echo ""

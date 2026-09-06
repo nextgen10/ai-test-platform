@@ -155,22 +155,14 @@ else
 fi
 unset TOKEN
 
-step "Orchestrator API tokens"
-if kubectl -n "$NS" get secret orchestrator-auth >/dev/null 2>&1; then
-    echo "  reusing existing orchestrator-auth secret"
-else
-    OP_TOKEN="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(32))')"
-    AU_TOKEN="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(32))')"
-    API_TOKENS="${OP_TOKEN}:operator:operator,${AU_TOKEN}:author:author"
-    kubectl -n "$NS" create secret generic orchestrator-auth \
-        --from-literal=API_TOKENS="$API_TOKENS" \
-        >/dev/null
-    echo "  orchestrator-auth created. Log in at the UI with one of these tokens:"
-    echo "    operator: ${OP_TOKEN}"
-    echo "    author:   ${AU_TOKEN}"
-    echo "  They are also in the orchestrator-auth secret; this script will not print them again."
-    unset OP_TOKEN AU_TOKEN API_TOKENS
-fi
+# No API tokens are minted here. The orchestrator runs open (AUTH_MODE=disabled
+# in backend-deployment.yaml) and the UI has no login, so tokens generated at
+# deploy time were credentials nothing could present — while the instructions
+# still told you to paste one at a sign-in page that redirects away.
+#
+# The namespace is protected by its NetworkPolicy and by not being exposed
+# outside the cluster, not by a bearer token. If this is ever put somewhere
+# reachable, put an authenticating proxy in front of it.
 
 # ------------------------------------------------------------- workloads
 

@@ -11,14 +11,7 @@ from pathlib import Path
 
 from app.config import settings
 from app.executors.base import ExecutionResult
-
-
-def _runtime_value(job_id: str, name: str) -> str | None:
-    """Read one per-job control file from the runtime directory."""
-    path = settings.runtime_for(job_id) / name
-    if not path.is_file():
-        return None
-    return path.read_text(encoding="utf-8").strip() or None
+from app.executors import runtime as exec_runtime
 
 
 class DockerExecutor:
@@ -36,10 +29,7 @@ class DockerExecutor:
         log_path = workspace / "output" / "execution.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
-        job_engine = settings.engine
-        override_engine = _runtime_value(job_id, "engine")
-        if override_engine in {"mock", "copilot"}:
-            job_engine = override_engine
+        job_engine = exec_runtime.resolve_job_engine(job_id)
 
         command = [
             "docker",
@@ -68,6 +58,12 @@ class DockerExecutor:
             "-e",
             f"REPROCESS={'1' if reprocess else '0'}",
             "-e",
+            # So the runner stops inside the limit and writes its record, rather
+            # than being killed at it with nothing to show.
+            f"JOB_TIMEOUT_SECONDS={settings.job_timeout_seconds}",
+            "-e",
+            "PYTHONUNBUFFERED=1",
+            "-e",
             "WORKSPACE=/workspace",
             "-e",
             f"RUNNER_VERSION={settings.runner_version}",
@@ -82,11 +78,11 @@ class DockerExecutor:
         # Job-specific overrides win over global env. They are read from the
         # runtime directory rather than the workspace: the workspace is served
         # by the artifacts endpoint, and one of these values is a credential.
-        model = _runtime_value(job_id, "copilot_model")
+        model = exec_runtime.runtime_value(job_id, "copilot_model")
         if model:
             command += ["-e", f"COPILOT_MODEL={model}"]
 
-        token = _runtime_value(job_id, "copilot_token") or (
+        token = exec_runtime.runtime_value(job_id, "copilot_token") or (
             os.getenv("COPILOT_GITHUB_TOKEN")
             or os.getenv("GH_TOKEN")
             or os.getenv("GITHUB_TOKEN")

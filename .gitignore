@@ -10,8 +10,11 @@ logs/
 # Per-job control files and credentials. Never commit these.
 .job-runtime/
 
-# Local job database
+# Local job database. The WAL sidecars need naming separately: `*.db` does not
+# match `jobs.db-shm` / `jobs.db-wal`, so they were stageable.
 *.db
+*.db-shm
+*.db-wal
 
 # Environment
 .env
@@ -22,6 +25,18 @@ frontend/.next/
 frontend/.next-verify/
 frontend/next-env.d.ts
 frontend/tsconfig.tsbuildinfo
+
+# UI verification screenshots — a local scratchpad, not a deliverable.
+frontend/.ubs-verify/
+
+# Stray build output at the repo root. `frontend/.next/` above does not cover
+# it, and a build run from the wrong directory lands here.
+/.next/
+
+# The root lockfile is junk from a stray `npm install` at the top level.
+# frontend/package-lock.json is deliberately NOT ignored: CI installs from it
+# with `npm ci` and keys its cache on it.
+/package-lock.json
 
 # Python
 __pycache__/

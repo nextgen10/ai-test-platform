@@ -211,16 +211,22 @@ def check_contract(artifact: Path, schema_path: Path | None) -> ContractResult:
     A missing schema is not a failure — plenty of agents legitimately produce
     prose. What matters is that when an agent *does* declare a contract, the
     platform enforces it rather than trusting the model.
-    """
-    if schema_path is None:
-        return ContractResult(ok=True, checked="no schema declared")
 
+    The file itself is not optional either way. An agent that declares an
+    output artifact owes the workflow that file, because the next stage reads
+    it; a schemaless agent that wrote nothing used to be reported as having
+    satisfied its contract, so its stage passed and the *following* one failed
+    on a missing input, pointing at the wrong agent.
+    """
     if not artifact.exists():
         return ContractResult(
             ok=False,
             errors=[f"The declared output artifact {artifact.name} was not written."],
-            checked=schema_path.name,
+            checked=schema_path.name if schema_path else "no schema declared",
         )
+
+    if schema_path is None:
+        return ContractResult(ok=True, checked="no schema declared")
 
     if not schema_path.is_file():
         # Declared but absent: worth saying, but not worth failing a run over.
@@ -454,6 +460,7 @@ def run_with_contract(
     contract = contract_prompt(schema_path)
     result = ContractResult(ok=False, errors=["Agent was never invoked."])
     total = max(1, attempts)
+    baseline = _fingerprint(artifact)
 
     for attempt in range(1, total + 1):
         hint = ""
@@ -469,7 +476,8 @@ def run_with_contract(
                 f"  • Emit strict JSON only — no Markdown fences, no prose before or after.\n"
                 f"  • Inside string values, escape newlines as \\n, tabs as \\t, "
                 f"backslashes as \\\\ (a regex \\d must be \\\\d).\n"
-                f"  • Do not add, remove or rename top-level keys.\n"
+                f"  • Use exactly the key names the contract defines — but do "
+                f"add a required key that is missing, which is often the fix.\n"
                 f"  • Satisfy every constraint listed above; do not fix one error by "
                 f"introducing another."
             )
@@ -490,7 +498,24 @@ def run_with_contract(
             log(f"  {agent_id}: invocation failed on the final attempt ({exc})")
             return result
 
-        result = check_contract(artifact, schema_path)
+        if baseline is not None and _fingerprint(artifact) == baseline:
+            # The artifact predates this invocation and the agent did not touch
+            # it. Validating it would pass on someone else's work: the amending
+            # stages (gap-closer, and the reviewer on a second gate attempt)
+            # write over a file that already exists and already validates, so a
+            # silent no-op reads as a successful run that changed nothing.
+            result = ContractResult(
+                ok=False,
+                errors=[
+                    f"{artifact.name} is unchanged from before this run — you did "
+                    f"not write it. Write the complete document to {artifact.name}."
+                ],
+                checked=schema_path.name if schema_path else "no schema declared",
+            )
+        else:
+            result = check_contract(artifact, schema_path)
+
+        baseline = _fingerprint(artifact)
 
         if result.ok:
             if attempt > 1:
@@ -503,6 +528,19 @@ def run_with_contract(
 
     log(f"  {agent_id}: still not matching its contract after {total} attempts")
     return result
+
+
+def _fingerprint(path: Path) -> tuple[int, int] | None:
+    """Enough of the file to tell whether an invocation rewrote it.
+
+    None when the file does not exist, which the existence check in
+    :func:`check_contract` already covers.
+    """
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return (stat.st_mtime_ns, stat.st_size)
 
 
 # ------------------------------------------------------------- token accounting
@@ -589,3 +627,20 @@ def usage_for(prompt: str, cli_output: str) -> Usage:
     if reported.total_tokens is not None:
         return reported
     return estimate_usage(prompt, cli_output)
+
+
+# ---------------------------------------------------------------- one identity
+
+# This module is reachable under two names: ``agent_io`` (the runner directory is
+# on sys.path inside the container, and the backend adds it) and
+# ``runner.agent_io`` (the test suite imports it as a package). Python treats
+# those as two separate modules, each with its own copy of everything at module
+# scope — so patching one leaves the other live, an exception raised through one
+# is not caught by the other, and module-level state diverges silently.
+#
+# Registering both names against this single object removes the ambiguity:
+# whichever name a caller uses, it gets this module.
+import sys as _sys
+
+for _alias in ("agent_io", "runner.agent_io"):
+    _sys.modules.setdefault(_alias, _sys.modules[__name__])

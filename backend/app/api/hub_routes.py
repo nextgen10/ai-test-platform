@@ -17,7 +17,11 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.security import Principal, require_author, require_reader
 from app.services import hub_registry
-from app.services.hub_registry import DeniedTool, InvalidEntityId
+from app.services.hub_registry import (
+    DeniedTool,
+    InvalidAgentDefinition,
+    InvalidEntityId,
+)
 
 router = APIRouter(prefix=f"{settings.api_prefix}/hub", tags=["hub"])
 
@@ -40,6 +44,12 @@ class EntityCreateRequest(BaseModel):
     """Create or update an entity by ID + raw file content."""
     id: str = Field(..., min_length=1, max_length=128, pattern=_ID_PATTERN)
     content: str = Field(..., min_length=10, max_length=1_000_000)
+
+
+class AgentValidateRequest(BaseModel):
+    """Check a definition without writing it anywhere."""
+
+    content: str = Field(..., min_length=1, max_length=1_000_000)
 
 
 class WorkflowCreateRequest(BaseModel):
@@ -74,19 +84,48 @@ def get_agent(
     return agent
 
 
+def _invalid_agent(exc: InvalidAgentDefinition) -> HTTPException:
+    """Report every fault at once, so one round trip is enough to fix them all.
+
+    A plain string, not a structured body: `detail` is what every existing
+    client renders. An editor wanting the faults separately posts to
+    ``/agents/validate``, which returns them as a list.
+    """
+    return HTTPException(400, "\n".join(exc.errors))
+
+
+@router.post("/agents/validate")
+def validate_agent(
+    payload: AgentValidateRequest,
+    _: Principal = Depends(require_reader),
+) -> dict:
+    """Check an agent definition without installing it.
+
+    Onboarding an agent otherwise means saving it, running a job and reading
+    the log to discover that a path was wrong. This answers the same question
+    before anything is written.
+    """
+    return hub_registry.validate_agent(payload.content)
+
+
 @router.post("/agents", status_code=201)
 def create_agent(
     payload: EntityCreateRequest,
     _: Principal = Depends(require_author),
 ) -> dict:
     try:
-        return hub_registry.create_agent(payload.id, payload.content)
+        agent = hub_registry.create_agent(payload.id, payload.content)
     except InvalidEntityId as exc:
         raise _bad_id(exc) from exc
+    except InvalidAgentDefinition as exc:
+        raise _invalid_agent(exc) from exc
     except DeniedTool as exc:
         raise HTTPException(400, str(exc)) from exc
     except FileExistsError as exc:
         raise HTTPException(409, str(exc)) from exc
+    # Warnings describe a definition that runs but is missing something worth
+    # having. They travel with the created agent rather than blocking it.
+    return {**agent, "warnings": hub_registry.validate_agent(payload.content)["warnings"]}
 
 
 @router.put("/agents/{agent_id}")
@@ -96,13 +135,16 @@ def update_agent(
     _: Principal = Depends(require_author),
 ) -> dict:
     try:
-        return hub_registry.update_agent(agent_id, payload.content)
+        agent = hub_registry.update_agent(agent_id, payload.content)
     except InvalidEntityId as exc:
         raise _bad_id(exc) from exc
+    except InvalidAgentDefinition as exc:
+        raise _invalid_agent(exc) from exc
     except DeniedTool as exc:
         raise HTTPException(400, str(exc)) from exc
     except FileNotFoundError as exc:
         raise HTTPException(404, str(exc)) from exc
+    return {**agent, "warnings": hub_registry.validate_agent(payload.content)["warnings"]}
 
 
 @router.delete("/agents/{agent_id}")

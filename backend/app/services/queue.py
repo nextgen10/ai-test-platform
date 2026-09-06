@@ -193,6 +193,92 @@ class LeaseHeartbeat:
 
 # --------------------------------------------------------------- reconcile
 
+#: Non-terminal states a job can be sitting in while a worker holds its lease.
+IN_FLIGHT_STATES = (
+    JobStatus.QUEUED,
+    JobStatus.STARTING,
+    JobStatus.ANALYZING,
+    JobStatus.RUNNING,
+    JobStatus.VALIDATING,
+    JobStatus.EVALUATING,
+)
+
+
+def _make_claimable(job: Job) -> None:
+    """Put one abandoned job back into a state another worker will pick up.
+
+    The lease is what says "someone is on this", so clearing it is not enough:
+    ``claim_next`` only looks at QUEUED and RUNNING, and ``reclaim_expired``
+    only looks at rows that still carry an owner. A row left ANALYZING with no
+    lease is therefore invisible to both, and would sit there forever.
+
+    STARTING / ANALYZING never finished the first stage, so they go back to
+    QUEUED. VALIDATING / EVALUATING are past the human gate, where RUNNING is
+    the claimable state that resumes generation.
+    """
+    if job.status in (JobStatus.STARTING, JobStatus.ANALYZING):
+        job.status = JobStatus.QUEUED
+    elif job.status in (JobStatus.VALIDATING, JobStatus.EVALUATING):
+        job.status = JobStatus.RUNNING
+    job.lease_owner = None
+    job.lease_expires_at = None
+
+
+def abandon_in_flight(*, worker: str = WORKER_ID) -> int:
+    """Hand back every job this worker holds, for a clean shutdown.
+
+    Without this a rolling update is worse than a crash. The replica going away
+    stops renewing, so its jobs are only picked up once the lease *expires* —
+    up to ``JOB_LEASE_SECONDS`` of a job sitting still while a healthy replica
+    polls an empty queue. Releasing on the way out makes the handover immediate.
+
+    The runner child is killed first. It is doing work whose result nobody will
+    read, against a Copilot quota somebody is paying for, and on the local and
+    docker executors it would outlive the process that started it.
+    """
+    from app.executors import runtime as exec_runtime
+
+    # Read first, kill outside the transaction, then write. Killing a runner
+    # takes up to ten seconds per job (terminate, wait, kill, wait), and doing
+    # that with a write transaction open would hold row locks on PostgreSQL for
+    # the length of the shutdown.
+    with session_scope() as db:
+        mine = list(
+            db.scalars(
+                select(Job.id).where(
+                    Job.status.in_(IN_FLIGHT_STATES),
+                    Job.lease_owner == worker,
+                )
+            ).all()
+        )
+
+    for job_id in mine:
+        try:
+            exec_runtime.kill_process(job_id)
+        except Exception:  # noqa: BLE001 - shutdown must not raise
+            logger.exception("could not stop the runner for job %s", job_id)
+
+    handed_back = 0
+    with session_scope() as db:
+        for job_id in mine:
+            job = db.get(Job, job_id)
+            # Only if it is still ours and still unfinished: the runner may
+            # have completed between the read and here.
+            if job is None or job.lease_owner != worker:
+                continue
+            if job.status.is_terminal:
+                continue
+            _make_claimable(job)
+            handed_back += 1
+
+    if handed_back:
+        logger.info(
+            "handed %d in-flight job(s) back to the queue for another worker",
+            handed_back,
+        )
+    return handed_back
+
+
 def reclaim_expired() -> int:
     """Return jobs whose worker stopped renewing to the claimable pool.
 
@@ -206,16 +292,7 @@ def reclaim_expired() -> int:
     with session_scope() as db:
         stale = db.scalars(
             select(Job).where(
-                Job.status.in_(
-                    (
-                        JobStatus.QUEUED,
-                        JobStatus.STARTING,
-                        JobStatus.ANALYZING,
-                        JobStatus.RUNNING,
-                        JobStatus.VALIDATING,
-                        JobStatus.EVALUATING,
-                    )
-                ),
+                Job.status.in_(IN_FLIGHT_STATES),
                 Job.lease_owner.is_not(None),
                 Job.lease_expires_at < now,
             )
@@ -235,16 +312,7 @@ def reclaim_expired() -> int:
                 exhausted += 1
                 continue
 
-            # STARTING / ANALYZING never finished the first stage: put them
-            # back in QUEUED so claim_next will pick them up. VALIDATING and
-            # EVALUATING already passed the human gate — RUNNING is the
-            # claimable state that resumes generation. RUNNING stays RUNNING.
-            if job.status in (JobStatus.STARTING, JobStatus.ANALYZING):
-                job.status = JobStatus.QUEUED
-            elif job.status in (JobStatus.VALIDATING, JobStatus.EVALUATING):
-                job.status = JobStatus.RUNNING
-            job.lease_owner = None
-            job.lease_expires_at = None
+            _make_claimable(job)
             job.error_message = None
             reclaimed += 1
 
@@ -288,9 +356,22 @@ class Worker:
         )
 
     def stop(self, timeout: float = 5.0) -> None:
+        """Stop polling, then hand back anything still in flight.
+
+        The join is best-effort: a thread inside a runner invocation will not
+        return within any shutdown budget worth waiting for. What matters is
+        that the job does not stay pinned to a replica that is going away, so
+        the handover happens whether or not the thread came back.
+        """
         self._stop.set()
         for thread in self._threads:
             thread.join(timeout=timeout)
+        if self._reconciler is not None:
+            self._reconciler.join(timeout=timeout)
+        try:
+            abandon_in_flight()
+        except Exception:  # noqa: BLE001 - never fail a shutdown
+            logger.exception("could not hand back in-flight jobs on shutdown")
 
     def _reconcile_loop(self) -> None:
         """Periodically return abandoned jobs to the pool."""
@@ -313,6 +394,8 @@ class Worker:
                 continue
 
             self._run_claimed(job_id)
+            # Yield briefly so a tight cycle cannot starve the event loop
+            self._stop.wait(0.05)
 
     def _run_claimed(self, job_id: str) -> None:
         """Execute a job this worker holds the lease on."""
@@ -325,6 +408,16 @@ class Worker:
             with session_scope() as db:
                 job = db.get(Job, job_id)
                 if job is None or job.status.is_terminal:
+                    return
+                if job.attempt >= MAX_ATTEMPTS:
+                    job.status = JobStatus.FAILED
+                    job.completed_at = _utcnow()
+                    job.error_message = (
+                        f"Execution was attempted {job.attempt} time(s); exceeded MAX_ATTEMPTS ({MAX_ATTEMPTS})."
+                    )
+                    job.lease_owner = None
+                    job.lease_expires_at = None
+                    logger.warning("failing job %s: reached max attempts (%d)", job_id, job.attempt)
                     return
                 job.attempt += 1
                 attempt = job.attempt

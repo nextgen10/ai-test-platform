@@ -82,11 +82,15 @@ export interface Evaluation {
 }
 
 export interface JobSummary {
-    total: number;
-    by_category: Record<string, number>;
-    by_priority: Record<string, number>;
-    requirement_reference: string | null;
-    assumptions: number;
+    total?: number;
+    by_category?: Record<string, number>;
+    by_priority?: Record<string, number>;
+    requirement_reference?: string | null;
+    assumptions?: number;
+    /** Generic workflows summarise their primary artifact instead of a suite. */
+    artifact?: string;
+    size_bytes?: number;
+    chars?: number;
 }
 
 export interface PhaseInfo {
@@ -225,6 +229,8 @@ export interface Workflow {
     approval_gate: boolean;
     has_custom_ui: boolean;
     custom_ui_route: string | null;
+    /** What the workflow declares as its deliverable, e.g. `output/result.json`. */
+    output?: { type?: string; schema?: string | null; primary_artifact?: string };
 }
 
 export interface SkillInfo {

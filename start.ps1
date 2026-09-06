@@ -196,7 +196,8 @@ Set-EnvDefault 'EXECUTOR' 'local'
 Set-EnvDefault 'ENGINE' 'mock'
 Set-EnvDefault 'BACKEND_PORT' '8100'
 Set-EnvDefault 'FRONTEND_PORT' '3100'
-Set-EnvDefault 'AUTH_MODE' 'disabled'
+# Demo is open even if .env still has AUTH_MODE=token.
+$env:AUTH_MODE = 'disabled'
 Set-EnvDefault 'ENABLE_DOCS' '1'
 
 $BackendPort = [int]$env:BACKEND_PORT
@@ -204,10 +205,7 @@ $FrontendPort = [int]$env:FRONTEND_PORT
 $Python = Resolve-Python
 $Node = Resolve-Node
 
-# The orchestrator refuses to start in token mode with no credentials, so that
-# an unconfigured deployment can never serve an open API. For a local run we
-# mint one here and hand it to both processes: the browser talks to Next, Next
-# attaches the token, and nothing sensitive reaches the client.
+# This demo is open. Token mode is opt-in (AUTH_MODE=token + API_TOKENS).
 if ($env:AUTH_MODE -eq 'token' -and -not $env:API_TOKENS) {
     $DevToken = & $Python.Exe @($Python.Prefix + @('-c', 'import secrets; print(secrets.token_urlsafe(32))'))
     if ($DevToken -is [array]) { $DevToken = $DevToken[-1] }
@@ -217,8 +215,8 @@ if ($env:AUTH_MODE -eq 'token' -and -not $env:API_TOKENS) {
     $env:API_TOKEN = $DevToken
     Write-Host "  auth     token mode, dev credential generated for this run"
 } elseif ($env:AUTH_MODE -eq 'disabled') {
-    $env:ALLOW_INSECURE_AUTH = '1'
-    Write-Host "  auth     DISABLED — every endpoint is open. Loopback only."
+    $env:API_TOKEN = ''
+    Write-Host "  auth     off — no login, no token"
 } else {
     if (-not (Test-EnvSet 'API_TOKEN')) { $env:API_TOKEN = '' }
     Write-Host "  auth     token mode, using API_TOKENS from the environment"

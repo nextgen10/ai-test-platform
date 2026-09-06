@@ -6,7 +6,9 @@
   "type": "object",
   "required": [
     "scores",
-    "overall"
+    "overall",
+    "gaps",
+    "recommendations"
   ],
   "additionalProperties": true,
   "properties": {

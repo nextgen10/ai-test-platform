@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import type { ChatSession, ChatSessionSummary, ChatMessage, SendMessagePayload } from '@/lib/chat-api';
 import { chatApi } from '@/lib/chat-api';
 import { api, MIN_JOB_BRIEF_CHARS } from '@/lib/api';
@@ -43,6 +43,15 @@ interface ChatState {
     catalog: HubCatalog | null;
 }
 
+export interface AgentTurnResult {
+    content: string;
+    stopped: boolean;
+    duration_ms: number | null;
+    agent_id: string | null;
+    model: string | null;
+    error?: string;
+}
+
 interface ChatActions {
     newChat: () => void;
     loadSessions: () => Promise<void>;
@@ -51,6 +60,18 @@ interface ChatActions {
     deleteSession: (id: string) => Promise<void>;
     loadEarlierMessages: () => Promise<void>;
     sendMessage: (content: string) => Promise<void>;
+    /**
+     * Run one onboarded agent as itself, in the open session.
+     *
+     * The console is a workbench: pick an agent, give it input, read the
+     * output, then optionally pass that output to a different agent. Each
+     * of those is one turn of the same session — not a new chat, and not a
+     * workflow job.
+     */
+    runAgentTurn: (
+        content: string,
+        options?: { agentId?: string | null; onChunk?: (text: string) => void },
+    ) => Promise<AgentTurnResult>;
     stopStreaming: () => void;
     updateConfig: (update: Partial<ChatConfig>) => void;
     clearError: () => void;
@@ -94,9 +115,22 @@ function nextSequence(list: ChatMessage[]): number {
     return last ? last.sequence + 1 : 1;
 }
 
+/**
+ * The console's launch parameters, read from the address bar.
+ *
+ * Deliberately not `useSearchParams`. That hook forces a Suspense boundary
+ * above the provider, and a suspended subtree hydrates *after* its parent.
+ * Theme is now aligned via cookie + `initialMode` on SSR; keeping launch
+ * params off `useSearchParams` still avoids remounting the console (and
+ * killing an in-flight stream) on Next navigations.
+ */
+function launchParams(): URLSearchParams {
+    if (typeof window === 'undefined') return new URLSearchParams();
+    return new URLSearchParams(window.location.search);
+}
+
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const router = useRouter();
-    const searchParams = useSearchParams();
 
     const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
     const [hasMoreSessions, setHasMoreSessions] = useState(false);
@@ -108,11 +142,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [streamingContent, setStreamingContent] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [config, setConfig] = useState<ChatConfig>(EMPTY_CONFIG);
-    const [sessionLoading, setSessionLoading] = useState(Boolean(searchParams.get('session')));
+    const [sessionLoading, setSessionLoading] = useState(false);
     const [catalog, setCatalog] = useState<HubCatalog | null>(null);
 
     const abortRef = useRef<(() => void) | null>(null);
     const streamedRef = useRef('');
+    /** Prevents a second Run from starting before React has painted isStreaming. */
+    const runLockRef = useRef(false);
     const landingConsumed = useRef(false);
     const restoredSession = useRef(false);
 
@@ -133,8 +169,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const qs = params.toString();
         const next = qs ? `/chat?${qs}` : '/chat';
         // replaceState, not router.replace: a Next navigation remounts the
-        // useSearchParams Suspense boundary, which unmounts the console
-        // (spinner) and kills the in-flight stream on first send.
+        // provider, which unmounts the console and kills the in-flight stream
+        // on first send.
         if (typeof window !== 'undefined') {
             const current = window.location.pathname + window.location.search;
             if (current !== next) {
@@ -167,7 +203,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Restore ?session= once. Landing ?agent= / ?workflow= apply once, then
     // the URL is owned by the open session so ConfigBar changes stick.
     useEffect(() => {
-        const sessionId = searchParams.get('session');
+        const params = launchParams();
+        const sessionId = params.get('session');
         if (sessionId && !restoredSession.current) {
             restoredSession.current = true;
             landingConsumed.current = true;
@@ -187,11 +224,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         landingConsumed.current = true;
 
         const fromUrl: Partial<ChatConfig> = {};
-        const agent = searchParams.get('agent');
-        const workflow = searchParams.get('workflow');
-        const skill = searchParams.get('skill');
-        const prompt = searchParams.get('prompt');
-        const model = searchParams.get('model');
+        const agent = params.get('agent');
+        const workflow = params.get('workflow');
+        const skill = params.get('skill');
+        const prompt = params.get('prompt');
+        const model = params.get('model');
 
         if (workflow) {
             fromUrl.workflowId = workflow;
@@ -205,7 +242,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (Object.keys(fromUrl).length > 0) {
             setConfig((prev) => exclusiveConfig(prev, fromUrl));
         }
-    }, [searchParams, applyOpenedSession, syncSessionUrl]);
+    }, [applyOpenedSession, syncSessionUrl]);
 
     const loadSessions = useCallback(async () => {
         try {
@@ -358,22 +395,27 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         [config.engine, config.model, router],
     );
 
-    const sendMessage = useCallback(
-        async (content: string) => {
-            if (isStreaming) return;
-            setError(null);
-
-            if (config.workflowId) {
-                try {
-                    await runWorkflow(config.workflowId, content);
-                } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Could not start that workflow');
-                }
-                return;
+    const runAgentTurn = useCallback(
+        async (
+            content: string,
+            options: { agentId?: string | null; onChunk?: (text: string) => void } = {},
+        ): Promise<AgentTurnResult> => {
+            const blank: AgentTurnResult = {
+                content: '',
+                stopped: false,
+                duration_ms: null,
+                agent_id: null,
+                model: null,
+            };
+            if (runLockRef.current || isStreaming) {
+                return { ...blank, error: 'An agent is already running' };
             }
+            runLockRef.current = true;
 
-            // Leave the empty catalog before the session round-trip so the
-            // transcript pane does not collapse and remount on first send.
+            const agentId = options.agentId !== undefined ? options.agentId : config.agentId;
+            const from: ChatConfig = { ...config, agentId, workflowId: null };
+
+            setError(null);
             setIsStreaming(true);
             setStreamingContent('');
             streamedRef.current = '';
@@ -381,11 +423,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             let sessionId = activeSessionId;
             if (!sessionId) {
                 try {
-                    sessionId = (await openSession(content.slice(0, 80), config)).id;
+                    sessionId = (await openSession(content.slice(0, 80), from)).id;
                 } catch (e) {
+                    runLockRef.current = false;
                     setIsStreaming(false);
-                    setError(e instanceof Error ? e.message : 'Could not start a new session');
-                    return;
+                    const error = e instanceof Error ? e.message : 'Could not start a new session';
+                    setError(error);
+                    return { ...blank, error };
                 }
             }
 
@@ -397,7 +441,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     role: 'user',
                     content,
                     created_at: new Date().toISOString(),
-                    agent_id: config.agentId,
+                    agent_id: agentId,
                     model: config.model,
                     duration_ms: null,
                 };
@@ -405,9 +449,47 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
             setMessageTotal((prev) => prev + 1);
 
+            let streamFrame = 0;
+            const paintStream = () => {
+                if (streamFrame) return;
+                streamFrame = requestAnimationFrame(() => {
+                    streamFrame = 0;
+                    const text = streamedRef.current;
+                    setStreamingContent(text);
+                    options.onChunk?.(text);
+                });
+            };
+            const cancelStreamPaint = () => {
+                if (!streamFrame) return;
+                cancelAnimationFrame(streamFrame);
+                streamFrame = 0;
+            };
+
+            let finished: AgentTurnResult = { ...blank, agent_id: agentId, model: config.model };
+
             const commit = (stopped: boolean, extra?: { duration_ms?: number; agent_id?: string; model?: string }) => {
+                cancelStreamPaint();
                 const text = streamedRef.current;
-                if (!text) return;
+                // Empty buffer: record stop/error metadata only. Never wipe a
+                // finished turn that already committed on `done` — the trailing
+                // commit after the stream loop used to clear `finished.content`
+                // and the console reported "produced no output" falsely.
+                if (!text) {
+                    if (stopped) finished = { ...finished, stopped: true };
+                    if (extra?.duration_ms != null) finished = { ...finished, duration_ms: extra.duration_ms };
+                    if (extra?.agent_id) finished = { ...finished, agent_id: extra.agent_id };
+                    if (extra?.model) finished = { ...finished, model: extra.model };
+                    setStreamingContent('');
+                    return;
+                }
+                finished = {
+                    content: text,
+                    stopped,
+                    duration_ms: extra?.duration_ms ?? finished.duration_ms,
+                    agent_id: extra?.agent_id ?? finished.agent_id ?? agentId,
+                    model: extra?.model ?? finished.model ?? config.model,
+                    error: finished.error,
+                };
                 setMessages((prev) => [
                     ...prev,
                     {
@@ -417,9 +499,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         role: 'assistant',
                         content: stopped ? `${text}${STOPPED_MARKER}` : text,
                         created_at: new Date().toISOString(),
-                        agent_id: extra?.agent_id ?? config.agentId,
-                        model: extra?.model ?? config.model,
-                        duration_ms: extra?.duration_ms ?? null,
+                        agent_id: finished.agent_id,
+                        model: finished.model,
+                        duration_ms: finished.duration_ms,
                     },
                 ]);
                 setMessageTotal((prev) => prev + 1);
@@ -430,7 +512,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             try {
                 const payload: SendMessagePayload = {
                     content,
-                    agent_id: config.agentId,
+                    agent_id: agentId,
                     skill_id: config.skillId,
                     prompt_id: config.promptId,
                     model: config.model,
@@ -444,7 +526,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 for await (const event of stream) {
                     if (event.type === 'chunk' && event.content) {
                         streamedRef.current += event.content;
-                        setStreamingContent(streamedRef.current);
+                        paintStream();
                     } else if (event.type === 'done') {
                         commit(false, {
                             duration_ms: event.duration_ms,
@@ -452,7 +534,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             model: event.model,
                         });
                     } else if (event.type === 'error') {
-                        setError(event.message || 'The agent reported an error');
+                        const message = event.message || 'The agent reported an error';
+                        setError(message);
+                        finished = { ...finished, error: message };
                         commit(false);
                     }
                 }
@@ -462,15 +546,45 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const aborted = e instanceof Error && e.name === 'AbortError';
                 commit(aborted);
                 if (!aborted) {
-                    setError(e instanceof Error ? e.message : 'The request failed');
+                    const error = e instanceof Error ? e.message : 'The request failed';
+                    setError(error);
+                    finished = { ...finished, error };
                 }
             } finally {
+                cancelStreamPaint();
                 setIsStreaming(false);
                 abortRef.current = null;
+                runLockRef.current = false;
                 void loadSessions();
             }
+
+            // Empty + not aborted + no error = a silent failure. Say so.
+            if (!finished.content && !finished.error && !finished.stopped) {
+                const error =
+                    'The agent produced no output. Check the engine and model in the ' +
+                    'config bar, and that a GitHub token is set for Copilot runs.';
+                setError(error);
+                finished = { ...finished, error };
+            }
+
+            return finished;
         },
-        [activeSessionId, config, isStreaming, openSession, runWorkflow, loadSessions],
+        [activeSessionId, config, isStreaming, openSession, loadSessions],
+    );
+
+    const sendMessage = useCallback(
+        async (content: string) => {
+            if (config.workflowId) {
+                try {
+                    await runWorkflow(config.workflowId, content);
+                } catch (e) {
+                    setError(e instanceof Error ? e.message : 'Could not start that workflow');
+                }
+                return;
+            }
+            await runAgentTurn(content);
+        },
+        [config.workflowId, runWorkflow, runAgentTurn],
     );
 
     const stopStreaming = useCallback(() => {
@@ -503,6 +617,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteSession,
         loadEarlierMessages,
         sendMessage,
+        runAgentTurn,
         stopStreaming,
         updateConfig,
         clearError,

@@ -70,7 +70,11 @@ class Settings:
         os.getenv("RUNNER_DIR", str(PROJECT_ROOT / "runner"))
     )
     runner_image: str = os.getenv("RUNNER_IMAGE", "ai-test-runner:dev")
-    job_timeout_seconds: int = int(os.getenv("JOB_TIMEOUT_SECONDS", "600"))
+    # Has to fit a whole chain of real agents, not one: four stages at up to
+    # AGENT_TIMEOUT_SECONDS each, plus a contract correction where one is
+    # needed. At the old 600s a healthy run against real Copilot was killed
+    # part-way through generation and reported as a timeout.
+    job_timeout_seconds: int = int(os.getenv("JOB_TIMEOUT_SECONDS", "2700"))
 
     # --- kubernetes
     k8s_namespace: str = os.getenv("K8S_NAMESPACE", "ai-testing")
@@ -94,9 +98,8 @@ class Settings:
         if origin.strip()
     ]
 
-    # --- auth. `token` requires API_TOKENS and is the default, so an
-    # unconfigured deployment fails at startup instead of serving an open API.
-    # `disabled` is an explicit opt-out for a loopback development run.
+    # --- auth. This demo is open: callers do not present a token.
+    # Set AUTH_MODE=token and API_TOKENS to lock the API again.
     auth_mode: str = os.getenv("AUTH_MODE", "disabled")
     #: "<token>:<name>:<role>[,<token>:<name>:<role>...]" — mounted from a secret.
     api_tokens: str = os.getenv("API_TOKENS", "")

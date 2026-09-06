@@ -19,8 +19,19 @@ export interface HubAgent {
     /** Declared in the agent's own frontmatter, so it describes itself. */
     role: string;
     stage: string;
+    /**
+     * The primary artifact this agent reads and writes.
+     *
+     * Always a string — the registry normalises it. A fan-in agent that
+     * declares several inputs reports its first here and the full set in
+     * `input_artifacts`, so chaining logic should read the plural form.
+     */
     input_artifact: string;
     output_artifact: string;
+    input_artifacts?: string[];
+    output_artifacts?: string[];
+    /** Path to the agent's output contract, or null when it writes prose. */
+    output_schema?: string | null;
 }
 
 export interface HubSkill {

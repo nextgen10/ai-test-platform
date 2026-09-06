@@ -34,13 +34,14 @@ import { api } from '@/lib/api';
 import { getSessionGithubToken, setSessionGithubToken } from '@/lib/settings';
 import { selectMenuProps } from '@/theme';
 import { useRouter } from 'next/navigation';
+import { displayAgentName } from '@/lib/agent-name';
 
 interface PlatformInfo {
   engine: string;
   server_token_configured: boolean;
 }
 
-export const ConfigBar: React.FC = () => {
+export const ConfigBar: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const theme = useTheme();
   const isLight = theme.palette.mode === 'light';
   const router = useRouter();
@@ -54,7 +55,7 @@ export const ConfigBar: React.FC = () => {
   const [tokenInput, setTokenInput] = useState(getSessionGithubToken());
 
   useEffect(() => {
-    hubApi.listModels().then(setModels).catch(console.error);
+    hubApi.listModels().then(setModels).catch(() => setModels([]));
     api.settings().then(setPlatform).catch(() => setPlatform(null));
   }, []);
 
@@ -92,11 +93,17 @@ export const ConfigBar: React.FC = () => {
     },
   };
 
+  // `width` is the size these want, not a size they insist on. The four in the
+  // main row asked for 732px plus gaps, padding and the action cluster — over
+  // 900px on a row that stopped wrapping at the 900px breakpoint, so on a
+  // normal laptop the row overflowed a shell that clips horizontally, taking
+  // the right-hand controls off-screen. They now shrink toward a readable
+  // floor and the row wraps at any width rather than only below `md`.
   const selectFrame = (width: number) => ({
     width: { xs: '100%', sm: width },
-    minWidth: { xs: 0, sm: width },
+    minWidth: { xs: 0, sm: 120 },
     maxWidth: { xs: '100%', sm: width },
-    flex: { xs: '1 1 calc(50% - 8px)', sm: '0 0 auto' },
+    flex: { xs: '1 1 calc(50% - 8px)', sm: `0 1 ${width}px` },
     '& .MuiInputBase-root': { width: '100%' },
     '& .MuiInputLabel-shrink': {
       bgcolor: isLight ? '#ffffff' : '#2a2a2a',
@@ -105,8 +112,10 @@ export const ConfigBar: React.FC = () => {
 
   const workflowName = (id: string) =>
     catalog?.workflows.find((w) => w.id === id)?.name ?? id;
-  const agentName = (id: string) =>
-    catalog?.agents.find((a) => a.id === id)?.name ?? id;
+  const agentName = (id: string) => {
+    const found = catalog?.agents.find((a) => a.id === id);
+    return displayAgentName(id, found?.name);
+  };
   const modelName = (id: string) =>
     models.find((m) => m.id === id)?.name ?? id;
 
@@ -119,6 +128,9 @@ export const ConfigBar: React.FC = () => {
         px: { xs: 1.5, sm: 2.5 },
         pt: 1.5,
         pb: 1,
+        // Chrome, not content: it keeps its height whatever the transcript does.
+        flexShrink: 0,
+        minWidth: 0,
       }}
     >
       <Box
@@ -126,10 +138,16 @@ export const ConfigBar: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           gap: { xs: 1, sm: 1.5 },
-          flexWrap: { xs: 'wrap', md: 'nowrap' },
+          // Always allowed to wrap. `nowrap` above md meant the row could
+          // demand more width than the viewport had, and the console clips
+          // horizontally, so the overflow was simply invisible.
+          flexWrap: 'wrap',
+          rowGap: 1,
+          minWidth: 0,
         }}
       >
-        {/* Agent */}
+        {/* Agent — the workbench picks the agent; this row is for chat-style config. */}
+        {!compact && (
         <FormControl size="small" sx={selectFrame(168)}>
           <InputLabel id="agent-select-label" sx={{ fontSize: '0.82rem' }}>
             Agent
@@ -156,14 +174,20 @@ export const ConfigBar: React.FC = () => {
               <MenuItem key={ag.id} value={ag.id}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Bot size={14} color={theme.palette.primary.main} />
-                  <span>{ag.name}</span>
+                  <span>{displayAgentName(ag.id, ag.name)}</span>
                 </Box>
               </MenuItem>
             ))}
+            {config.agentId &&
+              !(catalog?.agents ?? []).some((ag) => ag.id === config.agentId) && (
+                <MenuItem value={config.agentId}>{config.agentId}</MenuItem>
+              )}
           </Select>
         </FormControl>
 
-        {/* Workflow */}
+        )}
+
+        {!compact && (
         <FormControl size="small" sx={selectFrame(240)}>
           <InputLabel id="workflow-select-label" sx={{ fontSize: '0.82rem' }}>
             Workflow
@@ -223,6 +247,7 @@ export const ConfigBar: React.FC = () => {
             ))}
           </Select>
         </FormControl>
+        )}
 
         {/* Model */}
         <FormControl size="small" sx={selectFrame(176)}>
@@ -250,6 +275,9 @@ export const ConfigBar: React.FC = () => {
                 </Box>
               </MenuItem>
             ))}
+            {config.model && !models.some((m) => m.id === config.model) && (
+              <MenuItem value={config.model}>{config.model}</MenuItem>
+            )}
           </Select>
         </FormControl>
 
@@ -360,6 +388,34 @@ export const ConfigBar: React.FC = () => {
             flexWrap: 'wrap',
           }}
         >
+
+          {compact && (
+          <FormControl size="small" sx={selectFrame(240)}>
+            <InputLabel id="workflow-job-label" sx={{ fontSize: '0.82rem' }}>
+              Workflow (job)
+            </InputLabel>
+            <Select
+              labelId="workflow-job-label"
+              value={config.workflowId || ''}
+              label="Workflow (job)"
+              fullWidth
+              onChange={(e) => updateConfig({ workflowId: e.target.value || null })}
+              renderValue={(value) => (value ? workflowName(String(value)) : '')}
+              MenuProps={selectMenuProps}
+              sx={selectSx}
+            >
+              <MenuItem value="">
+                <em>None — run agents one at a time</em>
+              </MenuItem>
+              {(catalog?.workflows ?? []).map((wf) => (
+                <MenuItem key={wf.id} value={wf.id} disabled={wf.available === false}>
+                  {wf.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          )}
+
           <FormControl size="small" sx={selectFrame(168)}>
             <InputLabel id="skill-select-label" sx={{ fontSize: '0.82rem' }}>
               Skill Context

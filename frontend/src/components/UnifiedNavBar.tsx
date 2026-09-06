@@ -120,7 +120,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
     const [useCasesAnchorEl, setUseCasesAnchorEl] = useState<null | HTMLElement>(null);
     const isUseCasesOpen = Boolean(useCasesAnchorEl);
 
-    const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+    const isDesktop = useMediaQuery(theme.breakpoints.up('md'), { noSsr: true });
     useEffect(() => {
         if (isDesktop) setDrawerOpen(false);
     }, [isDesktop]);

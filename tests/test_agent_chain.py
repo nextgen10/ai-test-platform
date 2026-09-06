@@ -9,6 +9,7 @@ import pytest
 from runner.agent_chain import (
     _repair_strings,
     _strip_fences,
+    agent_json,
     ensure_workspace_github,
     mock_design,
     mock_draft,
@@ -145,6 +146,8 @@ def test_ensure_workspace_github(tmp_path):
     result = ensure_workspace_github(workspace, app_dir)
     assert result is not None
     assert (workspace / ".github").exists()
+    assert (workspace / "schemas" / "test-case.schema.json").is_file()
+    assert (workspace / "schemas" / "test-design.schema.json").is_file()
 
 
 def test_full_chain_mock_execution(tmp_path):
@@ -169,3 +172,71 @@ def test_full_chain_mock_execution(tmp_path):
     # Validate output document
     test_cases_doc = read_json(workspace / "output" / "test_cases.json")
     assert len(test_cases_doc["test_cases"]) >= 5
+
+
+VALID_CASE = {
+    "id": "TC-001",
+    "title": "Reset link is sent to a registered email",
+    "category": "functional",
+    "priority": "high",
+    "preconditions": ["An account exists for user@example.com"],
+    "steps": [
+        "Open the Forgot Password page",
+        "Enter user@example.com and submit",
+    ],
+    "expected_result": "A reset email is delivered to user@example.com.",
+    "requirement_reference": "REQ-042",
+}
+
+
+def test_agent_json_rewrites_when_draft_misses_the_schema(tmp_path, monkeypatch):
+    """A structurally invalid first draft must not ship; the agent gets one fix."""
+    schema = Path(__file__).resolve().parents[1] / "schemas" / "test-case.schema.json"
+    artifact = tmp_path / "intermediate" / "draft_test_cases.json"
+    artifact.parent.mkdir()
+    calls = {"n": 0}
+
+    def fake_run(agent, prompt, cwd):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            artifact.write_text('{"test_cases": []}', encoding="utf-8")
+            return ""
+        write_json(
+            artifact,
+            {
+                "requirement_reference": "REQ-042",
+                "assumptions": ["Generic confirmation to avoid enumeration."],
+                "test_cases": [VALID_CASE],
+            },
+        )
+        return ""
+
+    monkeypatch.setattr("runner.agent_chain.run_copilot_agent", fake_run)
+    draft = agent_json("test-generator", "write the suite", tmp_path, artifact, schema)
+    assert calls["n"] == 2
+    assert draft["test_cases"][0]["id"] == "TC-001"
+
+
+def test_agent_json_accepts_a_schema_valid_first_draft(tmp_path, monkeypatch):
+    schema = Path(__file__).resolve().parents[1] / "schemas" / "test-case.schema.json"
+    artifact = tmp_path / "intermediate" / "draft_test_cases.json"
+    artifact.parent.mkdir()
+    calls = {"n": 0}
+
+    def fake_run(agent, prompt, cwd):
+        calls["n"] += 1
+        write_json(
+            artifact,
+            {
+                "requirement_reference": "REQ-042",
+                "assumptions": ["Generic confirmation to avoid enumeration."],
+                "test_cases": [VALID_CASE],
+            },
+        )
+        return ""
+
+    monkeypatch.setattr("runner.agent_chain.run_copilot_agent", fake_run)
+    draft = agent_json("test-generator", "write the suite", tmp_path, artifact, schema)
+    assert calls["n"] == 1
+    assert len(draft["test_cases"]) == 1
+

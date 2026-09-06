@@ -125,36 +125,85 @@ def test_history_truncation_never_leaves_a_hole(monkeypatch):
     assert "2 earlier turn(s) omitted" in rendered
 
 
-def test_agent_tool_grant_comes_from_the_agent_definition():
-    """The CLI must never be handed --allow-all, shell, fetch, or write."""
+def _granted(cmd):
+    """Permission patterns actually handed to the CLI, in either flag form."""
+    granted = set()
+    for index, part in enumerate(cmd):
+        if part == "--allow-tool":
+            granted.add(cmd[index + 1])
+        elif part.startswith("--allow-tool="):
+            granted.add(part.split("=", 1)[1])
+    return granted
+
+
+def test_chat_grants_the_cli_no_write_shell_or_fetch(tmp_path):
+    """Chat reads the hub; it never writes to it.
+
+    Nothing is granted at all now, which is stronger than before rather than
+    weaker: `--allow-tool read` was never a permission pattern the CLI
+    understood (the kinds are shell(...), write(...), url(...) and
+    <mcp-server>(...)), so it was accepted and discarded. Reading is not gated,
+    so the correct grant for a read-only turn is the empty one.
+    """
     config = chat_orchestrator.ChatConfig(content="hi", agent_id="test-designer")
-    cmd = chat_orchestrator._build_copilot_cmd(config, "prompt")
-    assert "--allow-all" not in cmd
-    assert "--allow-tool" in cmd
-    granted = {cmd[i + 1] for i, part in enumerate(cmd) if part == "--allow-tool"}
-    assert granted == {"read"}
-    assert "write" not in granted
-    assert "shell" not in granted
-    assert "fetch" not in granted
-
-    # No agent selected means no tools beyond reading.
-    bare = chat_orchestrator._build_copilot_cmd(
-        chat_orchestrator.ChatConfig(content="hi"), "prompt"
+    cmd = chat_orchestrator._build_copilot_cmd(
+        config, "prompt", work=tmp_path, model=None
     )
-    assert {bare[i + 1] for i, p in enumerate(bare) if p == "--allow-tool"} == {"read"}
+    assert "--allow-all" not in cmd
+    assert "--allow-all-tools" not in cmd
+    granted = _granted(cmd)
+    assert granted == set(), granted
+    assert not any(part.startswith("--allow-tool") for part in cmd)
+
+    bare = chat_orchestrator._build_copilot_cmd(
+        chat_orchestrator.ChatConfig(content="hi"), "prompt", work=tmp_path, model=None
+    )
+    assert _granted(bare) == set()
 
 
-def test_a_skill_selection_resolves_to_its_hub_directory():
+def test_an_agent_declaring_write_is_still_not_granted_it_in_chat(tmp_path):
+    """The agent definitions all declare `write` for their job runs. A chat turn
+    must not inherit that: hub writes are an author action in the Registry."""
+    config = chat_orchestrator.ChatConfig(content="hi", agent_id="test-generator")
+    cmd = chat_orchestrator._build_copilot_cmd(
+        config, "prompt", work=tmp_path, model=None
+    )
+    assert "write" not in _granted(cmd)
+
+
+def test_the_hub_is_staged_where_the_cli_discovers_agents(tmp_path):
+    """The console bug: chat ran in an empty temp dir, so the CLI could see no
+    agents at all and every turn died on `No such agent: …, available:`."""
+    chat_orchestrator._stage_hub_context(tmp_path)
+    assert (tmp_path / ".github" / "agents" / "test-designer.agent.md").is_file()
+    assert (tmp_path / ".github" / "skills" / "test-case-generation").is_dir()
+
+
+def test_staged_agents_are_real_files_not_links_into_the_host_tree(tmp_path):
+    """agent-hub/.github/{agents,skills} are symlinks. Copied as links they
+    would point at a path that does not exist inside a container."""
+    chat_orchestrator._stage_hub_context(tmp_path)
+    staged = tmp_path / ".github" / "agents"
+    assert not staged.is_symlink()
+    assert not (staged / "test-designer.agent.md").is_symlink()
+
+
+def test_a_skill_selection_resolves_to_its_hub_directory(tmp_path):
     config = chat_orchestrator.ChatConfig(content="hi", skill_id="document-ocr")
-    cmd = chat_orchestrator._build_copilot_cmd(config, "prompt")
+    cmd = chat_orchestrator._build_copilot_cmd(
+        config, "prompt", work=tmp_path, model=None
+    )
     assert "--skill-path" in cmd
     assert cmd[cmd.index("--skill-path") + 1].endswith("/skills/document-ocr")
 
 
-def test_a_traversing_skill_id_never_becomes_a_path():
+def test_a_traversing_skill_id_never_becomes_a_path(tmp_path):
     for hostile in ("../../etc", "..", "skills/../../..", ""):
         cmd = chat_orchestrator._build_copilot_cmd(
-            chat_orchestrator.ChatConfig(content="hi", skill_id=hostile), "prompt"
+            chat_orchestrator.ChatConfig(content="hi", skill_id=hostile),
+            "prompt",
+            work=tmp_path,
+            model=None,
         )
         assert "--skill-path" not in cmd, hostile
 
@@ -327,3 +376,184 @@ def test_an_oversized_message_is_rejected(client):
     assert res.status_code == 422
 
     client.delete(f"/api/v1/chat/sessions/{session_id}")
+
+
+# ------------------------------------------------- the console's retry decisions
+
+
+def _drive(config, monkeypatch, attempts):
+    """Run execute_streaming against a scripted sequence of CLI attempts.
+
+    Each entry in `attempts` is (chunks_to_emit, failure_message).
+    """
+    import asyncio
+
+    from app.services import chat_orchestrator as chat
+
+    seen = []
+
+    async def fake_stream_once(cmd, env, cwd, state, deadline):
+        chunks, failure = attempts[min(len(seen), len(attempts) - 1)]
+        seen.append(cmd)
+        for chunk in chunks:
+            state.emitted = True
+            yield chunk
+        state.failure = failure
+
+    monkeypatch.setattr(chat, "_stream_once", fake_stream_once)
+    monkeypatch.setattr(chat, "_stage_hub_context", lambda work: None)
+    monkeypatch.setattr(asyncio, "sleep", _no_sleep)
+
+    async def collect():
+        return [c async for c in chat.execute_streaming(config)]
+
+    return "".join(asyncio.run(collect())), seen
+
+
+async def _no_sleep(_seconds):
+    return None
+
+
+def test_a_model_the_account_rejects_is_dropped_and_the_turn_still_answers(monkeypatch):
+    """This is what the console showed as a 2.2s failure: the turn died on a
+    model the account cannot use, instead of asking for the default."""
+    from app.services import chat_orchestrator as chat
+    from app.services import runner_bridge
+
+    runner_bridge.copilot_cli().reset_model_fallback()
+    config = chat.ChatConfig(
+        content="hi", agent_id="test-designer", model="gpt-4o", engine="copilot"
+    )
+
+    text, seen = _drive(
+        config,
+        monkeypatch,
+        [
+            ([], "The requested model from --model flag is not available"),
+            (["the answer"], ""),
+        ],
+    )
+
+    assert text == "the answer"
+    assert "--model" in seen[0]
+    assert "--model" not in seen[1], "the rejected model must not be sent again"
+    runner_bridge.copilot_cli().reset_model_fallback()
+
+
+def test_a_transient_failure_is_retried(monkeypatch):
+    from app.services import chat_orchestrator as chat
+
+    config = chat.ChatConfig(content="hi", agent_id="test-designer", engine="copilot")
+    text, seen = _drive(
+        config, monkeypatch, [([], "503 Service Unavailable"), (["recovered"], "")]
+    )
+    assert text == "recovered"
+    assert len(seen) == 2
+
+
+def test_an_authentication_failure_is_reported_immediately(monkeypatch):
+    """No retry produces a token, and three attempts at it just wastes the wait."""
+    from app.services import chat_orchestrator as chat
+
+    config = chat.ChatConfig(content="hi", agent_id="test-designer", engine="copilot")
+    text, seen = _drive(config, monkeypatch, [([], "Error: Authentication failed")])
+    assert len(seen) == 1
+    assert "authentication" in text.lower()
+
+
+def test_a_partial_answer_is_never_followed_by_a_second_attempt(monkeypatch):
+    """Appending a retry to text the user has already read produces nonsense."""
+    from app.services import chat_orchestrator as chat
+
+    config = chat.ChatConfig(content="hi", agent_id="test-designer", engine="copilot")
+    text, seen = _drive(
+        config, monkeypatch, [(["half an answer"], "503 Service Unavailable")]
+    )
+    assert len(seen) == 1
+    assert text.startswith("half an answer")
+
+
+def test_an_unknown_agent_names_the_ones_that_do_exist(monkeypatch):
+    import asyncio
+
+    from app.services import chat_orchestrator as chat
+
+    config = chat.ChatConfig(
+        content="hi", agent_id="not-a-real-agent", engine="copilot"
+    )
+
+    async def collect():
+        return [c async for c in chat.execute_streaming(config)]
+
+    text = "".join(asyncio.run(collect()))
+    assert "not-a-real-agent" in text
+    assert "test-designer" in text, "the reply should say what is available"
+
+
+# --------------------------------------------------- console prompt framing
+
+def test_an_artifact_agent_is_told_its_reply_is_the_artifact():
+    """The console cannot give an agent the file its own prompt demands.
+
+    `test-designer.agent.md` says "write JSON only, no fences, to
+    intermediate/test_design.json". Chat strips `write` and has no workspace, so
+    without reframing the agent satisfies both readings at once: the payload
+    bare, then a narrated copy inside a fence. That doubled output is the bug
+    this framing exists to prevent.
+    """
+    from app.services.chat_orchestrator import ChatConfig, _resolve_prompt_content
+
+    prompt = _resolve_prompt_content(
+        ChatConfig(content="Export a test run to Excel.", agent_id="test-designer")
+    )
+
+    assert "intermediate/test_design.json" in prompt
+    assert "never repeat the content a second time" in prompt
+    # The framing leads, so the user's text stays last and stays data.
+    assert prompt.index("HOW TO REPLY") < prompt.index("Export a test run")
+
+
+def test_a_conversational_agent_gets_no_artifact_framing():
+    """An agent that declares no artifact has no contradiction to resolve."""
+    from app.services.chat_orchestrator import ChatConfig, _resolve_prompt_content
+
+    assert _resolve_prompt_content(ChatConfig(content="hello")) == "hello"
+
+
+def test_framing_survives_an_unknown_agent():
+    """A stale agent id must not break prompt construction."""
+    from app.services.chat_orchestrator import ChatConfig, _resolve_prompt_content
+
+    prompt = _resolve_prompt_content(
+        ChatConfig(content="hi", agent_id="zz-not-onboarded")
+    )
+    assert prompt == "hi"
+
+
+def test_mock_contract_reply_matches_the_agents_declared_shape():
+    """Mock mode must answer in the shape the real agent would.
+
+    `ENGINE=mock` is what CI and every first run use. When the designer replied
+    with a hand-written Markdown table while the real agent returned schema-valid
+    JSON, the entire structured path — the console's Structured view,
+    `extractJson`, every downstream consumer — was untested in the one mode that
+    always runs.
+    """
+    import json
+
+    from app.services.chat_orchestrator import _mock_contract_reply
+
+    for agent_id in ("test-designer", "test-generator", "test-evaluator"):
+        reply = _mock_contract_reply(agent_id)
+        assert reply is not None, f"{agent_id} declares a schema but mocks prose"
+        body = reply.strip().removeprefix("```json").removesuffix("```").strip()
+        json.loads(body)  # raises if the canned document is not valid JSON
+
+
+def test_an_agent_without_a_contract_still_mocks_prose():
+    """Inventing JSON for a prose agent would be its own kind of wrong."""
+    from app.services.chat_orchestrator import _mock_contract_reply
+
+    assert _mock_contract_reply("ocr-extractor") is None
+    assert _mock_contract_reply(None) is None
+    assert _mock_contract_reply("zz-not-onboarded") is None

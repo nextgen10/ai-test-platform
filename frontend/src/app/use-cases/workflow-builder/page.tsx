@@ -9,6 +9,7 @@ import {
     CircularProgress,
     Collapse,
     Grid,
+    Skeleton,
     IconButton,
     LinearProgress,
     Paper,
@@ -20,7 +21,6 @@ import {
 } from '@mui/material';
 import {
     AlertTriangle,
-    Bot,
     Check,
     ChevronDown,
     Circle,
@@ -42,12 +42,12 @@ import { MarkdownRenderer } from '@/components/chat/MarkdownRenderer';
 import {
     ACTIVE_STATUSES,
     api,
-    formatDuration,
     type Job,
-    type StageRecord,
     type Workflow,
 } from '@/lib/api';
 import { hubApi } from '@/lib/hub-api';
+// Shared with the job-detail stepper and side panel, so every view of a run agrees.
+import { derivePhases, humanise, type PhaseState } from '@/lib/phases';
 import { getSavedSettings, getSessionGithubToken } from '@/lib/settings';
 import {
     bundleWorkflowId,
@@ -90,6 +90,7 @@ export default function WorkflowBuilderPage() {
     const router = useRouter();
 
     const [workflow, setWorkflow] = useState<Workflow | null>(null);
+    const [catalogReady, setCatalogReady] = useState(false);
     const [brief, setBrief] = useState('');
     const [job, setJob] = useState<Job | null>(null);
     const [starting, setStarting] = useState(false);
@@ -107,7 +108,41 @@ export default function WorkflowBuilderPage() {
     useEffect(() => {
         api.workflows()
             .then((all) => setWorkflow(all.find((w) => w.id === WORKFLOW_ID) ?? null))
-            .catch(() => setWorkflow(null));
+            .catch(() => setWorkflow(null))
+            .finally(() => setCatalogReady(true));
+    }, []);
+
+    // Reopen a run from `?job=<id>`.
+    //
+    // The run used to live only in this component's state, so leaving the page
+    // lost it: a build still in flight could not be got back to, and a finished
+    // one left its generated files reachable only as a raw artifact download
+    // from the run-details page. The job list now links here with this
+    // parameter, and starting a run writes it into the URL, so a build is
+    // returnable and shareable for as long as its artifacts exist.
+    //
+    // Read from `window.location` rather than `useSearchParams` so the page
+    // needs no Suspense boundary to prerender.
+    const restored = useRef(false);
+    useEffect(() => {
+        if (restored.current) return;
+        restored.current = true;
+
+        const wanted = new URLSearchParams(window.location.search).get('job');
+        if (!wanted) return;
+
+        api.getJob(wanted)
+            .then((j) => {
+                if (j.workflow !== WORKFLOW_ID) {
+                    setError(
+                        `Job ${wanted} ran the ${j.workflow} workflow, not the builder. ` +
+                        `Open it from the Jobs list instead.`,
+                    );
+                    return;
+                }
+                setJob(j);
+            })
+            .catch(() => setError(`Job ${wanted} could not be loaded. It may have been deleted.`));
     }, []);
 
     const running = Boolean(job && ACTIVE_STATUSES.includes(job.status));
@@ -174,6 +209,8 @@ export default function WorkflowBuilderPage() {
                 github_token: getSessionGithubToken() || undefined,
             });
             setJob(await api.getJob(job_id));
+            // So this build survives navigating away and can be linked to.
+            window.history.replaceState(null, '', `?job=${encodeURIComponent(job_id)}`);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Could not start the builder');
         } finally {
@@ -188,6 +225,8 @@ export default function WorkflowBuilderPage() {
         setInstall({});
         setError(null);
         fetchedFor.current = null;
+        // Drop the deep link too, or a reload reopens the run just cleared.
+        window.history.replaceState(null, '', window.location.pathname);
     };
 
     const keyOf = (file: GeneratedFile) => `${file.kind}:${file.id}`;
@@ -268,35 +307,33 @@ export default function WorkflowBuilderPage() {
     // --------------------------------------------------------------- stages
 
     const declared = workflow?.agents ?? [];
-    const recorded: StageRecord[] = job?.provenance?.stages ?? [];
+    const derived = job ? derivePhases(job, workflow) : null;
+    const pipeline =
+        derived && !derived.unknown
+            ? derived.phases
+            : declared.map((agent) => ({
+                  key: agent.id,
+                  label: humanise(agent.stage || agent.id),
+                  hint: agent.description,
+              }));
 
-    const stageState = (stage: string): 'pending' | 'active' | 'completed' | 'failed' | 'skipped' => {
-        const record = recorded.find((r) => r.stage === stage);
-        if (record?.status === 'completed') return 'completed';
-        if (record?.status === 'failed') return 'failed';
-        if (record?.status === 'skipped') return 'skipped';
-        if (!running) return failed ? 'failed' : 'pending';
-        // The runner only writes its record at the end, so mid-run the active
-        // stage is the first one with nothing recorded against it.
-        const firstUnrecorded = declared.find((a) => !recorded.some((r) => r.stage === a.stage));
-        return firstUnrecorded?.stage === stage ? 'active' : 'pending';
-    };
-
-    const STAGE_ICON = {
+    const STAGE_ICON: Record<PhaseState, React.ReactNode> = {
         completed: <Check size={13} />,
-        active: <Loader2 size={13} className="spin" />,
+        running: <Loader2 size={13} className="spin" />,
+        blocked: <Loader2 size={13} className="spin" />,
         failed: <X size={13} />,
         skipped: <Circle size={13} />,
         pending: <Circle size={13} />,
-    } as const;
+    };
 
-    const STAGE_COLOR = {
+    const STAGE_COLOR: Record<PhaseState, string> = {
         completed: theme.palette.success.main,
-        active: theme.palette.primary.main,
+        running: theme.palette.primary.main,
+        blocked: theme.palette.warning.main,
         failed: theme.palette.error.main,
         skipped: theme.palette.text.disabled,
         pending: theme.palette.text.disabled,
-    } as const;
+    };
 
     // ----------------------------------------------------------------- view
 
@@ -330,24 +367,15 @@ export default function WorkflowBuilderPage() {
                     'Describe a multi-agent workflow in plain English and have the platform design, write and install it.'
                 }
                 actions={
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        {job && (
-                            <Button
-                                variant="outlined"
-                                startIcon={<ScrollText size={16} />}
-                                onClick={() => router.push(`/jobs/${job.id}`)}
-                            >
-                                Run details
-                            </Button>
-                        )}
+                    job ? (
                         <Button
                             variant="outlined"
-                            startIcon={<Bot size={16} />}
-                            onClick={() => router.push(`/chat?workflow=${encodeURIComponent(WORKFLOW_ID)}`)}
+                            startIcon={<ScrollText size={16} />}
+                            onClick={() => router.push(`/jobs/${job.id}`)}
                         >
-                            Open in Agent Console
+                            Run details
                         </Button>
-                    </Box>
+                    ) : undefined
                 }
             />
 
@@ -515,19 +543,28 @@ export default function WorkflowBuilderPage() {
                             )}
                         </Box>
 
-                        {declared.length === 0 ? (
+                        {!catalogReady && pipeline.length === 0 ? (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                                {[0, 1, 2, 3].map((i) => (
+                                    <Box key={i} sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                                        <Skeleton variant="circular" width={24} height={24} />
+                                        <Skeleton variant="text" width="70%" height={20} />
+                                    </Box>
+                                ))}
+                            </Box>
+                        ) : pipeline.length === 0 ? (
                             <Typography variant="body2" color="text.secondary">
                                 Register <code>{WORKFLOW_ID}</code> in <code>agent-hub/workflows/</code>{' '}
                                 and its stages appear here.
                             </Typography>
                         ) : (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-                                {declared.map((agent, index) => {
-                                    const state = stageState(agent.stage);
-                                    const record = recorded.find((r) => r.stage === agent.stage);
+                                {pipeline.map((phase, index) => {
+                                    const state: PhaseState = derived?.states[phase.key]?.state ?? 'pending';
+                                    const detail = derived?.states[phase.key]?.detail ?? '';
                                     const color = STAGE_COLOR[state];
                                     return (
-                                        <Box key={agent.stage} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                                        <Box key={phase.key} sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                                             <Box
                                                 sx={{
                                                     width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
@@ -540,17 +577,19 @@ export default function WorkflowBuilderPage() {
                                             <Box sx={{ minWidth: 0, flex: 1 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                                                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                        {index + 1}. {agent.stage}
+                                                        {index + 1}. {phase.label}
                                                     </Typography>
-                                                    {record?.duration_ms != null && (
+                                                    {detail ? (
                                                         <Typography variant="caption" sx={{ color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}>
-                                                            {formatDuration(record.duration_ms)}
+                                                            {detail}
                                                         </Typography>
-                                                    )}
+                                                    ) : null}
                                                 </Box>
-                                                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1.4 }}>
-                                                    {agent.description ?? agent.id}
-                                                </Typography>
+                                                {phase.hint ? (
+                                                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', lineHeight: 1.4 }}>
+                                                        {phase.hint}
+                                                    </Typography>
+                                                ) : null}
                                             </Box>
                                         </Box>
                                     );

@@ -319,13 +319,8 @@ def test_docs_are_closed_in_token_mode(anonymous):
 
 # ------------------------------------------------ auth configuration at boot
 
-def test_disabled_auth_boots_only_with_the_insecure_flag(monkeypatch):
-    """`AUTH_MODE=disabled` is a supported (loopback-only) mode, so it must boot.
-
-    It reads ALLOW_INSECURE_AUTH from the environment, and `os` was not imported
-    in this module — so the documented development path raised NameError on
-    startup instead of either refusing or running open.
-    """
+def test_disabled_auth_boots_open_with_no_extra_flag(monkeypatch, anonymous):
+    """The demo serves the API with no login and no second opt-in flag."""
     from app import security
     from app.config import settings as app_settings
 
@@ -333,13 +328,11 @@ def test_disabled_auth_boots_only_with_the_insecure_flag(monkeypatch):
     # back afterwards so the rest of the tests still authenticate.
     monkeypatch.setattr(security, "_TOKENS", dict(security._TOKENS))
     monkeypatch.setattr(app_settings, "auth_mode", "disabled")
-    monkeypatch.delenv("ALLOW_INSECURE_AUTH", raising=False)
 
-    # Without the flag: a clear refusal, never a NameError.
-    with pytest.raises(security.AuthConfigError, match="ALLOW_INSECURE_AUTH"):
-        security.configure_auth()
-
-    # With it: boots, and every caller is the anonymous admin principal.
-    monkeypatch.setenv("ALLOW_INSECURE_AUTH", "1")
     security.configure_auth()
     assert security.ANONYMOUS.role is security.Role.ADMIN
+    catalog = anonymous.get("/api/v1/hub/catalog")
+    assert catalog.status_code == 200
+    me = anonymous.get("/api/v1/me")
+    assert me.status_code == 200
+    assert me.json() == {"name": "anonymous", "role": "admin"}

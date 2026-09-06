@@ -82,7 +82,9 @@ likelihood, not on how interesting the case is to write.
 
 Write **only** JSON to the output file — no Markdown fences, no prose, no
 commentary before or after. The document must match
-`schemas/test-case.schema.json`:
+`/workspace/schemas/test-case.schema.json` (this file is copied into the job
+workspace). Read it before writing. Never search the host filesystem for
+schemas.
 
 ```json
 {

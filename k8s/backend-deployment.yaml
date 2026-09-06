@@ -22,8 +22,22 @@ spec:
     metadata:
       labels:
         app: ai-test-orchestrator
+      annotations:
+        # /api/v1/metrics is a Prometheus scrape target: queue depth, job
+        # states and mean duration. Unauthenticated on purpose — it reports
+        # counts only, and metrics behind a credential are metrics nobody
+        # collects.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8100"
+        prometheus.io/path: "/api/v1/metrics"
     spec:
       serviceAccountName: ai-test-orchestrator
+      # Long enough for the worker to stop polling, kill its runner child and
+      # hand its in-flight jobs back to the queue. Without the window the pod
+      # is SIGKILLed, the lease stays pinned to a replica that no longer
+      # exists, and the job waits out JOB_LEASE_SECONDS before anyone may
+      # touch it — which makes a planned deploy recover slower than a crash.
+      terminationGracePeriodSeconds: 45
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -62,14 +76,7 @@ spec:
             - name: CORS_ORIGINS
               value: "http://localhost:3100"
             - name: AUTH_MODE
-              value: "token"
-            # "<token>:<name>:<role>[,...]" — reader | operator | author | admin.
-            # The API refuses to start in token mode without this.
-            - name: API_TOKENS
-              valueFrom:
-                secretKeyRef:
-                  name: orchestrator-auth
-                  key: API_TOKENS
+              value: "disabled"
             # Per-job credentials, deliberately off the artifact volume: every
             # file under ARTIFACT_ROOT is downloadable through the API.
             - name: JOB_RUNTIME_ROOT

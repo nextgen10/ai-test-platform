@@ -396,8 +396,12 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
             },
 
             // ---- Buttons -------------------------------------------------------
+            // Do not set `defaultProps.disableElevation` here. On this Next/MUI
+            // stack the prop is applied on the client but skipped during SSR, so
+            // every Button hydrates with an extra `MuiButton-disableElevation`
+            // class and a different Emotion hash. Flat elevation is enforced via
+            // styleOverrides.boxShadow instead.
             MuiButton: {
-                defaultProps: { disableElevation: true },
                 styleOverrides: {
                     root: {
                         borderRadius: shape.md,

@@ -125,10 +125,28 @@ app.include_router(lab_router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    """Never leak an internal error to a caller — but do give them the thread.
+
+    The request id is already on every log line for this request, so quoting it
+    back turns "it broke" into a support ticket someone can actually grep for.
+    The exception itself stays in the log where it belongs.
+    """
     logger.exception("Unhandled exception during request")
+    # "-" is the contextvar's default, meaning nothing set an id for this
+    # request. Quoting that back would send someone hunting for a log line
+    # that says nothing about them.
+    request_id = request_id_var.get()
+    known = request_id not in ("", "-")
+    detail = "Internal Server Error."
+    if known:
+        detail += f" Quote request {request_id} when reporting this."
+    else:
+        detail += " Please contact support if the issue persists."
+
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error. Please contact support if the issue persists."},
+        content={"detail": detail, "request_id": request_id if known else None},
+        headers={"X-Request-ID": request_id} if known else None,
     )
 
 
