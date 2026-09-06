@@ -14,12 +14,13 @@ COPY backend/requirements.txt /srv/requirements.txt
 RUN pip install --no-cache-dir -r /srv/requirements.txt \
     # Required for EXECUTOR=kubernetes and for a PostgreSQL DATABASE_URL.
     # Both are the production configuration, so both are in the image.
-    && pip install --no-cache-dir kubernetes==31.0.0 "psycopg[binary]==3.2.3"
+    && pip install --no-cache-dir kubernetes==31.0.0 "psycopg[binary]==3.2.3" jsonschema==4.23.0
 
 COPY backend/app /srv/app
 COPY backend/migrations /srv/migrations
 COPY schemas /srv/schemas
 COPY agent-hub /srv/agent-hub
+COPY runner /srv/runner
 
 ENV PYTHONPATH=/srv \
     AGENT_HUB_DIR=/srv/agent-hub \

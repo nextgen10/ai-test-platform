@@ -7,6 +7,7 @@ alembic==1.18.5
 pydantic==2.13.4
 pyyaml==6.0.2
 python-multipart==0.0.20
+jsonschema==4.23.0
 
 # Optional: required only when EXECUTOR=kubernetes
 # kubernetes==31.0.0
