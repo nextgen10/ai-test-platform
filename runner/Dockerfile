@@ -11,7 +11,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     APP_DIR=/app \
     AGENT_HUB_DIR=/app/agent-hub \
-    WORKSPACE=/workspace
+    WORKSPACE=/workspace \
+    PYTHONPATH=/app
 
 # python3 for the chain driver and validator; ca-certificates for TLS to the
 # Copilot endpoint. No compilers, no cloud CLIs, no docker, no kubectl.
@@ -54,8 +55,7 @@ COPY schemas /app/schemas
 # onboarded as data. entrypoint.sh picks between them on $RUNNER_KIND — shipping
 # only one of the two is how the container executors ended up silently running
 # the bespoke chain for every workflow.
-COPY runner/agent_chain.py runner/generic_runner.py runner/agent_io.py \
-     runner/workflow_graph.py runner/validate_output.py runner/entrypoint.sh /app/
+COPY runner/*.py runner/entrypoint.sh /app/
 
 RUN chmod +x /app/entrypoint.sh \
     && useradd --create-home --uid 10001 runner \

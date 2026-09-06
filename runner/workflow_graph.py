@@ -186,18 +186,14 @@ def should_run(stage: Stage, outcomes: dict[str, str]) -> tuple[bool, str]:
     if stage.when == "any_succeeded":
         if any(r == "completed" for r in results):
             return True, ""
-        return False, (
-            f"no dependency of {stage.key!r} succeeded "
-            f"({', '.join(f'{d}={outcomes.get(d, 'skipped')}' for d in stage.depends_on)})"
-        )
+        dep_str = ", ".join(f"{d}={outcomes.get(d, 'skipped')}" for d in stage.depends_on)
+        return False, f"no dependency of {stage.key!r} succeeded ({dep_str})"
 
     # all_succeeded
     failed = [
         dep for dep in stage.depends_on if outcomes.get(dep, "skipped") != "completed"
     ]
     if failed:
-        return False, (
-            f"{stage.key!r} needs {', '.join(failed)} to succeed "
-            f"({', '.join(f'{d}={outcomes.get(d, 'skipped')}' for d in failed)})"
-        )
+        failed_str = ", ".join(f"{d}={outcomes.get(d, 'skipped')}" for d in failed)
+        return False, f"{stage.key!r} needs {', '.join(failed)} to succeed ({failed_str})"
     return True, ""
