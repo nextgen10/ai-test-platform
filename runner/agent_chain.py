@@ -52,6 +52,11 @@ DEFAULT_APP_DIR = Path(os.getenv("APP_DIR", "/app"))
 MAX_REVIEW_ATTEMPTS = int(os.getenv("MAX_REVIEW_ATTEMPTS", "3"))
 COPILOT_MODEL = os.getenv("COPILOT_MODEL", "")
 
+#: Set on a reprocess the caller asked not to re-score. The gap-closer still
+#: runs; the evaluator does not. Off by default — the evaluator is the only
+#: check that the gap-closer closed what it was asked to close.
+SKIP_EVALUATION = os.getenv("SKIP_EVALUATION", "").strip().lower() in {"1", "true", "yes"}
+
 
 def _copilot_bin() -> str:
     """Resolved CLI path. On Windows a bare `copilot` is not executable."""
@@ -1679,7 +1684,7 @@ def main() -> int:
     elif args.reprocess:
         # A reprocess amends the existing suite instead of regenerating it, so it
         # runs the gap-closer, not the design/generate/review chain.
-        stage_agents = ["gap-closer", "test-evaluator"]
+        stage_agents = ["gap-closer"] if SKIP_EVALUATION else ["gap-closer", "test-evaluator"]
     else:
         stage_agents = ["test-designer", "test-generator", "test-reviewer", "test-evaluator"]
 
@@ -1726,9 +1731,19 @@ def main() -> int:
             # was sound" half of a reprocess; the gap-closer takes it as its base.
             log("REPROCESS: closing the gaps the evaluator named")
             result = run_gap_closing(workspace, args.app_dir, args.engine)
-            evaluation_error = evaluate_best_effort(
-                workspace, args.app_dir, args.engine, result
-            )
+            if SKIP_EVALUATION:
+                # Amend and stop, as the caller asked. Said out loud in the log
+                # because the score beside this suite now describes the suite
+                # *before* the amendment, and someone reading this later needs
+                # to know that was a choice rather than a failure.
+                log(
+                    "  skipping re-evaluation at the caller's request — "
+                    "the recorded score describes the pre-amendment suite"
+                )
+            else:
+                evaluation_error = evaluate_best_effort(
+                    workspace, args.app_dir, args.engine, result
+                )
         else:
             result = run_chain(workspace, args.app_dir, args.engine)
             evaluation_error = evaluate_best_effort(

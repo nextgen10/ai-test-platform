@@ -121,6 +121,17 @@ class KubernetesExecutor:
                                     {"name": "WORKFLOW_ID", "value": workflow},
                                     {"name": "RUNNER_KIND", "value": runner},
                                     {"name": "REPROCESS", "value": "1" if reprocess else "0"},
+                                    # A reprocess the caller asked not to
+                                    # re-score. Set on all three executors, not
+                                    # just the one in local use: a variable one
+                                    # path sets and another ignores is how
+                                    # RUNNER_KIND silently did nothing.
+                                    {
+                                        "name": "SKIP_EVALUATION",
+                                        "value": "1"
+                                        if exec_runtime.runtime_value(job_id, "skip_evaluation")
+                                        else "0",
+                                    },
                                     # So the runner stops inside activeDeadlineSeconds
                                     # and writes its record, rather than being killed
                                     # at it with nothing to show.

@@ -51,6 +51,11 @@ class LocalExecutor:
             }
         )
 
+        # A reprocess the caller asked not to re-score. Read from the same
+        # per-job control directory as engine and model.
+        if exec_runtime.runtime_value(job_id, "skip_evaluation"):
+            env["SKIP_EVALUATION"] = "1"
+
         model = exec_runtime.runtime_value(job_id, "copilot_model")
         if model:
             env["COPILOT_MODEL"] = model

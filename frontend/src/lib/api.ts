@@ -79,6 +79,15 @@ export interface Evaluation {
     overall: { score: number; rating: Rating; verdict?: string };
     gaps?: { area: string; detail: string; severity: 'low' | 'medium' | 'high' }[];
     recommendations?: { action: string; detail: string; target_ids?: string[] }[];
+    /**
+     * Set when a reprocess amended the suite without re-scoring it.
+     *
+     * The score below then describes the *previous* suite. It is kept rather
+     * than discarded — it is still the last thing anyone measured — but it must
+     * never be presented as current.
+     */
+    stale?: boolean;
+    stale_reason?: string;
 }
 
 export interface JobSummary {

@@ -78,6 +78,10 @@ class DockerExecutor:
         # Job-specific overrides win over global env. They are read from the
         # runtime directory rather than the workspace: the workspace is served
         # by the artifacts endpoint, and one of these values is a credential.
+        # A reprocess the caller asked not to re-score.
+        if exec_runtime.runtime_value(job_id, "skip_evaluation"):
+            command += ["-e", "SKIP_EVALUATION=1"]
+
         model = exec_runtime.runtime_value(job_id, "copilot_model")
         if model:
             command += ["-e", f"COPILOT_MODEL={model}"]

@@ -50,9 +50,10 @@ on.** Re-solving them is the main way this brief wastes a week.
 | **[r5]** Artifacts are pruned on a policy | `services/retention.py` | `pytest tests/test_retention.py` |
 | **[r5]** A fan-in stage checks its inputs exist | `generic_runner.missing_inputs` | `pytest tests/test_workflow_execution.py -k fan_in` |
 | **[r5]** Reprocess says it is still running | `/jobs/[id]` banner + 'Cancel reprocess' | open a job mid-reprocess |
+| **[r5]** Reprocess can skip re-scoring | `POST /jobs/{id}/reprocess {"evaluate": false}` | `pytest tests/test_reprocess_runtime.py -k amend` |
 | **[r5]** Dead UI removed | `ChatInput`/`ChatMessage` deleted | `grep -r ChatInput frontend/src` finds nothing |
 
-Backend baseline: **335 tests green** *(r4 said 323, r3 313, r2 310)*. Frontend:
+Backend baseline: **339 tests green** *(r4 said 323, r3 313, r2 310)*. Frontend:
 `tsc --noEmit` clean, `next build` clean. Any slice that leaves either red is
 not done.
 
@@ -408,7 +409,7 @@ the DoD row honestly; do not leave a check nobody can run.
 | Repo hygiene holds | `git status --porcelain -uall` shows nothing stageable but source — **[r3] passing** |
 | Auth still disabled, none added | no `/api/auth/*` route; `AUTH_MODE=disabled`; `pytest tests/test_security.py` |
 | Jobs + chat failures actionable | no blank 500s: every error path returns JSON with `detail` + `request_id` |
-| Backend not regressed | `pytest tests/` ≥ 335 passing **[r5]**, and green under `pytest-randomly` |
+| Backend not regressed | `pytest tests/` ≥ 339 passing **[r5]**, and green under `pytest-randomly` |
 | Frontend not regressed | `tsc --noEmit` clean, `next build` clean |
 | Styling law holds | no hex literals outside `theme/index.ts` + `globals.css`; fonts resolve (no 404s in dev log) |
 | Quality does not drift | golden-set run diffs within tolerance of last release |

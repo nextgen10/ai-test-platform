@@ -82,6 +82,21 @@ export default function EvaluationPanel({ job, evaluation, onReprocess }: Props)
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, width: '100%', minWidth: 0 }}>
+            {/* A reprocess that amended the suite without re-scoring it leaves
+                this score describing the previous one. The number is still the
+                last thing anyone measured, so it is shown — but never as though
+                it were current. */}
+            {evaluation.stale && (
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                    <Box sx={{ fontWeight: 500, mb: 0.25 }}>
+                        This score is out of date
+                    </Box>
+                    {evaluation.stale_reason ??
+                        'The suite was amended after this evaluation ran.'}{' '}
+                    Reprocess again with scoring enabled to measure the current suite.
+                </Alert>
+            )}
+
             {/* 1. Headline Score Card */}
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: alpha(color, 0.4), minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 1.5 }}>

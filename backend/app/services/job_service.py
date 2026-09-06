@@ -219,7 +219,7 @@ def _submitted_engine(job: Job) -> str | None:
     return None
 
 
-def _restage_runtime_for_reprocess(job: Job) -> None:
+def _restage_runtime_for_reprocess(job: Job, *, evaluate: bool = True) -> None:
     """Put engine and model back on disk before a reprocess run.
 
     The PAT is not in the database (by design). If it was already purged, the
@@ -232,6 +232,17 @@ def _restage_runtime_for_reprocess(job: Job) -> None:
         copilot_model=job.copilot_model,
         github_token=None,
     )
+
+    # A reprocess that skips scoring is told so through the same per-job control
+    # directory the engine and model travel in, rather than a new parameter
+    # threaded through three executors.
+    runtime = settings.runtime_for(job.id)
+    marker = runtime / "skip_evaluation"
+    if evaluate:
+        marker.unlink(missing_ok=True)
+    else:
+        runtime.mkdir(parents=True, exist_ok=True)
+        marker.write_text("1", encoding="utf-8")
 
 
 def _job_can_still_execute(job: Job) -> bool:
@@ -1164,7 +1175,7 @@ def reject_job(db: Session, job: Job, rejected_by: str, reason: str = "") -> Job
     return job
 
 
-def start_reprocess(db: Session, job: Job) -> Job:
+def start_reprocess(db: Session, job: Job, *, evaluate: bool = True) -> Job:
     """Re-run generation once, feeding the evaluator's recommendations back in."""
     if job.status is not JobStatus.COMPLETED:
         raise JobError(
@@ -1183,7 +1194,23 @@ def start_reprocess(db: Session, job: Job) -> Job:
     # Restage *before* the job becomes claimable. Workers read engine from the
     # runtime directory; if this is missing they fall back to the process
     # default, which is mock.
-    _restage_runtime_for_reprocess(job)
+    _restage_runtime_for_reprocess(job, evaluate=evaluate)
+
+    if not evaluate:
+        # The suite is about to change and nothing will re-score it, so the
+        # stored evaluation stops describing what is on disk. Saying so is the
+        # whole cost of the option: an unmarked stale score is a score card that
+        # confidently reports a number for a suite that no longer exists, and
+        # `start_reprocess` reads these same gaps to decide what to fix next.
+        job.evaluation = {
+            **(job.evaluation or {}),
+            "stale": True,
+            "stale_reason": (
+                "Scored before reprocess "
+                f"#{job.reprocess_count + 1}, which amended the suite without "
+                "re-scoring it."
+            ),
+        }
 
     job.reprocess_count += 1
     job.error_message = None

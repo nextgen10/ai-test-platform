@@ -103,6 +103,18 @@ class ApprovalRequest(BaseModel):
     reason: str = Field(default="", max_length=1000)
 
 
+class ReprocessRequest(BaseModel):
+    """Options for re-running a completed job's generation stage."""
+
+    actor: str = Field(default="anonymous", max_length=128)
+    #: Re-score the amended suite. Default on, because the evaluator is the only
+    #: check that the gap-closer closed what it was asked to close — and because
+    #: leaving it off means the stored score describes the previous suite. Turn
+    #: it off to amend and stop, one model call cheaper; the job then records
+    #: that its evaluation is stale rather than showing an old number as current.
+    evaluate: bool = True
+
+
 class JobOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -19,6 +19,7 @@ from app.schemas.jobs import (
     LogsResponse,
     OcrExtractRequest,
     OcrExtractResponse,
+    ReprocessRequest,
     ResultResponse,
 )
 from app.security import Principal, require_operator, require_reader
@@ -457,14 +458,23 @@ def reject_job(
 @router.post("/jobs/{job_id}/reprocess", response_model=JobOut, tags=["workflow"])
 def reprocess_job(
     job_id: str,
+    payload: ReprocessRequest | None = None,
     db: Session = Depends(get_db),
     principal: Principal = Depends(require_operator),
 ) -> JobOut:
-    """Re-run generation once, feeding the evaluator's recommendations back in."""
+    """Re-run generation once, feeding the evaluator's recommendations back in.
+
+    `evaluate: false` amends the suite and stops. That is a full model call
+    cheaper, and it leaves the stored evaluation describing the *previous*
+    suite — so the job records that its score is stale rather than presenting an
+    out-of-date number as current.
+    """
     try:
         job = job_service.get_job(db, job_id)
         deny_unless_owner(principal, job.created_by, kind="Job")
-        job = job_service.start_reprocess(db, job)
+        job = job_service.start_reprocess(
+            db, job, evaluate=payload.evaluate if payload else True
+        )
     except JobError as exc:
         raise _handle(exc) from exc
 
