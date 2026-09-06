@@ -42,14 +42,22 @@ function parseMarkdown(rawText: string, isLight: boolean): React.ReactNode[] {
 
   while ((match = codeBlockRegex.exec(rawText)) !== null) {
     pushText(rawText.substring(lastIndex, match.index));
-    parts.push(
-      <CodeBlock
-        key={`code-${keyIdx++}`}
-        language={match[1] || 'text'}
-        code={match[2]}
-        isLight={isLight}
-      />
-    );
+    const language = (match[1] || 'text').toLowerCase();
+    const code = match[2];
+    // Agents wrap finished reports in ```markdown — render those as prose,
+    // not as a monospace dump.
+    if (language === 'markdown' || language === 'md') {
+      pushText(code);
+    } else {
+      parts.push(
+        <CodeBlock
+          key={`code-${keyIdx++}`}
+          language={match[1] || 'text'}
+          code={code}
+          isLight={isLight}
+        />
+      );
+    }
     lastIndex = match.index + match[0].length;
   }
 
@@ -62,14 +70,19 @@ function parseMarkdown(rawText: string, isLight: boolean): React.ReactNode[] {
     const unterminated = /```([a-zA-Z0-9_-]*)[ \t]*\n?([\s\S]*)$/.exec(rest);
     if (unterminated) {
       pushText(rest.substring(0, unterminated.index));
-      parts.push(
-        <CodeBlock
-          key={`code-${keyIdx++}`}
-          language={unterminated[1] || 'text'}
-          code={unterminated[2]}
-          isLight={isLight}
-        />
-      );
+      const language = (unterminated[1] || 'text').toLowerCase();
+      if (language === 'markdown' || language === 'md') {
+        pushText(unterminated[2]);
+      } else {
+        parts.push(
+          <CodeBlock
+            key={`code-${keyIdx++}`}
+            language={unterminated[1] || 'text'}
+            code={unterminated[2]}
+            isLight={isLight}
+          />
+        );
+      }
     } else {
       pushText(rest);
     }

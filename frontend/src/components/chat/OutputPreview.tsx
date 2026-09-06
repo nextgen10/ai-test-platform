@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -36,7 +36,7 @@ import {
   Minimize2,
   Table2 as TableIcon,
 } from 'lucide-react';
-import { extractJson } from '@/lib/agent-output';
+import { extractJson, forChatPreview } from '@/lib/agent-output';
 import { copyToClipboard } from '@/lib/clipboard';
 import { JsonDocumentView } from './JsonDocumentView';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -81,12 +81,7 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
 
   const parsedJson = useMemo(() => extractJson(content), [content]);
   const hasDocument = parsedJson !== null;
-
-  // Whether the reader has expressed a preference. Until they do, a document
-  // opens as a document: agents here are contract-bound to emit JSON, so
-  // defaulting to Preview showed a wall of braces for output whose whole point
-  // is to be read before deciding what runs next.
-  const tabChosenByUser = useRef(false);
+  const previewMarkdown = useMemo(() => forChatPreview(content), [content]);
 
   // Resolved while rendering, never patched afterwards.
   //
@@ -96,13 +91,11 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
   // received JSON payload does not parse, so the two document tabs disappear
   // mid-stream and return when the closing brace arrives. Deriving the tab from
   // what is actually renderable means there is no invalid intermediate state to
-  // correct.
+  // correct. Preview is the default (chatbot-style); Structured / Data are opt-in.
   const shownTab: TabId =
     !hasDocument && (activeTab === 'structured' || activeTab === 'json')
       ? 'preview'
-      : hasDocument && !tabChosenByUser.current && activeTab === 'preview'
-        ? 'structured'
-        : activeTab;
+      : activeTab;
 
   useEffect(() => {
     if (!expanded) return;
@@ -208,31 +201,28 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
             <Bot size={16} />
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 22 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 500, fontSize: '0.88rem' }} noWrap>
                 {agentName || agentId || 'Agent Output'}
               </Typography>
-              {isStreaming ? (
-                <Chip
-                  label="Streaming…"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ height: 20, fontSize: '0.68rem', fontWeight: 500 }}
-                />
-              ) : content ? (
-                <Chip
-                  label="Ready to pass on"
-                  size="small"
-                  sx={{
-                    height: 20,
-                    fontSize: '0.68rem',
-                    fontWeight: 500,
-                    bgcolor: alpha(theme.palette.success.main, 0.12),
-                    color: theme.palette.success.main,
-                  }}
-                />
-              ) : null}
+              <Chip
+                label={isStreaming ? 'Streaming…' : content ? 'Ready to pass on' : 'Waiting'}
+                size="small"
+                color={isStreaming ? 'primary' : 'default'}
+                variant={isStreaming ? 'outlined' : 'filled'}
+                sx={{
+                  height: 20,
+                  fontSize: '0.68rem',
+                  fontWeight: 500,
+                  minWidth: 108,
+                  visibility: isStreaming || content ? 'visible' : 'hidden',
+                  bgcolor:
+                    !isStreaming && content
+                      ? alpha(theme.palette.success.main, 0.12)
+                      : undefined,
+                  color: !isStreaming && content ? theme.palette.success.main : undefined,
+                }}
+              />
             </Box>
           </Box>
         </Box>
@@ -242,7 +232,6 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
           <Tabs
             value={shownTab}
             onChange={(_, val) => {
-              tabChosenByUser.current = true;
               setActiveTab(val);
             }}
             sx={{
@@ -254,20 +243,20 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
                 fontSize: '0.78rem',
                 textTransform: 'none',
                 fontWeight: 500,
+                minWidth: 'auto',
               },
             }}
           >
-            {parsedJson !== null && (
-              <Tab
-                value="structured"
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <TableIcon size={13} />
-                    <span>Structured</span>
-                  </Box>
-                }
-              />
-            )}
+            <Tab
+              value="structured"
+              disabled={!hasDocument}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <TableIcon size={13} />
+                  <span>Structured</span>
+                </Box>
+              }
+            />
             <Tab
               value="preview"
               label={
@@ -277,17 +266,16 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
                 </Box>
               }
             />
-            {parsedJson !== null && (
-              <Tab
-                value="json"
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Database size={13} />
-                    <span>Data / JSON</span>
-                  </Box>
-                }
-              />
-            )}
+            <Tab
+              value="json"
+              disabled={!hasDocument}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Database size={13} />
+                  <span>Data</span>
+                </Box>
+              }
+            />
             <Tab
               value="raw"
               label={
@@ -299,22 +287,23 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
             />
           </Tabs>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1 }}>
-            {duration_ms && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.4,
-                  fontSize: '0.72rem',
-                  color: 'text.secondary',
-                  mr: 1,
-                }}
-              >
-                <Clock size={12} />
-                <span>{(duration_ms / 1000).toFixed(1)}s</span>
-              </Box>
-            )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 1, flexShrink: 0 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.4,
+                fontSize: '0.72rem',
+                color: 'text.secondary',
+                mr: 0.5,
+                width: 44,
+                justifyContent: 'flex-end',
+                visibility: duration_ms ? 'visible' : 'hidden',
+              }}
+            >
+              <Clock size={12} />
+              <span>{duration_ms ? `${(duration_ms / 1000).toFixed(1)}s` : '0.0s'}</span>
+            </Box>
 
             <Tooltip title={copied ? 'Copied!' : 'Copy output'}>
               <IconButton size="small" onClick={handleCopy} disabled={!content} sx={{ p: 0.75 }}>
@@ -387,7 +376,7 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
           </Box>
         ) : shownTab === 'preview' ? (
           <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden', wordBreak: 'break-word' }}>
-            <MarkdownRenderer content={content} />
+            <MarkdownRenderer content={previewMarkdown} />
           </Box>
         ) : shownTab === 'json' && parsedJson !== null ? (
           <Paper
@@ -456,7 +445,7 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
               sx={{
                 width: { xs: '100%', sm: 220 },
                 maxWidth: '100%',
-                flex: '0 1 220px',
+                flex: { xs: '1 1 100%', sm: '0 0 220px' },
               }}
             >
               <InputLabel id="pass-target-label">Next agent</InputLabel>

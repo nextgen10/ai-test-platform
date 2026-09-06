@@ -93,17 +93,14 @@ export const ConfigBar: React.FC<{ compact?: boolean }> = ({ compact = false }) 
     },
   };
 
-  // `width` is the size these want, not a size they insist on. The four in the
-  // main row asked for 732px plus gaps, padding and the action cluster — over
-  // 900px on a row that stopped wrapping at the 900px breakpoint, so on a
-  // normal laptop the row overflowed a shell that clips horizontally, taking
-  // the right-hand controls off-screen. They now shrink toward a readable
-  // floor and the row wraps at any width rather than only below `md`.
+  // Fixed frame sizes so choosing a longer agent/workflow name does not
+  // stretch neighbouring controls. They wrap as whole units when the row is
+  // tight, instead of shrinking mid-interaction.
   const selectFrame = (width: number) => ({
     width: { xs: '100%', sm: width },
-    minWidth: { xs: 0, sm: 120 },
+    minWidth: { xs: 0, sm: width },
     maxWidth: { xs: '100%', sm: width },
-    flex: { xs: '1 1 calc(50% - 8px)', sm: `0 1 ${width}px` },
+    flex: { xs: '1 1 calc(50% - 8px)', sm: `0 0 ${width}px` },
     '& .MuiInputBase-root': { width: '100%' },
     '& .MuiInputLabel-shrink': {
       bgcolor: isLight ? '#ffffff' : '#2a2a2a',
@@ -322,27 +319,29 @@ export const ConfigBar: React.FC<{ compact?: boolean }> = ({ compact = false }) 
             )}
           </Box>
 
-          {hasActiveConfig && (
-            <Tooltip title="Clear the agent, workflow, model and engine selection">
-              <Button
-                size="small"
-                variant="text"
-                color="inherit"
-                startIcon={<RotateCcw size={13} />}
-                onClick={handleResetConfig}
-                sx={{ fontSize: '0.75rem', textTransform: 'none', px: 1 }}
-              >
-                Reset
-              </Button>
-            </Tooltip>
-          )}
+          <Box sx={{ width: 72, display: 'flex', justifyContent: 'flex-end' }}>
+            {hasActiveConfig && (
+              <Tooltip title="Clear the agent, workflow, model and engine selection">
+                <Button
+                  size="small"
+                  variant="text"
+                  color="inherit"
+                  startIcon={<RotateCcw size={13} />}
+                  onClick={handleResetConfig}
+                  sx={{ fontSize: '0.75rem', textTransform: 'none', px: 1 }}
+                >
+                  Reset
+                </Button>
+              </Tooltip>
+            )}
+          </Box>
 
           <Button
             size="small"
             variant="text"
             onClick={() => setShowAdvanced(!showAdvanced)}
             endIcon={showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            sx={{ fontSize: '0.75rem', textTransform: 'none', px: 1, color: 'text.secondary' }}
+            sx={{ fontSize: '0.75rem', textTransform: 'none', px: 1, color: 'text.secondary', minWidth: 118 }}
           >
             More Options
           </Button>

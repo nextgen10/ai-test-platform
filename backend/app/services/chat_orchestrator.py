@@ -144,14 +144,28 @@ def _console_framing(agent_id: str | None) -> str:
         # A conversational agent writes no artifact and needs no reframing.
         return ""
 
+    # How to deliver it depends on what it is. A JSON artifact is data: fencing
+    # it keeps it parseable and renders as a code block, which is correct. A
+    # Markdown artifact is a *document*, and the same instruction turned it into
+    # a fenced block that the console rendered as source code — headings, lists
+    # and all, in monospace with a "markdown" label. Prose is read, not shown.
+    structured = Path(artifact).suffix.lower() in {".json", ".yaml", ".yml"}
+    delivery = (
+        f"as a single fenced ```{Path(artifact).suffix.lstrip('.') or 'json'} block"
+        if structured
+        else (
+            "as your reply itself, with no surrounding code fence — it is a "
+            "document to be read, not source to be displayed"
+        )
+    )
+
     return (
         "--- HOW TO REPLY IN THIS CONSOLE ---\n"
         "You are running interactively, not inside a job workspace. There is no "
         f"filesystem here: you cannot create {artifact}, and no later stage will "
         "read it.\n"
         "Your reply IS the artifact. Return exactly the content you would have "
-        f"written to {artifact} — once — as your entire reply, in a single "
-        "fenced code block of the appropriate language.\n"
+        f"written to {artifact} — once — {delivery}.\n"
         "Do not describe what you are about to do, do not summarise afterwards, "
         "and never repeat the content a second time.\n"
         "--- END ---\n"
