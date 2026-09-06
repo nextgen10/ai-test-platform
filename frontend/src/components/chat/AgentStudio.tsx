@@ -53,11 +53,46 @@ const SAMPLE_PROMPTS: Record<string, string> = {
     'Prepare Jira ticket creation payloads and issue links for the following identified defects and test cases:\n\n"Defect: Rate lock expires before execution confirmation on EUR/USD transfers during weekend rollover."',
 };
 
+/**
+ * How a handed-off turn announces itself, in the transcript and to the agent.
+ *
+ * Always present when there is a handoff — a pass with no extra instructions
+ * used to send the previous output bare, which left the agent unable to tell a
+ * colleague's output from a human's brief, and left the transcript with no
+ * record that the two runs were one chain.
+ */
+const HANDOFF_MARKER = 'Output from ';
+
 function buildTurnContent(input: string, handoff: Handoff | null): string {
   const extra = input.trim();
   if (!handoff) return extra;
-  if (!extra) return handoff.content;
-  return `${extra}\n\n---\nOutput from ${handoff.fromAgentName}:\n\n${handoff.content}`;
+  const passed = `---\n${HANDOFF_MARKER}${handoff.fromAgentName}:\n\n${handoff.content}`;
+  return extra ? `${extra}\n\n${passed}` : passed;
+}
+
+/**
+ * The chain as it stands, read back from a restored session.
+ *
+ * A run continues the chain only when it consumed a handoff, which the marker
+ * above records. Anything else starts a new one — so reopening a session shows
+ * the sequence that actually happened rather than every agent it ever ran.
+ */
+function chainFromMessages(
+  messages: { role: string; content: string; agent_id?: string | null }[],
+): string[] {
+  let chain: string[] = [];
+  let handedOff = false;
+
+  for (const message of messages) {
+    if (message.role === 'user') {
+      handedOff = message.content.includes(HANDOFF_MARKER);
+      continue;
+    }
+    if (message.role !== 'assistant' || !message.agent_id) continue;
+    chain = handedOff && chain.length ? [...chain, message.agent_id] : [message.agent_id];
+    handedOff = false;
+  }
+  return chain;
 }
 
 export const AgentStudio: React.FC = () => {
@@ -149,13 +184,7 @@ export const AgentStudio: React.FC = () => {
       setSelectedId(lastAsst.agent_id);
     }
 
-    const seen: string[] = [];
-    for (const m of messagesRef.current) {
-      if (m.role === 'assistant' && m.agent_id && !seen.includes(m.agent_id)) {
-        seen.push(m.agent_id);
-      }
-    }
-    setChainIds(seen);
+    setChainIds(chainFromMessages(messagesRef.current));
   }, [activeSessionId, sessionLoading]);
 
   const passToAgent = useCallback(
@@ -163,8 +192,13 @@ export const AgentStudio: React.FC = () => {
       if (!targetAgentId || isStreaming) return;
       const output = lastOutput.trim();
       if (!output) {
+        // Nothing to pass, so this is a plain switch — same as picking from the
+        // dropdown, and it starts a new sequence rather than implying a handoff
+        // that carried nothing.
         setSelectedId(targetAgentId);
         updateConfig({ agentId: targetAgentId, workflowId: null });
+        setChainIds([]);
+        setHandoff(null);
         return;
       }
       const fromId = outputSourceId || selectedId;
@@ -180,11 +214,23 @@ export const AgentStudio: React.FC = () => {
     [isStreaming, lastOutput, outputSourceId, selectedId, labelFor, updateConfig],
   );
 
-  /** Switch agent without handing off — Pass is explicit. */
-  const selectAgent = (id: string) => {
+  /**
+   * Switch agent without handing off — Pass is explicit.
+   *
+   * Picking from the dropdown starts a new sequence. The bar is a record of
+   * what fed what, so carrying it across an unrelated pick would draw a chain
+   * between two runs that never exchanged anything. Clicking a chip in the bar
+   * is navigation within the existing chain, so it keeps it (`startNewChain`
+   * false).
+   */
+  const selectAgent = (id: string, { startNewChain = true } = {}) => {
     if (!id || id === selectedId || isStreaming) return;
     setSelectedId(id);
     updateConfig({ agentId: id, workflowId: null });
+    if (startNewChain) {
+      setChainIds([]);
+      setHandoff(null);
+    }
   };
 
   const handleRun = async () => {
@@ -196,6 +242,9 @@ export const AgentStudio: React.FC = () => {
     createdThisRun.current = !activeSessionId;
     runSessionRef.current = activeSessionId;
     const runningAgent = selectedId;
+    // Captured before the run: `handoff` is cleared on success, and this is
+    // what decides whether the sequence bar extends or starts over.
+    const continuedFrom = handoff?.fromAgentId ?? null;
 
     updateConfig({ agentId: selectedId, workflowId: null });
     const result = await runAgentTurn(payload, { agentId: selectedId });
@@ -216,7 +265,15 @@ export const AgentStudio: React.FC = () => {
       setOutputSourceId(result.agent_id || runningAgent);
       setDurationMs(result.duration_ms);
       setOutputModel(result.model);
-      setChainIds((prev) => (prev.includes(runningAgent) ? prev : [...prev, runningAgent]));
+      setChainIds((prev) => {
+        // A run that consumed no handoff is the start of a sequence, whatever
+        // ran before it.
+        if (!continuedFrom) return [runningAgent];
+        // Extend the existing chain when it ends where this run began;
+        // otherwise root a new one at the agent whose output was passed.
+        const base = prev[prev.length - 1] === continuedFrom ? prev : [continuedFrom];
+        return [...base, runningAgent];
+      });
     }
     setRunError(
       result.error ?? (result.stopped && !result.content ? 'Stopped before any output.' : null),
@@ -303,7 +360,9 @@ export const AgentStudio: React.FC = () => {
                   size="small"
                   icon={<CheckCircle2 size={12} />}
                   label={labelFor(id)}
-                  onClick={() => !isStreaming && selectAgent(id)}
+                  // Navigating within the sequence, not starting a new one:
+                  // clicking your own history must not erase it.
+                  onClick={() => !isStreaming && selectAgent(id, { startNewChain: false })}
                   sx={{
                     height: 24,
                     fontSize: '0.72rem',
