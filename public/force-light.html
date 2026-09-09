@@ -1,0 +1,6 @@
+<!doctype html><html><body><script>
+localStorage.setItem('themeMode','light');
+document.cookie='themeMode=light;path=/;max-age=31536000;SameSite=Lax';
+const target=new URLSearchParams(location.search).get('to')||'/';
+location.replace(target);
+</script></body></html>

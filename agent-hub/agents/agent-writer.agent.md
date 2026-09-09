@@ -66,6 +66,14 @@ Describe the role and instructions for the agent based on its responsibilities i
 ```
 
 ## Rules
+
+- **Never** put `shell` or `fetch` in `tools`. Allowed tools are only
+  `read`, `write`, `edit`, and `search`. Prefer `tools: ["read", "write"]`.
+  This platform denies `shell`/`fetch` at install time because they turn
+  prompt injection into host/network access. If the requirement mentions
+  fetching a URL, the agent must work from content the caller pasted into
+  `input/requirement.md` (or say clearly that live network fetch is not
+  available) — do not invent a `fetch` tool grant.
 - Generate high quality, strict prompt instructions for each agent.
 - Ensure the YAML syntax is valid and dependencies match the JSON.
 - Every id — the workflow's and each agent's — must be kebab-case

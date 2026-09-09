@@ -144,6 +144,7 @@ def get_agent(agent_id: str) -> dict[str, Any] | None:
 
 def create_agent(agent_id: str, content: str) -> dict[str, Any]:
     """Write a new agent file.  Raises ``FileExistsError`` if it already exists."""
+    content, _stripped = strip_denied_tools(content)
     assert_agent_valid(content)
     path = _contained(_agents_dir(), f"{_safe_id(agent_id)}.agent.md")
     if path.exists():
@@ -154,6 +155,7 @@ def create_agent(agent_id: str, content: str) -> dict[str, Any]:
 
 
 def update_agent(agent_id: str, content: str) -> dict[str, Any]:
+    content, _stripped = strip_denied_tools(content)
     assert_agent_valid(content)
     path = _contained(_agents_dir(), f"{_safe_id(agent_id)}.agent.md")
     if not path.is_file():
@@ -203,6 +205,54 @@ ALLOWED_TOOLS = KNOWN_TOOLS - DENIED_TOOLS
 #: Artifact paths an agent may declare. ``workspace`` means "the whole tree";
 #: anything else is a path relative to the job workspace root.
 _ARTIFACT_DIRS = ("input/", "intermediate/", "output/")
+
+
+
+def strip_denied_tools(content: str) -> tuple[str, list[str]]:
+    """Remove shell/fetch from agent frontmatter before persist.
+
+    Generators sometimes emit ``tools: ["fetch", ...]`` for URL-shaped
+    workflows. Those tools are never granted at runtime; stripping them lets
+    the Workflow Builder install the rest of a valid agent instead of failing
+    the whole write.
+    """
+    meta, _body = _parse_frontmatter(content)
+    declared = meta.get("tools")
+    if not isinstance(declared, list):
+        return content, []
+    removed = sorted({
+        str(t).strip().lower()
+        for t in declared
+        if str(t).strip().lower() in DENIED_TOOLS
+    })
+    if not removed:
+        return content, []
+    kept = [
+        str(t).strip().lower()
+        for t in declared
+        if str(t).strip() and str(t).strip().lower() not in DENIED_TOOLS
+    ]
+    if not kept:
+        kept = ["read", "write"] if meta.get("output_artifact") else ["read"]
+
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return content, list(removed)
+    fence_open, frontmatter, rest = parts[0], parts[1], parts[2]
+    tools_flow = "[" + ", ".join(f'"{name}"' for name in kept) + "]"
+    replaced, n = re.subn(
+        r"(?m)^tools:\s*\[[^\]]*\]\s*$",
+        f"tools: {tools_flow}",
+        frontmatter,
+        count=1,
+    )
+    if n == 0:
+        meta_out = dict(meta)
+        meta_out["tools"] = kept
+        replaced = "\n" + yaml.safe_dump(
+            meta_out, sort_keys=False, allow_unicode=True, default_flow_style=False
+        )
+    return f"{fence_open}---{replaced}---{rest}", list(removed)
 
 
 def _assert_tools_allowed(content: str) -> None:

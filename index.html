@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/ubs-icon.svg" type="image/svg+xml" />
+    <link rel="shortcut icon" href="/ubs-icon.svg" type="image/svg+xml" />
+    <title>Agent HUB Platform — Enterprise Multi-Agent Orchestration</title>
+    <meta
+      name="description"
+      content="Agent HUB Platform — Onboard, orchestrate, and run autonomous multi-agent workflows, skills, and prompts. Includes a universal Agent Console and bespoke use-case UIs."
+    />
+    <!--
+      Runs before paint so the stored theme is on <html> for the first frame.
+      Without it the page paints light, then flips to dark once React mounts.
+    -->
+    <script>
+      (function () {
+        try {
+          var key = 'themeMode';
+          var m = localStorage.getItem(key);
+          if (m !== 'light' && m !== 'dark') {
+            m = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', m);
+          document.documentElement.style.colorScheme = m;
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

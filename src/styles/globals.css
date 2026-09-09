@@ -1,0 +1,1008 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   UBS Design System — global stylesheet
+   A port of the UBS "FIT" design tokens. Everything the old MUI theme
+   expressed as a `createTheme` component override lives here as a class, so
+   the look survives the move off MUI without a component library.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Colour tokens — light mode
+   -------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --ubs-font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+  --ubs-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-ubs-brand: var(--ubs-font);
+
+  /* Backgrounds */
+  --col-background-ui-10: #ffffff;
+  --col-background-ui-10-hovered: #f4f3ee;
+  --col-background-ui-20: #f9f9f7;
+  --col-background-ui-30: #f4f3ee;
+  --col-background-ui-40: #fbf9ee;
+  --col-background-ui-80: #404040;
+  --col-background-brand: #E60000;
+  --col-background-brand-hovered: #8A000A;
+  --col-background-primary: #1c1c1c;
+  --col-background-primary-hovered: #5a5d5c;
+  --col-background-disabled: #cccabc;
+  --col-background-error: #da0000;
+  --col-background-warning: #e4a911;
+  --col-background-success: #cad67a;
+
+  /* Text */
+  --col-text-primary: #1c1c1c;
+  --col-text-subtle: #5a5d5c;
+  --col-text-readonly: #5a5d5c;
+  --col-text-disabled: #b8b3a2;
+  --col-text-inverted: #ffffff;
+  --col-text-highlight: #DA0000;
+
+  /* Borders */
+  --col-border-primary: #1c1c1c;
+  --col-border-subtle: #5a5d5c;
+  --col-border-light: #8e8d83;
+  --col-border-illustrative: #cccabc;
+  --col-border-brand: #DA0000;
+
+  /* Links & focus */
+  --col-link-text-brand: #DA0000;
+  --col-link-text-brand-hovered: #8A000A;
+  --col-focus-ring: #0769A6;
+  --col-focus-gap: #ffffff;
+
+  /* Tags — the fills behind chips and alerts */
+  --col-tag-01: #f4f3ee;
+  --col-tag-02: #e1eaa9;
+  --col-tag-03: #ebd698;
+  --col-tag-04: #f3e8c3;
+
+  /* Brand tints */
+  --col-primary-light: #FBEAEA;
+
+  /* Semantic, resolved for the current mode */
+  --col-success: #cad67a;
+  --col-warning: #e4a911;
+  --col-error: #da0000;
+  --col-info: #00759e;
+
+  /* Categorical accents (UBS chart ramp) */
+  --acc-gold: #af8626;
+  --acc-teal: #00759e;
+  --acc-olive: #879420;
+  --acc-plum: #4b2d58;
+  --acc-bronze: #9f8865;
+  --acc-navy: #2e476b;
+  --acc-green: #469a6c;
+  --acc-wine: #ad3e4a;
+  --acc-periwinkle: #8489bd;
+
+  /* Elevation — UBS elevates with a hairline and a whisper, never a glow. */
+  --ubs-shadow-rest: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ubs-shadow-raised: 0 2px 6px rgba(0, 0, 0, 0.06);
+
+  /* Shape & motion */
+  --ubs-radius: 2px;
+  --ubs-easing: cubic-bezier(0.38, 0.19, 0.32, 0.95);
+  --ubs-duration: 0.2s;
+
+  /* Grid */
+  --ubs-grid-max-width: 1290px;
+
+  /* Scrollbar */
+  --scrollbar-track: var(--col-background-ui-30);
+  --scrollbar-thumb: #cccabc;
+  --scrollbar-thumb-hover: #8e8d83;
+}
+
+/* --------------------------------------------------------------------------
+   Colour tokens — UBS FIT, dark mode
+   -------------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --col-background-ui-10: #1c1c1c;
+  --col-background-ui-10-hovered: #2a2a2a;
+  --col-background-ui-20: #2a2a2a;
+  --col-background-ui-30: #2a2a2a;
+  --col-background-ui-40: #2a2a2a;
+  --col-background-ui-80: #cccabc;
+  --col-background-brand: #D83B31;
+  --col-background-brand-hovered: #FF8C70;
+  --col-background-primary: #f4f3ee;
+  --col-background-primary-hovered: #b8b3a2;
+  --col-background-disabled: #5a5d5c;
+  --col-background-error: #e8696f;
+  --col-background-warning: #875f03;
+  --col-background-success: #cad67a;
+
+  --col-text-primary: #f9f9f7;
+  --col-text-subtle: #e0dfd7;
+  --col-text-readonly: #b8b3a2;
+  --col-text-disabled: #5a5d5c;
+  --col-text-inverted: #1c1c1c;
+  --col-text-highlight: #FE6F5D;
+
+  --col-border-primary: #f9f9f7;
+  --col-border-subtle: #e0dfd7;
+  --col-border-light: #b8b3a2;
+  --col-border-illustrative: #7a7870;
+  --col-border-brand: #D83B31;
+
+  --col-link-text-brand: #FE6F5D;
+  --col-link-text-brand-hovered: #FF8C70;
+  --col-focus-ring: #4CA5E1;
+  --col-focus-gap: #1c1c1c;
+
+  --col-tag-01: #404040;
+  --col-tag-02: #596318;
+  --col-tag-03: #86671d;
+  --col-tag-04: #654d16;
+
+  --col-primary-light: rgba(216, 59, 49, 0.16);
+
+  --col-success: #cad67a;
+  --col-warning: #875f03;
+  --col-error: #e8696f;
+  --col-info: #54aecf;
+
+  --acc-gold: #af8626;
+  --acc-teal: #54aecf;
+  --acc-olive: #b4c054;
+  --acc-plum: #d8afe9;
+  --acc-bronze: #b69f7c;
+  --acc-navy: #6187bd;
+  --acc-green: #469a6c;
+  --acc-wine: #cc707a;
+  --acc-periwinkle: #9da2cd;
+
+  /* Dark mode elevates with contrast alone. */
+  --ubs-shadow-rest: none;
+  --ubs-shadow-raised: none;
+
+  --scrollbar-track: #2a2a2a;
+  --scrollbar-thumb: #5a5d5c;
+  --scrollbar-thumb-hover: #7a7870;
+}
+
+/* Respect the OS preference until the app stamps an explicit choice. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+
+    --col-background-ui-10: #1c1c1c;
+    --col-background-ui-10-hovered: #2a2a2a;
+    --col-background-ui-20: #2a2a2a;
+    --col-background-ui-30: #2a2a2a;
+    --col-background-ui-40: #2a2a2a;
+    --col-background-ui-80: #cccabc;
+    --col-background-primary: #f4f3ee;
+    --col-background-primary-hovered: #b8b3a2;
+    --col-background-disabled: #5a5d5c;
+    --col-background-error: #e8696f;
+    --col-background-warning: #875f03;
+
+    --col-text-primary: #f9f9f7;
+    --col-text-subtle: #e0dfd7;
+    --col-text-readonly: #b8b3a2;
+    --col-text-disabled: #5a5d5c;
+    --col-text-inverted: #1c1c1c;
+
+    --col-border-primary: #f9f9f7;
+    --col-border-subtle: #e0dfd7;
+    --col-border-light: #b8b3a2;
+    --col-border-illustrative: #7a7870;
+
+    --col-background-brand: #D83B31;
+    --col-background-brand-hovered: #FF8C70;
+    --col-text-highlight: #FE6F5D;
+    --col-border-brand: #D83B31;
+    --col-link-text-brand: #FE6F5D;
+    --col-link-text-brand-hovered: #FF8C70;
+    --col-focus-ring: #4CA5E1;
+
+    --col-focus-gap: #1c1c1c;
+
+    --col-tag-01: #404040;
+    --col-tag-02: #596318;
+    --col-tag-03: #86671d;
+    --col-tag-04: #654d16;
+
+    --col-primary-light: rgba(216, 59, 49, 0.16);
+
+    --col-error: #e8696f;
+    --col-warning: #875f03;
+    --col-info: #54aecf;
+
+    --acc-teal: #54aecf;
+    --acc-olive: #b4c054;
+    --acc-plum: #d8afe9;
+    --acc-bronze: #b69f7c;
+    --acc-navy: #6187bd;
+    --acc-wine: #cc707a;
+    --acc-periwinkle: #9da2cd;
+
+    --ubs-shadow-rest: none;
+    --ubs-shadow-raised: none;
+
+    --scrollbar-track: #2a2a2a;
+    --scrollbar-thumb: #5a5d5c;
+    --scrollbar-thumb-hover: #7a7870;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Tailwind theme bridge — the tokens above, as utilities.
+   `bg-surface`, `text-subtle`, `border-hairline` and friends resolve to the
+   same variables, so a utility follows light/dark without a `dark:` variant.
+   -------------------------------------------------------------------------- */
+@theme inline {
+  --font-sans: var(--ubs-font);
+  --font-mono: var(--ubs-mono);
+
+  --color-surface: var(--col-background-ui-10);
+  --color-surface-hover: var(--col-background-ui-10-hovered);
+  --color-elevated: var(--col-background-ui-20);
+  --color-sunken: var(--col-background-ui-30);
+  --color-callout: var(--col-background-ui-40);
+  --color-inverse: var(--col-background-ui-80);
+
+  --color-brand: var(--col-background-brand);
+  --color-brand-hover: var(--col-background-brand-hovered);
+  --color-brand-tint: var(--col-primary-light);
+  --color-contrast: var(--col-background-primary);
+
+  --color-ink: var(--col-text-primary);
+  --color-subtle: var(--col-text-subtle);
+  --color-readonly: var(--col-text-readonly);
+  --color-faint: var(--col-text-disabled);
+  --color-inverted: var(--col-text-inverted);
+
+  --color-hairline: var(--col-border-illustrative);
+  --color-edge: var(--col-border-light);
+  --color-strong: var(--col-border-subtle);
+  --color-firm: var(--col-border-primary);
+
+  --color-success: var(--col-success);
+  --color-warning: var(--col-warning);
+  --color-danger: var(--col-error);
+  --color-info: var(--col-info);
+
+  --color-tag-neutral: var(--col-tag-01);
+  --color-tag-green: var(--col-tag-02);
+  --color-tag-amber: var(--col-tag-03);
+  --color-tag-sand: var(--col-tag-04);
+
+  --color-gold: var(--acc-gold);
+  --color-teal: var(--acc-teal);
+  --color-olive: var(--acc-olive);
+  --color-plum: var(--acc-plum);
+  --color-bronze: var(--acc-bronze);
+  --color-navy: var(--acc-navy);
+  --color-moss: var(--acc-green);
+  --color-wine: var(--acc-wine);
+  --color-periwinkle: var(--acc-periwinkle);
+
+  --radius-ubs: 2px;
+
+  --ease-ubs: cubic-bezier(0.38, 0.19, 0.32, 0.95);
+}
+
+/* --------------------------------------------------------------------------
+   Base — MUST live in `@layer base`.
+
+   Unlayered `* { padding: 0 }` and `button { color: inherit }` beat every
+   Tailwind utility and every `.ui-*` class (those sit in `@layer utilities`
+   / `@layer components`). That is what made the port look empty: cards with
+   no padding, primary buttons with dark text on blue. The original app never
+   hit this because MUI injects unlayered Emotion styles that win on
+   specificity. Put the reset here so utilities can still paint.
+   -------------------------------------------------------------------------- */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scrollbar-gutter: stable both-edges;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--ubs-font);
+    /* UBS type is Light by default; hierarchy comes from size, not weight. */
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--col-text-primary);
+    background-color: var(--col-background-ui-10);
+    overflow-x: hidden;
+    overflow-y: scroll;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* The UBS type system has no bold face — keep the browser from faking one. */
+  strong,
+  b {
+    font-weight: 500;
+  }
+
+  /* UBS focus is a blue ring with a clear gap, never the brand red. */
+  :focus-visible {
+    outline: 2px solid var(--col-focus-ring);
+    outline-offset: 2px;
+  }
+
+  /* Content links only. Nav and buttons are not `<a>`s and must stay ink. */
+  a {
+    color: var(--col-link-text-brand);
+    text-underline-offset: 0.2em;
+  }
+
+  a:hover {
+    color: var(--col-link-text-brand-hovered);
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Scrollbars
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--ubs-radius);
+}
+
+::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* --------------------------------------------------------------------------
+   Motion — UBS keeps it short and purposeful.
+   -------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--ubs-duration) var(--ubs-easing);
+}
+
+@keyframes ubsSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-ubs-spin {
+  animation: ubsSpin 1.2s linear infinite;
+}
+
+@keyframes ubsPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+.animate-ubs-pulse {
+  animation: ubsPulse 1.4s var(--ubs-easing) infinite;
+}
+
+/*
+ * Expanding ring used by the landing Hub "Live" marker (and Settings when
+ * Copilot is selected). Matches the MUI `hubLive` keyframes: a firm ease-out
+ * and a 12px fade, not an opacity blink.
+ */
+@keyframes hubLive {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 70%, transparent); opacity: 1; }
+  50%  { opacity: 0.55; }
+  70%  { box-shadow: 0 0 0 12px transparent; opacity: 1; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+}
+
+.animate-hub-live {
+  animation: hubLive 1.8s var(--ubs-easing) infinite;
+  will-change: box-shadow, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hub-live {
+    animation: none;
+  }
+}
+
+/* The landing hero's marquee of registry artifact types. */
+@keyframes hubTicker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* An indeterminate bar, the way MuiLinearProgress drew one. */
+@keyframes ubsIndeterminate {
+  0%   { left: -35%; right: 100%; }
+  60%  { left: 100%; right: -90%; }
+  100% { left: 100%; right: -90%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+input,
+textarea,
+select,
+[contenteditable="true"],
+.selectable-text,
+.selectable-text * {
+  -webkit-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+.line-clamp-2-box {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Component layer — what the MUI theme used to provide.
+   ========================================================================== */
+@layer components {
+
+  /* ---- Typography -------------------------------------------------------
+     Headings are Light and large — the signature UBS voice. */
+  .ui-h1 { font-size: 2.5rem;    font-weight: 300; line-height: 1.15; letter-spacing: 0; }
+  .ui-h2 { font-size: 2rem;      font-weight: 300; line-height: 1.2;  letter-spacing: 0; }
+  .ui-h3 { font-size: 1.5rem;    font-weight: 300; line-height: 1.25; letter-spacing: 0; }
+  .ui-h4 { font-size: 1.25rem;   font-weight: 500; line-height: 1.3;  letter-spacing: 0; }
+  .ui-h5 { font-size: 1.0625rem; font-weight: 500; line-height: 1.4;  letter-spacing: 0; }
+  .ui-h6 { font-size: 0.9375rem; font-weight: 500; line-height: 1.4;  letter-spacing: 0; }
+  .ui-subtitle1 { font-size: 1rem;     font-weight: 500; line-height: 1.5; }
+  .ui-subtitle2 { font-size: 0.875rem; font-weight: 500; line-height: 1.5; }
+  .ui-body1 { font-size: 1rem;     font-weight: 400; line-height: 1.55; }
+  .ui-body2 { font-size: 0.875rem; font-weight: 400; line-height: 1.55; }
+  .ui-caption { font-size: 0.75rem; font-weight: 400; line-height: 1.45; }
+  .ui-overline {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.4;
+  }
+
+  /* ---- Page container — UBS content column is 1290px. ------------------- */
+  .ui-container {
+    width: 100%;
+    max-width: var(--ubs-grid-max-width);
+    margin-inline: auto;
+  }
+
+  /* ---- Surfaces --------------------------------------------------------- */
+  /* Mirrors MUI Paper elevation={0}: surface + 2px radius, no hairline, no shadow. */
+  .ui-paper {
+    background-color: var(--col-background-ui-10);
+    border-radius: var(--ubs-radius);
+  }
+
+  /* Mirrors MUI Paper variant="outlined" / card edge. */
+  .ui-paper-flat {
+    background-color: var(--col-background-ui-10);
+    border: 1px solid var(--col-border-illustrative);
+    border-radius: var(--ubs-radius);
+  }
+
+  .ui-raised {
+    background-color: var(--col-background-ui-10);
+    border: 1px solid var(--col-border-illustrative);
+    border-radius: var(--ubs-radius);
+    box-shadow: var(--ubs-shadow-raised);
+  }
+
+  .ui-divider {
+    border: 0;
+    border-top: 1px solid var(--col-border-illustrative);
+  }
+
+  /* ---- Buttons ----------------------------------------------------------
+     Colour transitions only — `all` animates width when a menu opens. */
+  .ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* No flex gap — MUI spaces icons via `.MuiButton-startIcon { margin-right: 8px }`. */
+    gap: 0;
+    border-radius: var(--ubs-radius);
+    /* Contained/text have no border (MUI); outlined variants set one below. */
+    border: 0;
+    font-weight: 500;
+    font-size: 0.875rem;
+    /* MUI Button default line-height is 1.75 (24.5px at 14px) — 1.5 made
+       our buttons 4px shorter than the Next build. */
+    line-height: 1.75;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: nowrap;
+    cursor: pointer;
+    padding: 8px 20px;
+    background-color: transparent;
+    transition:
+      background-color 0.15s var(--ubs-easing),
+      color 0.15s var(--ubs-easing),
+      border-color 0.15s var(--ubs-easing),
+      opacity 0.15s var(--ubs-easing);
+  }
+
+  /*
+   * MUI Button startIcon / endIcon spacing (theme default):
+   *   startIcon: marginLeft -4px, marginRight 8px
+   *   endIcon:   marginLeft 8px,  marginRight -4px
+   * Plain +8/+8 made dual-icon CTAs 8px wider and single-icon 4px wider.
+   */
+  .ui-btn > svg:first-child,
+  .ui-btn > .ui-btn-icon:first-child {
+    margin-left: -4px;
+    margin-right: 8px;
+  }
+  .ui-btn > svg:last-child:not(:only-child),
+  .ui-btn > .ui-btn-icon:last-child:not(:only-child) {
+    margin-left: 8px;
+    margin-right: -4px;
+  }
+
+  .ui-btn:disabled,
+  .ui-btn[aria-disabled="true"] {
+    cursor: not-allowed;
+    background-color: var(--col-background-ui-10-hovered);
+    color: var(--col-text-disabled);
+    border-color: transparent;
+  }
+
+  .ui-btn-sm { font-size: 0.8125rem; padding: 5px 14px; }
+  .ui-btn-lg { font-size: 1rem;      padding: 11px 28px; }
+
+  .ui-btn-contained {
+    background-color: var(--col-background-brand);
+    color: #ffffff;
+  }
+  .ui-btn-contained:hover:not(:disabled) { background-color: var(--col-background-brand-hovered); }
+
+  .ui-btn-secondary {
+    background-color: var(--col-background-primary);
+    color: var(--col-text-inverted);
+  }
+  .ui-btn-secondary:hover:not(:disabled) { background-color: var(--col-background-primary-hovered); }
+
+  .ui-btn-outlined {
+    border: 1px solid var(--col-border-primary);
+    color: var(--col-text-primary);
+  }
+  .ui-btn-outlined:hover:not(:disabled) { background-color: var(--col-background-ui-10-hovered); }
+
+  .ui-btn-outlined-primary {
+    border: 1px solid var(--col-border-brand);
+    color: var(--col-link-text-brand);
+  }
+  .ui-btn-outlined-primary:hover:not(:disabled) {
+    border-color: var(--col-background-brand-hovered);
+    color: var(--col-link-text-brand-hovered);
+    background-color: var(--col-primary-light);
+  }
+
+  .ui-btn-outlined-warning { border: 1px solid var(--col-warning); color: var(--col-text-primary); }
+  .ui-btn-outlined-warning:hover:not(:disabled) { background-color: var(--col-tag-amber); }
+
+  .ui-btn-outlined-danger { border: 1px solid var(--col-error); color: var(--col-error); }
+  .ui-btn-outlined-danger:hover:not(:disabled) { background-color: color-mix(in srgb, var(--col-error) 10%, transparent); }
+
+  .ui-btn-text { color: var(--col-text-primary); }
+  .ui-btn-text:hover:not(:disabled) { background-color: var(--col-background-ui-10-hovered); }
+
+  .ui-btn-text-primary { color: var(--col-link-text-brand); }
+  .ui-btn-text-primary:hover:not(:disabled) {
+    color: var(--col-link-text-brand-hovered);
+    background-color: var(--col-primary-light);
+  }
+
+  .ui-btn-danger { background-color: var(--col-error); color: #ffffff; }
+  .ui-btn-danger:hover:not(:disabled) { opacity: 0.88; }
+
+  /* ---- Icon button ------------------------------------------------------ */
+  .ui-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border: 0;
+    border-radius: var(--ubs-radius);
+    background-color: transparent;
+    color: var(--col-text-primary);
+    cursor: pointer;
+    transition:
+      background-color 0.15s var(--ubs-easing),
+      color 0.15s var(--ubs-easing);
+  }
+  .ui-icon-btn:hover:not(:disabled) { background-color: var(--col-background-ui-10-hovered); }
+  .ui-icon-btn:disabled { color: var(--col-text-disabled); cursor: not-allowed; }
+  .ui-icon-btn-sm { padding: 5px; }
+
+  /* ---- Chips ------------------------------------------------------------
+     Filled chips have no border (MUI). A transparent 1px border was adding
+     2px to auto width and making COMPLETED/FAILED chips ~2px wider than Next. */
+  /*
+   * Match MUI Chip size="small" (theme height 24 / fontSize 0.75rem).
+   * MUI puts horizontal inset on `.MuiChip-label` with root `padding: 0`;
+   * our chip is a flat span, so the same 8px lives on the root. Line-height
+   * 1.5 → 18px like the MUI label; justify center keeps icon+text stacked
+   * the same way as flex on the MUI root.
+   */
+  .ui-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: var(--ubs-radius);
+    border: 0;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.5;
+    white-space: nowrap;
+    background-color: var(--col-tag-01);
+    color: var(--col-text-primary);
+    box-sizing: border-box;
+  }
+
+  /* Icons inside chips (AlertTriangle, etc.) — MUI puts a small left margin. */
+  .ui-chip > svg:first-child {
+    margin-left: -2px;
+    margin-right: 4px;
+  }
+
+  .ui-chip-primary { background-color: var(--col-background-brand); color: #ffffff; }
+  .ui-chip-success { background-color: var(--col-tag-02); color: #1c1c1c; }
+  .ui-chip-warning { background-color: var(--col-tag-03); color: #1c1c1c; }
+  .ui-chip-info    { background-color: var(--col-tag-03); color: #1c1c1c; }
+  .ui-chip-error {
+    background-color: color-mix(in srgb, var(--col-error) 14%, transparent);
+    color: var(--col-error);
+  }
+  .ui-chip-secondary { background-color: var(--col-tag-01); color: var(--col-text-primary); }
+
+  .ui-chip-outlined {
+    background-color: transparent;
+    border: 1px solid var(--col-border-light);
+    color: var(--col-text-primary);
+  }
+  .ui-chip-outlined.ui-chip-primary { color: var(--col-link-text-brand); border-color: var(--col-border-brand); }
+  .ui-chip-outlined.ui-chip-warning { color: var(--col-text-primary); border-color: var(--col-warning); }
+  .ui-chip-outlined.ui-chip-error   { color: var(--col-error); border-color: var(--col-error); }
+  .ui-chip-outlined.ui-chip-success { color: var(--col-text-primary); border-color: var(--col-success); }
+  .ui-chip-outlined.ui-chip-info    { color: var(--col-text-primary); border-color: var(--col-info); }
+
+  /* ---- Inputs ----------------------------------------------------------- */
+  .ui-input,
+  .ui-textarea,
+  .ui-select {
+    width: 100%;
+    background-color: var(--col-background-ui-10);
+    color: var(--col-text-primary);
+    border: 1px solid var(--col-border-light);
+    border-radius: var(--ubs-radius);
+    font-size: 0.875rem;
+    font-family: inherit;
+    padding: 9px 12px;
+    transition: border-color 0.15s var(--ubs-easing);
+  }
+
+  .ui-input:hover:not(:disabled),
+  .ui-textarea:hover:not(:disabled),
+  .ui-select:hover:not(:disabled) { border-color: var(--col-border-primary); }
+
+  .ui-input:focus,
+  .ui-textarea:focus,
+  .ui-select:focus {
+    border-color: var(--col-focus-ring);
+    outline: 2px solid var(--col-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .ui-input:disabled,
+  .ui-textarea:disabled,
+  .ui-select:disabled {
+    background-color: var(--col-background-ui-20);
+    color: var(--col-text-disabled);
+    cursor: not-allowed;
+  }
+
+  .ui-input::placeholder,
+  .ui-textarea::placeholder { color: var(--col-text-disabled); }
+
+  .ui-textarea { resize: vertical; line-height: 1.55; }
+
+  .ui-select-trigger {
+    appearance: none;
+    background-image: none !important;
+    padding-right: 12px;
+    cursor: pointer;
+  }
+
+  .ui-select {
+    appearance: none;
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235a5d5c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :root[data-theme="dark"] .ui-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23e0dfd7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+
+  .ui-label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--col-text-subtle);
+    margin-bottom: 6px;
+  }
+
+  /* Floating label for outlined controls (MUI InputLabel shrink). */
+  .ui-label-outline {
+    position: absolute;
+    top: -0.5rem;
+    left: 0.5rem;
+    z-index: 1;
+    max-width: calc(100% - 1rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 4px;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--col-text-subtle);
+    background-color: var(--col-background-ui-10);
+    pointer-events: none;
+  }
+
+  /*
+   * ConfigBar / toolbar outlined controls — match MUI Select size="small"
+   * (~37–40px). Fixed height keeps Model / Engine / Mock / More Options
+   * on one baseline even when labels float.
+   */
+  .ui-select-compact,
+  .ui-input-compact {
+    box-sizing: border-box;
+    height: 40px;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 0.82rem;
+    line-height: 38px; /* height − 2×1px border */
+  }
+
+  .ui-select-compact.ui-select-trigger {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.4375;
+  }
+
+  /* Soften focus so the ring does not shove neighbours visually. */
+  .ui-select-compact:focus,
+  .ui-input-compact:focus {
+    outline-width: 1px;
+    outline-offset: 1px;
+  }
+
+  .ui-helper {
+    font-size: 0.75rem;
+    color: var(--col-text-subtle);
+    margin-top: 4px;
+  }
+
+  /* ---- Menus & popovers -------------------------------------------------- */
+  .ui-menu {
+    background-color: var(--col-background-ui-10);
+    border: 1px solid var(--col-border-illustrative);
+    border-radius: var(--ubs-radius);
+    box-shadow: var(--ubs-shadow-raised);
+    padding-block: 4px;
+  }
+
+  .ui-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    text-align: left;
+    background-color: transparent;
+    color: var(--col-text-primary);
+    border: 0;
+    cursor: pointer;
+  }
+  .ui-menu-item:hover:not(:disabled) { background-color: var(--col-background-ui-10-hovered); }
+  .ui-menu-item[data-selected="true"] { background-color: var(--col-background-ui-30); }
+  .ui-menu-item:disabled { color: var(--col-text-disabled); cursor: default; }
+
+  /* ---- Tables ------------------------------------------------------------ */
+  .ui-table { width: 100%; border-collapse: collapse; }
+
+  .ui-table th,
+  .ui-table td {
+    border-bottom: 1px solid var(--col-border-illustrative);
+    font-size: 0.875rem;
+    /* Matches MuiTableCell: theme overrides only set fontSize/padding; cells
+       inherit Typography body2 line-height (1.55 → ~21.7px at 0.875rem). */
+    padding: 12px 16px;
+    line-height: 1.55;
+    text-align: left;
+  }
+
+  .ui-table th {
+    font-weight: 500;
+    background-color: var(--col-background-ui-30);
+    color: var(--col-text-primary);
+    white-space: nowrap;
+  }
+
+  /* Kept as an alias of the standard cell: earlier ports used this for MUI's
+     `size="small"`, but the Next theme overrides small cells back to 12/16. */
+  .ui-table-dense th,
+  .ui-table-dense td { padding: 12px 16px; }
+
+  .ui-table tbody tr:hover { background-color: var(--col-background-ui-10-hovered); }
+  /* MUI keeps the last row's bottom border; dropping it made Vite tables look
+     shorter and unfinished next to the Next build. */
+  .ui-table tbody tr:last-child td { border-bottom: 1px solid var(--col-border-illustrative); }
+
+  /* ---- Tabs -------------------------------------------------------------- */
+  .ui-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--col-border-illustrative);
+    overflow-x: auto;
+  }
+
+  .ui-tab {
+    padding: 10px 16px;
+    min-height: 44px;
+    font-size: 0.875rem;
+    font-weight: 400;
+    text-transform: none;
+    color: var(--col-text-subtle);
+    background-color: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s var(--ubs-easing), border-color 0.15s var(--ubs-easing);
+  }
+
+  .ui-tab:hover { color: var(--col-text-primary); }
+
+  .ui-tab[aria-selected="true"] {
+    color: var(--col-text-primary);
+    font-weight: 500;
+    border-bottom-color: var(--col-background-brand);
+  }
+
+  /* ---- Alerts ------------------------------------------------------------ */
+  .ui-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 12px 16px;
+    border: 1px solid var(--col-border-illustrative);
+    border-radius: var(--ubs-radius);
+    font-size: 0.875rem;
+    color: var(--col-text-primary);
+  }
+
+  .ui-alert-error {
+    background-color: color-mix(in srgb, var(--col-error) 8%, transparent);
+    border-color: var(--col-error);
+  }
+  .ui-alert-success { background-color: var(--col-tag-02); border-color: var(--col-tag-02); color: #1c1c1c; }
+  .ui-alert-warning { background-color: var(--col-tag-03); border-color: var(--col-tag-03); color: #1c1c1c; }
+  .ui-alert-info    { background-color: var(--col-background-ui-40); }
+
+  /* ---- Progress ---------------------------------------------------------- */
+  .ui-progress {
+    position: relative;
+    overflow: hidden;
+    height: 4px;
+    width: 100%;
+    background-color: var(--col-background-ui-30);
+  }
+
+  .ui-progress-bar {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    background-color: var(--col-background-brand);
+    transition: width 0.3s var(--ubs-easing);
+  }
+
+  .ui-progress-indeterminate .ui-progress-bar {
+    width: auto;
+    animation: ubsIndeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+  }
+
+  /* ---- Skeleton ---------------------------------------------------------- */
+  .ui-skeleton {
+    background-color: var(--col-background-ui-30);
+    border-radius: var(--ubs-radius);
+    animation: ubsPulse 1.6s ease-in-out infinite;
+  }
+
+  /* ---- Tooltip ----------------------------------------------------------- */
+  .ui-tooltip-host { position: relative; display: inline-flex; }
+
+  .ui-tooltip {
+    position: absolute;
+    z-index: 1400;
+    background-color: var(--col-background-primary);
+    color: var(--col-text-inverted);
+    border-radius: var(--ubs-radius);
+    font-size: 0.75rem;
+    font-weight: 400;
+    padding: 6px 10px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* ---- Code -------------------------------------------------------------- */
+  .ui-code {
+    font-family: var(--ubs-mono);
+    font-size: 0.8125rem;
+    background-color: var(--col-background-ui-20);
+    border: 1px solid var(--col-border-illustrative);
+    border-radius: var(--ubs-radius);
+    padding: 12px 14px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}

@@ -7,25 +7,48 @@ generation itself — that is the runner's job.
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.api.hub_routes import router as hub_router
 from app.api.chat_routes import router as chat_router
 from app.api.automation_routes import router as automation_router
 from app.api.lab_routes import router as lab_router
-from app.config import settings
+from app.config import PROJECT_ROOT, settings
 from app.database import init_db
 from app.logging_config import configure_logging, request_id_var
 from app.security import configure_auth
 
 configure_logging()
 logger = logging.getLogger("ai-test-platform")
+
+
+def _resolve_static_dir() -> Path | None:
+    """Vite build output for Domino / single-process deploys.
+
+    Prefers STATIC_DIR, then backend/dist (app.sh copy target), then repo dist/.
+    """
+    candidates: list[Path] = []
+    env = os.getenv("STATIC_DIR", "").strip()
+    if env:
+        candidates.append(Path(env))
+    candidates.append(Path(__file__).resolve().parents[1] / "dist")
+    candidates.append(PROJECT_ROOT / "dist")
+    for path in candidates:
+        if (path / "index.html").is_file():
+            return path.resolve()
+    return None
+
+
+STATIC_DIR = _resolve_static_dir()
 
 
 @asynccontextmanager
@@ -51,12 +74,13 @@ async def lifespan(app: FastAPI):
     scheduler.start()
 
     logger.info(
-        "Orchestrator ready | executor=%s engine=%s auth=%s worker=%s artifacts=%s",
+        "Orchestrator ready | executor=%s engine=%s auth=%s worker=%s artifacts=%s static=%s",
         settings.executor,
         settings.engine,
         settings.auth_mode,
         "on" if worker else "off",
         settings.artifact_root,
+        STATIC_DIR or "off",
     )
     if settings.engine == "mock":
         logger.warning(
@@ -151,8 +175,38 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 @app.get("/", tags=["meta"])
-def root() -> dict[str, str]:
+def root():
+    """Serve the Vite SPA when a build is present; otherwise a small service map."""
+    if STATIC_DIR is not None:
+        return FileResponse(STATIC_DIR / "index.html")
     payload = {"service": settings.app_name, "api": settings.api_prefix}
     if _docs:
         payload["docs"] = "/docs"
     return payload
+
+
+# Domino / single-port: FastAPI serves the Vite build next to /api/v1.
+if STATIC_DIR is not None:
+    assets_dir = STATIC_DIR / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa_fallback(full_path: str):
+        """Client-side routes and public files from dist/ (favicon, etc.)."""
+        # Never shadow the API or OpenAPI surfaces.
+        if full_path == "api" or full_path.startswith("api/"):
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        if full_path in {"docs", "redoc", "openapi.json"} or full_path.startswith(
+            ("docs/", "redoc/")
+        ):
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+
+        candidate = (STATIC_DIR / full_path).resolve()
+        try:
+            candidate.relative_to(STATIC_DIR)
+        except ValueError:
+            return FileResponse(STATIC_DIR / "index.html")
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(STATIC_DIR / "index.html")

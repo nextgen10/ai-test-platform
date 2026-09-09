@@ -1,41 +1,25 @@
-# OS & IDE
-.DS_Store
-.idea/
-.vscode/
-
-# Local job database. Tracked on purpose for prodv1 historical runs.
-# Keep ignoring other *.db scratch files if they appear elsewhere.
-*.db
-*.db-shm
-*.db-wal
-!/jobs.db
-!/jobs.db-shm
-!/jobs.db-wal
-
-# Environment
+node_modules
+dist
+dist-ssr
 .env
+*.local
+.DS_Store
 
-# Frontend
-frontend/node_modules/
-frontend/.next/
-frontend/.next-verify/
-frontend/next-env.d.ts
-frontend/tsconfig.tsbuildinfo
-
-# UI verification screenshots — a local scratchpad, not a deliverable.
-frontend/.ubs-verify/
-
-# Stray build output at the repo root. `frontend/.next/` above does not cover
-# it, and a build run from the wrong directory lands here.
-/.next/
-
-# The root lockfile is junk from a stray `npm install` at the top level.
-# frontend/package-lock.json is deliberately NOT ignored: CI installs from it
-# with `npm ci` and keys its cache on it.
-/package-lock.json
-
-# Python
-__pycache__/
-*.py[cod]
+# Python / orchestrator
 .venv/
 venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Runtime data
+jobs.db
+jobs.db-*
+artifacts/
+.job-runtime/
+logs/
+*.log
+
+# Local visual-diff scratch
+.visual-diff/

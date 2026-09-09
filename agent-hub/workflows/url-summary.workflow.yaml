@@ -1,0 +1,28 @@
+id: url-summary
+name: URL Summary Workflow
+description: >-
+  Fetches a web page from a given URL, extracts and cleans its text content,
+  then produces a one-page summary highlighting key points and open questions.
+version: "1.0"
+runner: generic
+agents:
+  - id: page-fetcher
+    stage: fetch
+    optional: false
+    description: >-
+      Fetches the page at the given URL and extracts clean, readable text
+      content, stripping HTML markup, navigation, ads, and other boilerplate.
+    depends_on: []
+  - id: summary-writer
+    stage: summarize
+    optional: false
+    description: >-
+      Reads the cleaned page text and writes a one-page summary that includes
+      key points and a list of open questions raised by the content.
+    depends_on: [fetch]
+input:
+  type: text
+  label: Input
+output:
+  type: markdown
+  primary_artifact: output/summary.md

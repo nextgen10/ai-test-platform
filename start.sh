@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Start Agent HUB locally (orchestrator + UI).
-# Ports 8100/3100 run the backend orchestrator and Next.js frontend.
+# Start Agent HUB (orchestrator + Vite UI).
+# Ports 8100 / 3300 by default.
 #
 set -Eeuo pipefail
 
@@ -9,22 +9,20 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$ROOT/logs"
 mkdir -p "$LOG_DIR"
 
-# Load .env as *defaults*: anything already in the environment wins, so
-# `ENGINE=copilot ./start.sh` still overrides the file.
 load_env_defaults() {
     local file="$1" line key value
     while IFS= read -r line || [[ -n "$line" ]]; do
-        line="${line#"${line%%[![:space:]]*}"}"     # strip leading whitespace
+        line="${line#"${line%%[![:space:]]*}"}"
         [[ -z "$line" || "$line" == \#* ]] && continue
         line="${line#export }"
         [[ "$line" != *=* ]] && continue
         key="${line%%=*}"
         value="${line#*=}"
-        key="${key%"${key##*[![:space:]]}"}"        # strip trailing whitespace
+        key="${key%"${key##*[![:space:]]}"}"
         [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
-        value="${value%\"}"; value="${value#\"}"    # strip surrounding quotes
+        value="${value%\"}"; value="${value#\"}"
         value="${value%\'}"; value="${value#\'}"
-        [[ -n "${!key+x}" ]] && continue            # already set: environment wins
+        [[ -n "${!key+x}" ]] && continue
         export "$key=$value"
     done < "$file"
 }
@@ -37,32 +35,14 @@ fi
 : "${EXECUTOR:=local}"
 : "${ENGINE:=mock}"
 : "${BACKEND_PORT:=8100}"
-: "${FRONTEND_PORT:=3100}"
-# Demo is open even if .env still has AUTH_MODE=token.
+: "${FRONTEND_PORT:=3300}"
 AUTH_MODE=disabled
 : "${ENABLE_DOCS:=1}"
 export EXECUTOR ENGINE AUTH_MODE ENABLE_DOCS
-
-# This demo is open. Token mode is opt-in (AUTH_MODE=token + API_TOKENS).
-if [[ "$AUTH_MODE" == "token" && -z "${API_TOKENS:-}" ]]; then
-    DEV_TOKEN="$("${PYTHON:-python3}" -c 'import secrets; print(secrets.token_urlsafe(32))')"
-    export API_TOKENS="${DEV_TOKEN}:local-dev:admin"
-    export API_TOKEN="$DEV_TOKEN"
-    echo "  auth     token mode, dev credential generated for this run"
-elif [[ "$AUTH_MODE" == "disabled" ]]; then
-    unset API_TOKEN || true
-    echo "  auth     off — no login, no token"
-else
-    : "${API_TOKEN:=}"
-    echo "  auth     token mode, using API_TOKENS from the environment"
-    if [[ -z "$API_TOKEN" ]]; then
-        echo "           warning: API_TOKEN is unset, so the UI cannot authenticate." >&2
-        echo "           Set it to one of the tokens listed in API_TOKENS." >&2
-    fi
-fi
-export API_TOKEN="${API_TOKEN:-}"
+export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT},http://localhost:3100,http://127.0.0.1:3100}"
 
 PYTHON="${PYTHON:-python3}"
+VENV="$ROOT/.venv"
 
 cleanup() {
     echo ""
@@ -73,13 +53,25 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo "AI Test Platform"
+echo "Agent HUB (Vite)"
 echo "  executor : $EXECUTOR"
 echo "  engine   : $ENGINE"
 if [[ "$ENGINE" == "mock" ]]; then
     echo "             (deterministic stand-in — set ENGINE=copilot for real generation)"
 fi
+echo "  auth     off — no login, no token"
 echo ""
+
+if [[ ! -d "$VENV" ]]; then
+    echo "Creating Python venv…"
+    "$PYTHON" -m venv "$VENV"
+fi
+# shellcheck disable=SC1091
+source "$VENV/bin/activate"
+if ! python -c "import fastapi" 2>/dev/null; then
+    echo "Installing backend dependencies…"
+    pip install -q -r "$ROOT/backend/requirements.txt"
+fi
 
 echo "Cleaning up any processes on port $BACKEND_PORT..."
 lsof -t -i:"$BACKEND_PORT" | xargs kill -9 2>/dev/null || true
@@ -87,11 +79,13 @@ lsof -t -i:"$BACKEND_PORT" | xargs kill -9 2>/dev/null || true
 echo "Starting orchestrator on :$BACKEND_PORT"
 (
     cd "$ROOT/backend"
-    exec "$PYTHON" -m uvicorn app.main:app --host 127.0.0.1 --port "$BACKEND_PORT"
+    # Do not inherit Vite's PORT from .env — uvicorn must bind BACKEND_PORT.
+    unset PORT
+    exec python -m uvicorn app.main:app --host 127.0.0.1 --port "$BACKEND_PORT"
 ) > "$LOG_DIR/backend.log" 2>&1 &
 BACKEND_PID=$!
 
-for _ in $(seq 1 30); do
+for _ in $(seq 1 40); do
     if curl -sf "http://127.0.0.1:$BACKEND_PORT/api/v1/health" > /dev/null 2>&1; then
         echo "  orchestrator ready"
         break
@@ -101,41 +95,29 @@ done
 
 if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
     echo "Orchestrator failed to start. Last lines:" >&2
-    tail -20 "$LOG_DIR/backend.log" >&2
+    tail -30 "$LOG_DIR/backend.log" >&2
     exit 1
 fi
 
 echo "Cleaning up any processes on port $FRONTEND_PORT..."
 lsof -t -i:"$FRONTEND_PORT" | xargs kill -9 2>/dev/null || true
 
-echo "Starting UI on :$FRONTEND_PORT"
-if [[ ! -d "$ROOT/frontend/node_modules" ]]; then
+if [[ ! -d "$ROOT/node_modules" ]]; then
     echo "  installing frontend dependencies (first run)…"
-    (cd "$ROOT/frontend" && npm install --no-audit --no-fund) >> "$LOG_DIR/frontend.log" 2>&1
+    (cd "$ROOT" && npm install --no-audit --no-fund) >> "$LOG_DIR/frontend.log" 2>&1
 fi
 
+echo "Starting Vite UI on :$FRONTEND_PORT"
 (
-    cd "$ROOT/frontend"
+    cd "$ROOT"
     PORT="$FRONTEND_PORT" API_TARGET="http://127.0.0.1:$BACKEND_PORT" \
-        API_TOKEN="$API_TOKEN" UI_AUTH_MODE=shared exec npm run dev
+        exec npm run dev -- --port "$FRONTEND_PORT" --strictPort
 ) > "$LOG_DIR/frontend.log" 2>&1 &
 FRONTEND_PID=$!
 
-sleep 3
+sleep 2
 echo ""
 echo "  UI       http://localhost:$FRONTEND_PORT"
-# Next may also print Network as http://0.0.0.0:3100 when it binds all
-# interfaces. That is not a URL — use the addresses below.
-while IFS= read -r lan_ip; do
-    [[ -n "$lan_ip" ]] && echo "  Network  http://$lan_ip:$FRONTEND_PORT"
-done < <(
-    {
-        command -v ipconfig >/dev/null && ipconfig getifaddr en0
-        command -v ipconfig >/dev/null && ipconfig getifaddr en1
-        hostname -I 2>/dev/null
-        ifconfig 2>/dev/null | awk '/inet /{print $2}'
-    } 2>/dev/null | tr ' ' '\n' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | grep -v '^127\.' | grep -v '^169\.254\.' | uniq
-)
 echo "  API docs http://localhost:$BACKEND_PORT/docs"
 echo "  logs     $LOG_DIR/"
 echo ""
