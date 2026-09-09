@@ -567,43 +567,39 @@ export const AgentStudio: React.FC = () => {
               )}
 
               <Box
-                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, minHeight: 28 }}
+                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
               >
                 <Typography variant="subtitle2" sx={{ fontWeight: 500, fontSize: '0.82rem' }}>
                   {handoff ? 'Extra instructions (optional)' : 'What should this agent do?'}
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, minWidth: 132, justifyContent: 'flex-end' }}>
-                  <Button
-                    size="small"
-                    variant="text"
-                    startIcon={<Sparkles size={13} />}
-                    onClick={loadSample}
-                    disabled={Boolean(handoff) || !SAMPLE_PROMPTS[selectedId]}
-                    sx={{
-                      fontSize: '0.75rem',
-                      textTransform: 'none',
-                      py: 0.2,
-                      visibility: handoff ? 'hidden' : 'visible',
-                    }}
-                  >
-                    Sample
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="text"
-                    color="inherit"
-                    onClick={() => setInput('')}
-                    disabled={!input}
-                    sx={{
-                      fontSize: '0.75rem',
-                      textTransform: 'none',
-                      py: 0.2,
-                      color: 'text.secondary',
-                      minWidth: 52,
-                    }}
-                  >
-                    Clear
-                  </Button>
+                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                  {!handoff && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      startIcon={<Sparkles size={13} />}
+                      onClick={loadSample}
+                      sx={{ fontSize: '0.75rem', textTransform: 'none', py: 0.2 }}
+                    >
+                      Sample
+                    </Button>
+                  )}
+                  {input && (
+                    <Button
+                      size="small"
+                      variant="text"
+                      color="inherit"
+                      onClick={() => setInput('')}
+                      sx={{
+                        fontSize: '0.75rem',
+                        textTransform: 'none',
+                        py: 0.2,
+                        color: 'text.secondary',
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
                 </Box>
               </Box>
 
@@ -646,64 +642,50 @@ export const AgentStudio: React.FC = () => {
                   borderTop: '1px solid',
                   borderColor: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
                   gap: 1,
-                  flexWrap: 'nowrap',
+                  flexWrap: 'wrap',
                 }}
               >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                   {handoff
                     ? '⌘/Ctrl + Enter runs this agent on the previous output'
                     : `${input.length} characters · ⌘/Ctrl + Enter to run`}
                 </Typography>
 
-                <Box sx={{ flexShrink: 0, width: 88, display: 'flex', justifyContent: 'flex-end' }}>
-                  {isStreaming ? (
-                    <Button
-                      variant="contained"
-                      color="error"
-                      size="small"
-                      fullWidth
-                      startIcon={<Square size={13} fill="currentColor" />}
-                      onClick={() => stopStreaming()}
-                      sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        fontSize: '0.82rem',
-                        minHeight: 32,
-                      }}
-                    >
-                      Stop
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      size="small"
-                      fullWidth
-                      startIcon={<Play size={14} fill="currentColor" />}
-                      disabled={!canRun}
-                      onClick={() => void handleRun()}
-                      sx={{
-                        borderRadius: 2,
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        fontSize: '0.82rem',
-                        minHeight: 32,
-                      }}
-                    >
-                      Run
-                    </Button>
-                  )}
-                </Box>
+                {isStreaming ? (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    size="small"
+                    startIcon={<Square size={13} fill="currentColor" />}
+                    onClick={() => stopStreaming()}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    Stop
+                  </Button>
+                ) : (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={<Play size={14} fill="currentColor" />}
+                    disabled={!canRun}
+                    onClick={() => void handleRun()}
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      fontSize: '0.84rem',
+                      px: 2.5,
+                    }}
+                  >
+                    Run {selectedName}
+                  </Button>
+                )}
               </Box>
             </Paper>
           </Box>

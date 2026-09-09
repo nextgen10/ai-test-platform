@@ -92,8 +92,9 @@ function toneFor(column: string, raw: string): ChipTone {
     return 'default';
   }
   if (column === 'status') {
-    if (['pass', 'passed', 'ok', 'complete', 'completed'].includes(value)) return 'success';
-    if (['fail', 'failed', 'error'].includes(value)) return 'error';
+    if (['pass', 'passed', 'ok', 'complete', 'completed', 'success', 'ready'].includes(value)) return 'success';
+    if (['fail', 'failed', 'error', 'rejected', 'timeout'].includes(value)) return 'error';
+    if (['running', 'pending', 'queued', 'in progress', 'in-progress', 'streaming', 'waiting', 'blocked'].includes(value)) return 'warning';
     return 'default';
   }
   return 'default';

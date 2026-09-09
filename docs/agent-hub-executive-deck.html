@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agent HUB Platform — Leadership briefing</title>
+  <style>
+    :root {
+      --brand: #0769A6;
+      --brand-hover: #05557F;
+      --ink: #1C1C1C;
+      --muted: #5A5D5C;
+      --faint: #8E8D83;
+      --paper: #F4F3EE;
+      --slide: #FFFFFF;
+      --panel: #F9F9F7;
+      --rule: #CCCABC;
+      --gold: #A67C12;
+      --aqua: #0D7F8C;
+      --orchid: #8B47B8;
+      --green: #2F8F58;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #1C1C1C;
+      color: var(--ink);
+      font-family: var(--sans);
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .deck {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stage {
+      width: min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      background: var(--slide);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      position: absolute;
+      inset: 0;
+      padding: 6.4% 6.8% 5.6%;
+      flex-direction: column;
+    }
+    .slide.active { display: flex; }
+
+    .chrome {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4.4%;
+    }
+    .mark {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: clamp(11px, 1.15vw, 15px);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .mark img { height: 22px; width: auto; }
+    .folio {
+      font-size: clamp(11px, 1.1vw, 14px);
+      letter-spacing: 0.12em;
+      color: var(--faint);
+    }
+    .folio b { color: var(--ink); font-weight: 500; }
+
+    h1 {
+      font-size: clamp(28px, 3.6vw, 52px);
+      font-weight: 400;
+      letter-spacing: -0.025em;
+      line-height: 1.12;
+      max-width: 18ch;
+    }
+    h2 {
+      font-size: clamp(24px, 2.7vw, 40px);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.18;
+      max-width: 22ch;
+    }
+    .lede {
+      margin-top: 1.4%;
+      font-size: clamp(15px, 1.45vw, 20px);
+      line-height: 1.45;
+      color: var(--muted);
+      max-width: 46ch;
+    }
+    .lede strong { color: var(--ink); font-weight: 500; }
+
+    .fill { flex: 1; min-height: 0; }
+
+    .figures {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.6%;
+      margin-top: auto;
+    }
+    .figure {
+      padding-top: 4%;
+      border-top: 1px solid var(--rule);
+    }
+    .figure .n {
+      font-size: clamp(28px, 3.2vw, 46px);
+      font-weight: 300;
+      color: var(--brand);
+      line-height: 1;
+    }
+    .figure .l {
+      margin-top: 8px;
+      font-size: clamp(12px, 1.15vw, 15px);
+      font-weight: 500;
+    }
+    .figure .s {
+      margin-top: 4px;
+      font-size: clamp(11px, 1.05vw, 13px);
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3.2%;
+      margin-top: 5%;
+      flex: 1;
+      min-height: 0;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid #E0DFD7;
+      padding: 8% 8% 7%;
+    }
+    .card .kicker {
+      font-size: clamp(11px, 1.05vw, 13px);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--faint);
+      margin-bottom: 10px;
+    }
+    .card h3 {
+      font-size: clamp(18px, 1.7vw, 24px);
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .card ul { list-style: none; }
+    .card li {
+      font-size: clamp(13px, 1.25vw, 16px);
+      line-height: 1.45;
+      color: var(--muted);
+      padding: 7px 0 7px 16px;
+      position: relative;
+      border-top: 1px solid #E8E6DE;
+    }
+    .card li:first-of-type { border-top: 0; }
+    .card li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 15px;
+      width: 6px;
+      height: 6px;
+      background: var(--rule);
+    }
+    .card.hub li::before { background: var(--brand); }
+    .card.hub { border-color: rgba(7, 105, 166, 0.28); background: #F4F8FB; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 18px 1fr 18px 1fr 18px 1fr;
+      align-items: stretch;
+      gap: 0;
+      margin-top: 5%;
+      flex: 1;
+    }
+    .node {
+      padding: 18px 16px 16px;
+      border: 1px solid #E0DFD7;
+      background: var(--panel);
+    }
+    .node .step {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .node h3 { font-size: clamp(15px, 1.45vw, 20px); font-weight: 500; }
+    .node p { margin-top: 8px; font-size: clamp(12px, 1.1vw, 14px); color: var(--muted); line-height: 1.4; }
+    .node.gold .step { color: var(--gold); }
+    .node.aqua .step { color: var(--aqua); }
+    .node.orchid .step { color: var(--orchid); }
+    .node.green .step { color: var(--green); }
+    .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--faint);
+      font-size: 18px;
+    }
+
+    .examples {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 3%;
+      margin-top: 4.5%;
+      flex: 1;
+    }
+    .ex {
+      padding: 20px 22px;
+      border: 1px solid #E0DFD7;
+      background: var(--panel);
+    }
+    .ex .tag {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--brand);
+      margin-bottom: 8px;
+    }
+    .ex h3 { font-size: clamp(16px, 1.5vw, 21px); font-weight: 500; }
+    .ex p { margin-top: 8px; font-size: clamp(13px, 1.2vw, 15px); color: var(--muted); line-height: 1.45; }
+    .scale {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .scale .ex { flex: 1; }
+    .callout {
+      margin-top: auto;
+      padding-top: 3.2%;
+      border-top: 1px solid var(--rule);
+      font-size: clamp(15px, 1.4vw, 19px);
+      line-height: 1.4;
+    }
+
+    .asks {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2%;
+      margin-top: 5%;
+      flex: 1;
+    }
+    .ask {
+      padding-top: 16px;
+      border-top: 3px solid var(--brand);
+    }
+    .ask .num {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--brand);
+      margin-bottom: 10px;
+    }
+    .ask h3 { font-size: clamp(16px, 1.5vw, 21px); font-weight: 500; margin-bottom: 10px; }
+    .ask p { font-size: clamp(13px, 1.2vw, 15px); color: var(--muted); line-height: 1.45; }
+
+    .hint {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #8E8D83;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      z-index: 4;
+    }
+
+    @media print {
+      html, body { background: #fff; height: auto; }
+      .deck { display: block; height: auto; }
+      .stage {
+        width: 100%;
+        height: auto;
+        box-shadow: none;
+      }
+      .slide {
+        display: flex !important;
+        position: relative;
+        page-break-after: always;
+        width: 100%;
+        height: 100vh;
+      }
+      .slide:last-child { page-break-after: auto; }
+      .hint { display: none; }
+      @page { size: landscape; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <div class="stage" id="stage">
+
+      <section class="slide active" data-slide="1">
+        <div class="chrome">
+          <div class="mark">
+            <img src="../frontend/public/CTSH.svg" alt="" />
+            Agent HUB Platform
+          </div>
+          <div class="folio"><b>01</b> / 05</div>
+        </div>
+        <h1>One control plane.<br />Every agent.</h1>
+        <p class="lede">
+          Agent HUB is an <strong>enterprise multi-agent platform</strong> —
+          not a chatbot, and not a product built around a single use case.
+          Onboard work as files. Run it. Keep the evidence.
+        </p>
+        <div class="fill"></div>
+        <div class="figures">
+          <div class="figure">
+            <div class="n">4</div>
+            <div class="l">Registry artifacts</div>
+            <div class="s">Agents, workflows, skills, prompts — as files</div>
+          </div>
+          <div class="figure">
+            <div class="n">2</div>
+            <div class="l">Ways to run</div>
+            <div class="s">Agent Console, or a dedicated Custom UI</div>
+          </div>
+          <div class="figure">
+            <div class="n">0</div>
+            <div class="l">Migrations to onboard</div>
+            <div class="s">Drop a file. It is live. No redeploy.</div>
+          </div>
+          <div class="figure">
+            <div class="n">1</div>
+            <div class="l">Job per run</div>
+            <div class="s">Isolated execution, artifacts, audit trail</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide="2">
+        <div class="chrome">
+          <div class="mark">
+            <img src="../frontend/public/CTSH.svg" alt="" />
+            The architectural choice
+          </div>
+          <div class="folio"><b>02</b> / 05</div>
+        </div>
+        <h2>A platform, not a new product per idea.</h2>
+        <p class="lede">
+          Most “AI initiatives” become a chat window or a purpose-built screen.
+          The next request then becomes another release. Agent HUB stops that pattern.
+        </p>
+        <div class="split">
+          <div class="card">
+            <div class="kicker">Typical approach</div>
+            <h3>One use case = one product</h3>
+            <ul>
+              <li>Hardcoded into the application. A new use case is a release.</li>
+              <li>Work lives in an ephemeral transcript. Nothing to audit.</li>
+              <li>A long-lived shared process. A crash lands on everyone.</li>
+              <li>Human control is informal. No structured gate.</li>
+            </ul>
+          </div>
+          <div class="card hub">
+            <div class="kicker">Agent HUB</div>
+            <h3>One plane = many use cases</h3>
+            <ul>
+              <li>A file in the registry. A new workflow is live with no redeploy.</li>
+              <li>One job per run: versioned artifacts and a full event trail.</li>
+              <li>1 request = 1 isolated job. Sandboxed. Bounded filesystem.</li>
+              <li>Workflows can pause for approval. The decision is recorded.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide="3">
+        <div class="chrome">
+          <div class="mark">
+            <img src="../frontend/public/CTSH.svg" alt="" />
+            How the platform runs
+          </div>
+          <div class="folio"><b>03</b> / 05</div>
+        </div>
+        <h2>Onboard. Run. Trace.</h2>
+        <p class="lede">
+          Everything a team does on Agent HUB follows the same path —
+          regardless of domain, model, or interface.
+        </p>
+        <div class="flow">
+          <div class="node gold">
+            <div class="step">01 · Onboard</div>
+            <h3>Registry</h3>
+            <p>Agents, workflows, skills, and prompts are files. The catalog is the product surface.</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node aqua">
+            <div class="step">02A · Run</div>
+            <h3>Agent Console</h3>
+            <p>The universal execution plane. Any onboarded workflow. Any model. Live stream.</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node orchid">
+            <div class="step">02B · Run</div>
+            <h3>Custom UI</h3>
+            <p>Optional. Only when the work needs its own surface — declared on the workflow.</p>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node green">
+            <div class="step">03 · Trace</div>
+            <h3>Jobs</h3>
+            <p>Every run is a job: isolated workspace, artifacts, status history, audit trail.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" data-slide="4">
+        <div class="chrome">
+          <div class="mark">
+            <img src="../frontend/public/CTSH.svg" alt="" />
+            Use cases are installations
+          </div>
+          <div class="folio"><b>04</b> / 05</div>
+        </div>
+        <h2>One example. The same pattern, repeatedly.</h2>
+        <p class="lede">
+          Test Design is <strong>one workflow installed on the plane</strong> —
+          not the product. The next use case is another file, not another platform.
+        </p>
+        <div class="examples">
+          <div class="ex">
+            <div class="tag">Example · Custom UI</div>
+            <h3>Test Design &amp; Evaluation</h3>
+            <p>
+              Unstructured requirement → INVEST gate → coverage matrix →
+              generated suite → 5-D evaluation. Five agents, one job, a dedicated surface
+              because this work needs one. The Console can still run the same workflow.
+            </p>
+          </div>
+          <div class="scale">
+            <div class="ex">
+              <div class="tag">How the next one arrives</div>
+              <h3>Workflow Builder</h3>
+              <p>Describe a workflow in English. Agents design, write, and install it into the registry — live, no redeploy.</p>
+            </div>
+            <div class="ex">
+              <div class="tag">Same plane, other domains</div>
+              <h3>Already the pattern</h3>
+              <p>Document OCR. Incident post-mortem. Payments, IAM, trading skills as files. Each is a catalog entry, not a new product line.</p>
+            </div>
+          </div>
+        </div>
+        <p class="callout">The question is not “can we build another AI app?” It is “can we install another workflow?”</p>
+      </section>
+
+      <section class="slide" data-slide="5">
+        <div class="chrome">
+          <div class="mark">
+            <img src="../frontend/public/CTSH.svg" alt="" />
+            What this means
+          </div>
+          <div class="folio"><b>05</b> / 05</div>
+        </div>
+        <h2>Fund the plane. Scale the catalog.</h2>
+        <p class="lede">
+          Leadership gets reuse, control, and evidence —
+          without a new build for every request from the business.
+        </p>
+        <div class="asks">
+          <div class="ask">
+            <div class="num">01 · Reuse</div>
+            <h3>Stop paying for a new product each time</h3>
+            <p>The Console already runs anything in the registry. A Custom UI is optional, and only when the work needs its own surface.</p>
+          </div>
+          <div class="ask">
+            <div class="num">02 · Govern</div>
+            <h3>Every run is accountable</h3>
+            <p>One job, isolated execution, approval gates when required, and an audit trail. Nothing lives only in a chat.</p>
+          </div>
+          <div class="ask">
+            <div class="num">03 · Grow</div>
+            <h3>Add use cases without a release train</h3>
+            <p>Drop a file, or describe it in English. The platform does not change. The catalog does.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+  <div class="hint">← → to present &nbsp;·&nbsp; P to print as PDF</div>
+
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    let i = 0;
+
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key)) {
+        e.preventDefault();
+        show(i + 1);
+      } else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(e.key)) {
+        e.preventDefault();
+        show(i - 1);
+      } else if (e.key === 'Home') {
+        show(0);
+      } else if (e.key === 'End') {
+        show(slides.length - 1);
+      } else if (e.key === 'p' || e.key === 'P') {
+        window.print();
+      }
+    });
+
+    document.getElementById('stage').addEventListener('click', (e) => {
+      if (e.target.closest('a, button')) return;
+      show(e.clientX > window.innerWidth / 2 ? i + 1 : i - 1);
+    });
+  </script>
+</body>
+</html>

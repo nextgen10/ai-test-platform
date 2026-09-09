@@ -206,21 +206,16 @@ export const OutputPreview: React.FC<OutputPreviewProps> = ({
                 {agentName || agentId || 'Agent Output'}
               </Typography>
               <Chip
-                label={isStreaming ? 'Streaming…' : content ? 'Ready to pass on' : 'Waiting'}
+                label={isStreaming ? 'Running' : content ? 'Completed' : 'Waiting'}
                 size="small"
-                color={isStreaming ? 'primary' : 'default'}
-                variant={isStreaming ? 'outlined' : 'filled'}
+                color={isStreaming ? 'warning' : content ? 'success' : 'default'}
+                variant="filled"
                 sx={{
                   height: 20,
                   fontSize: '0.68rem',
                   fontWeight: 500,
-                  minWidth: 108,
+                  minWidth: 88,
                   visibility: isStreaming || content ? 'visible' : 'hidden',
-                  bgcolor:
-                    !isStreaming && content
-                      ? alpha(theme.palette.success.main, 0.12)
-                      : undefined,
-                  color: !isStreaming && content ? theme.palette.success.main : undefined,
                 }}
               />
             </Box>

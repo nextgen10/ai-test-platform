@@ -10,7 +10,7 @@ import { derivePhases, type PhaseState } from '@/lib/phases';
 const COLORS: Record<PhaseState, 'success' | 'info' | 'warning' | 'error'> = {
     completed: 'success',
     skipped: 'info',
-    running: 'info',
+    running: 'warning',
     blocked: 'warning',
     failed: 'error',
     // Pending never reads from the palette map — it uses text.disabled instead.

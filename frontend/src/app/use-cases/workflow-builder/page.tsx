@@ -328,7 +328,7 @@ export default function WorkflowBuilderPage() {
 
     const STAGE_COLOR: Record<PhaseState, string> = {
         completed: theme.palette.success.main,
-        running: theme.palette.primary.main,
+        running: theme.palette.warning.main,
         blocked: theme.palette.warning.main,
         failed: theme.palette.error.main,
         skipped: theme.palette.text.disabled,
@@ -477,7 +477,7 @@ export default function WorkflowBuilderPage() {
                             }}
                         />
 
-                        {(running || starting) && <LinearProgress sx={{ mb: 2, borderRadius: 2 }} />}
+                        {(running || starting) && <LinearProgress color="warning" sx={{ mb: 2, borderRadius: 2 }} />}
 
                         <Box sx={{ display: 'flex', gap: 1.5 }}>
                             <Button
@@ -537,7 +537,7 @@ export default function WorkflowBuilderPage() {
                                 <Chip
                                     size="small"
                                     label={job.status}
-                                    color={finished ? 'success' : failed ? 'error' : 'primary'}
+                                    color={finished ? 'success' : failed ? 'error' : 'warning'}
                                     sx={{ fontWeight: 500, fontSize: '0.68rem' }}
                                 />
                             )}

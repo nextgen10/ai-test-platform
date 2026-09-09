@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Hub — Executive Overview</title>
+  <meta name="description" content="Agent Hub: Enterprise AI Agent Orchestration Platform — Executive Presentation" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:     #0769A6;
+      --blue-lt:  #1A8FD4;
+      --blue-dim: rgba(7,105,166,0.18);
+      --gold:     #C49A2A;
+      --gold-dim: rgba(196,154,42,0.18);
+      --green:    #2ECC8A;
+      --green-dim:rgba(46,204,138,0.18);
+      --bg:       #0E0E0E;
+      --surface:  #161616;
+      --surface2: #1E1E1E;
+      --border:   rgba(255,255,255,0.08);
+      --text:     #F2F0E8;
+      --muted:    #8A887C;
+      --dim:      #4A4840;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* Deck Container */
+    #deck {
+      position: relative;
+      width: 100vw; height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Slide Base */
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(60px);
+      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .slide.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(0);
+    }
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+      pointer-events: none;
+    }
+
+    /* Background grid texture */
+    .slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    /* Navigation */
+    #nav {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      z-index: 100;
+      background: rgba(22,22,22,0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 10px 20px;
+    }
+
+    .nav-btn {
+      width: 36px; height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { background: var(--blue-dim); border-color: var(--blue); color: var(--text); }
+
+    .dots { display: flex; gap: 8px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--dim);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .dot.active {
+      background: var(--blue);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    #slide-counter {
+      font-size: 11px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    /* Logo & Corner Brand */
+    #brand {
+      position: fixed;
+      top: 28px; left: 36px;
+      display: flex; align-items: center; gap: 10px;
+      z-index: 100;
+    }
+    .brand-mark {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-lt));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff;
+    }
+    .brand-name {
+      font-size: 13px; font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    #slide-label {
+      position: fixed;
+      top: 32px; right: 36px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      z-index: 100;
+      transition: opacity 0.3s;
+    }
+
+    /* Typography */
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 16px;
+    }
+    .h1 {
+      font-size: clamp(40px, 5.5vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+    .h2 {
+      font-size: clamp(28px, 3.5vw, 48px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+      color: var(--text);
+    }
+    .h3 {
+      font-size: clamp(20px, 2.2vw, 28px);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+    .lede {
+      font-size: clamp(16px, 1.6vw, 20px);
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 640px;
+    }
+    .accent { color: var(--blue); }
+    .accent-gold { color: var(--gold); }
+    .accent-green { color: var(--green); }
+
+    /* Pill / Badge */
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      border-radius: 100px;
+      padding: 4px 12px;
+      border: 1px solid;
+    }
+    .pill-blue { color: var(--blue); border-color: var(--blue-dim); background: var(--blue-dim); }
+    .pill-gold { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-dim); }
+    .pill-green { color: var(--green); border-color: var(--green-dim); background: var(--green-dim); }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: rgba(7,105,166,0.4); transform: translateY(-2px); }
+
+    /* Glow orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+
+    /* Animate children on slide-in */
+    .slide .anim {
+      opacity: 0; transform: translateY(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .slide.active .anim { opacity: 1; transform: translateY(0); }
+    .slide.active .anim:nth-child(1) { transition-delay: 0.05s; }
+    .slide.active .anim:nth-child(2) { transition-delay: 0.15s; }
+    .slide.active .anim:nth-child(3) { transition-delay: 0.25s; }
+    .slide.active .anim:nth-child(4) { transition-delay: 0.35s; }
+    .slide.active .anim:nth-child(5) { transition-delay: 0.45s; }
+    .slide.active .anim:nth-child(6) { transition-delay: 0.55s; }
+    .slide.active .anim:nth-child(7) { transition-delay: 0.65s; }
+
+    /* keyboard hint */
+    #hint {
+      position: fixed;
+      bottom: 84px; right: 36px;
+      font-size: 10px; color: var(--dim);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .kbd {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+    }
+
+    /* ===== SLIDE 1: TITLE ===== */
+    #s1 { background: var(--bg); text-align: center; }
+    #s1 .orb1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(7,105,166,0.22) 0%, transparent 70%);
+      top: -100px; right: -100px;
+    }
+    #s1 .orb2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(196,154,42,0.1) 0%, transparent 70%);
+      bottom: -80px; left: -60px;
+    }
+    #s1 .hero-stack {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 24px; max-width: 900px;
+    }
+    #s1 .underline-accent { position: relative; display: inline-block; }
+    #s1 .underline-accent::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), transparent);
+      border-radius: 2px;
+    }
+    #s1 .meta-row {
+      display: flex; align-items: center; gap: 24px;
+      font-size: 12px; color: var(--dim); margin-top: 8px;
+    }
+    #s1 .meta-row span { display: flex; align-items: center; gap: 6px; }
+    #s1 .meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--dim); }
+
+    /* ===== SLIDE 2: THE PROBLEM ===== */
+    #s2 { background: var(--bg); }
+    #s2 .layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 60px; width: 100%; max-width: 1200px;
+      position: relative; z-index: 2;
+    }
+    #s2 .left { display: flex; flex-direction: column; justify-content: center; gap: 28px; }
+    #s2 .problem-list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+    #s2 .problem-list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      font-size: 15px; color: var(--muted); line-height: 1.5;
+    }
+    #s2 .problem-list li .icon-box {
+      flex-shrink: 0; width: 28px; height: 28px;
+      border-radius: 8px; background: var(--surface2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; font-size: 13px; margin-top: 1px;
+    }
+    #s2 .right { display: flex; flex-direction: column; gap: 16px; justify-content: center; }
+    .stat-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    .stat-num {
+      font-size: 40px; font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1;
+    }
+    .stat-label { font-size: 13px; color: var(--muted); line-height: 1.4; }
+
+    /* ===== SLIDE 3: ARCHITECTURE ===== */
+    #s3 { background: var(--bg); }
+    #s3 .layout {
+      width: 100%; max-width: 1200px;
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; gap: 36px; align-items: center;
+    }
+    #s3 .arch-header { text-align: center; }
+    #s3 .pipeline {
+      display: flex; align-items: center; gap: 0; width: 100%;
+    }
+    .pipe-node {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 16px; text-align: center;
+    }
+    .pipe-node .node-icon { font-size: 22px; margin-bottom: 8px; }
+    .pipe-node .node-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .pipe-node .node-sub { font-size: 11px; color: var(--muted); line-height: 1.4; }
+    .pipe-arrow { font-size: 18px; color: var(--blue); padding: 0 8px; flex-shrink: 0; }
+    #s3 .capabilities {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 16px; width: 100%;
+    }
+    .cap-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: 2px solid var(--blue); border-radius: 12px; padding: 20px;
+    }
+    .cap-card .cap-icon { font-size: 20px; margin-bottom: 10px; }
+    .cap-card .cap-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .cap-card .cap-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ===== SLIDE 4: USE CASE + SCALE ===== */
+    #s4 { background: var(--bg); }
+    #s4 .layout {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 48px; width: 100%; max-width: 1200px;
+      position: relative; z-index: 2;
+    }
+    #s4 .left { display: flex; flex-direction: column; gap: 20px; }
+    #s4 .right { display: flex; flex-direction: column; gap: 14px; }
+    .workflow-step { display: flex; align-items: flex-start; gap: 14px; }
+    .step-num {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid var(--blue); color: var(--blue);
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-content .step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .step-content .step-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .scale-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .scale-card .scale-emoji { font-size: 20px; flex-shrink: 0; }
+    .scale-card .scale-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .scale-card .scale-sub { font-size: 12px; color: var(--muted); }
+
+    /* ===== SLIDE 5: SUMMARY & CTA ===== */
+    #s5 { background: var(--bg); text-align: center; }
+    #s5 .orb1 {
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(7,105,166,0.18) 0%, transparent 70%);
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+    }
+    #s5 .layout {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 36px; max-width: 1100px; width: 100%;
+    }
+    #s5 .kpi-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 20px; width: 100%;
+    }
+    .kpi-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .kpi-num {
+      font-size: 42px; font-weight: 800;
+      letter-spacing: -0.04em; line-height: 1;
+    }
+    .kpi-label { font-size: 12px; color: var(--muted); text-align: center; line-height: 1.4; }
+    #s5 .next-steps {
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; width: 100%;
+    }
+    .next-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px;
+      text-align: left; flex: 1; min-width: 200px; max-width: 240px;
+    }
+    .next-card .next-step-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 8px;
+    }
+    .next-card .next-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .next-card .next-sub { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<!-- Brand Corner -->
+<div id="brand">
+  <div class="brand-mark">AH</div>
+  <span class="brand-name">Agent Hub</span>
+</div>
+
+<!-- Slide Label -->
+<div id="slide-label">Executive Overview</div>
+
+<!-- Keyboard Hint -->
+<div id="hint">
+  <span class="kbd">&#8592;</span> <span class="kbd">&#8594;</span>&nbsp;to navigate
+</div>
+
+<!-- DECK -->
+<div id="deck">
+
+  <!-- SLIDE 1: TITLE -->
+  <section class="slide active" id="s1" data-label="Introduction">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+
+    <div class="hero-stack">
+      <div class="anim">
+        <div class="pill pill-blue"><span>&#9679;</span> Enterprise Platform &mdash; Cognizant</div>
+      </div>
+
+      <h1 class="h1 anim">
+        <span class="underline-accent">Agent Hub</span><br/>
+        <span style="color:var(--muted);font-weight:300;">AI Agent Orchestration,</span><br/>
+        <span style="color:var(--muted);font-weight:300;">at Enterprise Scale</span>
+      </h1>
+
+      <p class="lede anim" style="text-align:center;">
+        A <strong style="color:var(--text);">shared platform</strong> that lets any team deploy, orchestrate, and scale multi-agent AI workflows — without redeployments, migrations, or deep ML expertise.
+      </p>
+
+      <div class="anim" style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:4px;">
+        <div class="pill pill-gold">&#128200; Scalable to any use case</div>
+        <div class="pill pill-green">&#9889; Live in minutes, not months</div>
+      </div>
+
+      <div class="anim" style="display:flex;align-items:center;gap:24px;font-size:12px;color:var(--dim);margin-top:12px;">
+        <span>&#127970; Cognizant Internal Platform</span>
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--dim);"></div>
+        <span>September 2026</span>
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--dim);"></div>
+        <span>Executive Overview &middot; 5 Slides</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: THE PROBLEM -->
+  <section class="slide" id="s2" data-label="The Challenge">
+    <div class="orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(196,154,42,0.1) 0%,transparent 70%);top:-150px;right:-100px;"></div>
+
+    <div class="layout">
+      <div class="left">
+        <div class="eyebrow anim">The Problem Space</div>
+        <h2 class="h2 anim">AI Agents are powerful.<br/><span class="accent">Deploying them at scale is hard.</span></h2>
+        <ul class="problem-list">
+          <li class="anim">
+            <div class="icon-box">&#128295;</div>
+            <span>Each new AI use case requires a <strong style="color:var(--text);">new custom system</strong> &mdash; months of engineering per workflow</span>
+          </li>
+          <li class="anim">
+            <div class="icon-box">&#128274;</div>
+            <span><strong style="color:var(--text);">Knowledge silos:</strong> agents, prompts &amp; skills are scattered across repos with no governance</span>
+          </li>
+          <li class="anim">
+            <div class="icon-box">&#128202;</div>
+            <span>No standard <strong style="color:var(--text);">quality evaluation</strong> &mdash; outputs are untested and untraced to requirements</span>
+          </li>
+          <li class="anim">
+            <div class="icon-box">&#9851;</div>
+            <span>Teams <strong style="color:var(--text);">rebuild the same infrastructure</strong> repeatedly &mdash; runners, orchestrators, audit trails</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="right">
+        <div class="stat-block anim">
+          <div class="stat-num accent-gold">10&times;</div>
+          <div class="stat-label">Faster to onboard a new AI workflow<br/>vs. building a custom system from scratch</div>
+        </div>
+        <div class="stat-block anim">
+          <div class="stat-num accent">0</div>
+          <div class="stat-label">Migrations required to add a new agent<br/>Drop a file &mdash; it's live instantly</div>
+        </div>
+        <div class="stat-block anim">
+          <div class="stat-num accent-green">&#8734;</div>
+          <div class="stat-label">Use cases the platform can host<br/>One platform, unlimited workflows</div>
+        </div>
+        <div class="anim" style="background:var(--surface2);border-left:2px solid var(--blue);border-radius:8px;padding:16px 18px;">
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">
+            <strong style="color:var(--text);">The Opportunity:</strong> Build the shared platform once. Every team publishes their AI workflows to it &mdash; and gets a full-featured UI, audit trail, quality gates, and job orchestration for free.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: PLATFORM ARCHITECTURE -->
+  <section class="slide" id="s3" data-label="Platform Architecture">
+    <div class="orb" style="width:500px;height:500px;background:radial-gradient(circle,rgba(7,105,166,0.15) 0%,transparent 70%);bottom:-100px;left:-100px;"></div>
+
+    <div class="layout">
+      <div class="arch-header">
+        <div class="eyebrow anim">How It Works</div>
+        <h2 class="h2 anim">One Platform. Four Layers.<br/><span class="accent">Any Workflow.</span></h2>
+      </div>
+
+      <div class="pipeline anim">
+        <div class="pipe-node" style="border-top:2px solid var(--blue);">
+          <div class="node-icon">&#128187;</div>
+          <div class="node-title">Next.js UI</div>
+          <div class="node-sub">Interactive dashboard, custom UIs per use case, real-time streaming</div>
+        </div>
+        <div class="pipe-arrow">&#8594;</div>
+        <div class="pipe-node" style="border-top:2px solid var(--gold);">
+          <div class="node-icon">&#9881;&#65039;</div>
+          <div class="node-title">FastAPI Orchestrator</div>
+          <div class="node-sub">REST API, job state machine, full audit trail &amp; model fallback</div>
+        </div>
+        <div class="pipe-arrow">&#8594;</div>
+        <div class="pipe-node" style="border-top:2px solid var(--green);">
+          <div class="node-icon">&#128640;</div>
+          <div class="node-title">Ephemeral Runners</div>
+          <div class="node-sub">Local, Docker, or Kubernetes &mdash; isolated per job execution</div>
+        </div>
+        <div class="pipe-arrow">&#8594;</div>
+        <div class="pipe-node" style="border-top:2px solid #9B59B6;">
+          <div class="node-icon">&#129302;</div>
+          <div class="node-title">Agent Registry</div>
+          <div class="node-sub">Agents, skills, prompts &amp; workflows as versioned files</div>
+        </div>
+      </div>
+
+      <div class="capabilities">
+        <div class="cap-card anim">
+          <div class="cap-icon">&#128203;</div>
+          <div class="cap-title">Agent Registry</div>
+          <div class="cap-desc">Agents, skills, prompts &amp; workflows declared as plain files. Drop a file &rarr; instantly live. No migrations.</div>
+        </div>
+        <div class="cap-card anim" style="border-top-color:var(--gold);">
+          <div class="cap-icon">&#128269;</div>
+          <div class="cap-title">Quality Gates</div>
+          <div class="cap-desc">Automated INVEST quality scoring, 5-dimensional evaluation, human approval gates before execution.</div>
+        </div>
+        <div class="cap-card anim" style="border-top-color:var(--green);">
+          <div class="cap-icon">&#128225;</div>
+          <div class="cap-title">Live Job Streaming</div>
+          <div class="cap-desc">Real-time log streaming, per-job isolation, full audit trail with provenance &amp; model lineage.</div>
+        </div>
+        <div class="cap-card anim" style="border-top-color:#9B59B6;">
+          <div class="cap-icon">&#129504;</div>
+          <div class="cap-title">Workflow Builder</div>
+          <div class="cap-desc">Describe a new workflow in English. Four agents design, critique, write &amp; review &mdash; installed live instantly.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: USE CASE + SCALE -->
+  <section class="slide" id="s4" data-label="Use Case &amp; Scale">
+    <div class="layout">
+      <div class="left">
+        <div class="eyebrow anim">Example Use Case</div>
+        <h2 class="h2 anim">AI-Powered<br/><span class="accent">Test Case Generation</span></h2>
+        <p class="anim" style="font-size:14px;color:var(--muted);line-height:1.6;max-width:420px;">
+          One workflow deployed on Agent Hub &mdash; from raw requirements to verified, requirement-traced test suites in minutes. <em style="color:var(--dim);">This is just one of many possible use cases.</em>
+        </p>
+
+        <div class="anim" style="display:flex;flex-direction:column;gap:14px;">
+          <div class="workflow-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <div class="step-title">Requirement Analyst</div>
+              <div class="step-sub">Parses &amp; scores requirements via INVEST framework (8 criteria)</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <div class="step-title">Test Designer</div>
+              <div class="step-sub">Generates test scenarios, coverage matrix, and edge cases</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <div class="step-title">Test Generator</div>
+              <div class="step-sub">Writes full test cases with steps, preconditions &amp; expected results</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <div class="step-title">Test Evaluator</div>
+              <div class="step-sub">5-D evaluation: Coverage, Completeness, Traceability, Correctness, Uniqueness</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="anim">
+          <div class="pill pill-blue">&#10003; Export to Excel &middot; Full audit trail &middot; Human approval gate</div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="anim" style="margin-bottom:4px;">
+          <div class="eyebrow">The Platform Advantage</div>
+          <h3 class="h3" style="margin-bottom:8px;">Scale to <span class="accent">Any Use Case</span></h3>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+            Test generation is just one example. The same infrastructure powers any agentic workflow &mdash; without rebuilding from scratch.
+          </p>
+        </div>
+
+        <div class="scale-card anim">
+          <div class="scale-emoji">&#128221;</div>
+          <div>
+            <div class="scale-title">Contract Review &amp; Analysis</div>
+            <div class="scale-sub">Multi-agent chain to extract clauses, flag risks &amp; generate summaries</div>
+          </div>
+        </div>
+        <div class="scale-card anim">
+          <div class="scale-emoji">&#128269;</div>
+          <div>
+            <div class="scale-title">Code Review Automation</div>
+            <div class="scale-sub">Agent pipeline to review PRs, detect security issues &amp; suggest fixes</div>
+          </div>
+        </div>
+        <div class="scale-card anim">
+          <div class="scale-emoji">&#128202;</div>
+          <div>
+            <div class="scale-title">Report &amp; Insight Generation</div>
+            <div class="scale-sub">Transform raw data into structured, executive-ready reports automatically</div>
+          </div>
+        </div>
+        <div class="scale-card anim">
+          <div class="scale-emoji">&#129529;</div>
+          <div>
+            <div class="scale-title">Workflow Builder (Meta-Agent)</div>
+            <div class="scale-sub">Describe a new workflow in English &mdash; agents design &amp; install it live</div>
+          </div>
+        </div>
+
+        <div class="anim" style="background:rgba(7,105,166,0.08);border:1px solid var(--blue-dim);border-radius:10px;padding:14px 16px;">
+          <div style="font-size:13px;line-height:1.6;color:var(--muted);">
+            <strong style="color:var(--blue);">Any team, any domain.</strong> Each new use case is a YAML file + agent definitions. No new infrastructure. No redeployment. Live in minutes.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: SUMMARY & NEXT STEPS -->
+  <section class="slide" id="s5" data-label="Next Steps">
+    <div class="orb orb1"></div>
+
+    <div class="layout">
+      <div class="anim">
+        <div class="eyebrow" style="text-align:center;">Platform Summary</div>
+        <h2 class="h2" style="text-align:center;">
+          Build Once.<br/>
+          <span class="accent">Power Every AI Use Case.</span>
+        </h2>
+      </div>
+
+      <div class="kpi-row anim">
+        <div class="kpi-card">
+          <div class="kpi-num accent">4</div>
+          <div class="kpi-label">Registry artifact types<br/><span style="color:var(--dim);">Agents, Skills, Prompts, Workflows</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num accent-gold">0</div>
+          <div class="kpi-label">Migrations to onboard<br/><span style="color:var(--dim);">Drop a file &mdash; it's live</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num accent-green">85%</div>
+          <div class="kpi-label">Quality threshold standard<br/><span style="color:var(--dim);">5-Dimensional evaluation score</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-num" style="color:#9B59B6;">&#8734;</div>
+          <div class="kpi-label">Workflows supported<br/><span style="color:var(--dim);">One platform, any use case</span></div>
+        </div>
+      </div>
+
+      <div class="next-steps anim">
+        <div class="next-card">
+          <div class="next-step-label">Step 1</div>
+          <div class="next-title">Live Platform Demo</div>
+          <div class="next-sub">Walkthrough of Agent Hub UI, registry, and job execution flow</div>
+        </div>
+        <div class="next-card">
+          <div class="next-step-label">Step 2</div>
+          <div class="next-title">Identify Use Cases</div>
+          <div class="next-sub">Map 2&ndash;3 high-value team workflows to onboard in Sprint 1</div>
+        </div>
+        <div class="next-card">
+          <div class="next-step-label">Step 3</div>
+          <div class="next-title">Pilot Deployment</div>
+          <div class="next-sub">Deploy to a shared environment with one team to validate ROI</div>
+        </div>
+        <div class="next-card">
+          <div class="next-step-label">Step 4</div>
+          <div class="next-title">Scale &amp; Govern</div>
+          <div class="next-sub">Establish registry governance, onboard all teams, measure impact</div>
+        </div>
+      </div>
+
+      <div class="anim" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;">
+        <div style="font-size:12px;color:var(--muted);">Presented by</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--blue-dim);border:1px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--blue);">AM</div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);">Aniket Kalyan Marwadi</div>
+            <div style="font-size:11px;color:var(--muted);">Lead AI Architect &amp; Principal Creator</div>
+          </div>
+        </div>
+        <div style="width:1px;height:30px;background:var(--border);"></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);">SM</div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);">Surendran Madhavan</div>
+            <div style="font-size:11px;color:var(--muted);">Executive Sponsor / Program Director</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<!-- Navigation Bar -->
+<div id="nav">
+  <button class="nav-btn" id="prev-btn" title="Previous slide">&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <div id="slide-counter">1 / 5</div>
+  <button class="nav-btn" id="next-btn" title="Next slide">&#8594;</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsContainer = document.getElementById('dots');
+  const counter = document.getElementById('slide-counter');
+  const slideLabel = document.getElementById('slide-label');
+  let current = 0;
+  let animating = false;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(d);
+  });
+
+  function goTo(index) {
+    if (index === current || animating) return;
+    animating = true;
+    const dir = index > current ? 1 : -1;
+
+    // Exit current
+    const outSlide = slides[current];
+    outSlide.classList.remove('active');
+    outSlide.style.transform = dir > 0 ? 'translateX(-60px)' : 'translateX(60px)';
+    outSlide.style.opacity = '0';
+
+    // Prepare new
+    const inSlide = slides[index];
+    inSlide.style.transition = 'none';
+    inSlide.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+    inSlide.style.opacity = '0';
+    inSlide.style.pointerEvents = 'none';
+
+    // Force reflow
+    inSlide.getBoundingClientRect();
+
+    // Animate in
+    requestAnimationFrame(() => {
+      inSlide.style.transition = '';
+      inSlide.style.transform = 'translateX(0)';
+      inSlide.style.opacity = '1';
+      inSlide.classList.add('active');
+      inSlide.style.pointerEvents = '';
+    });
+
+    current = index;
+    updateUI();
+
+    setTimeout(() => {
+      outSlide.style.transform = '';
+      outSlide.style.opacity = '';
+      animating = false;
+    }, 600);
+  }
+
+  function updateUI() {
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    slideLabel.textContent = slides[current].dataset.label || '';
+  }
+
+  document.getElementById('prev-btn').addEventListener('click', () => {
+    if (current > 0) goTo(current - 1);
+  });
+  document.getElementById('next-btn').addEventListener('click', () => {
+    if (current < slides.length - 1) goTo(current + 1);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      if (current < slides.length - 1) goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      if (current > 0) goTo(current - 1);
+    }
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0 && current < slides.length - 1) goTo(current + 1);
+      if (dx > 0 && current > 0) goTo(current - 1);
+    }
+  });
+
+  updateUI();
+</script>
+</body>
+</html>

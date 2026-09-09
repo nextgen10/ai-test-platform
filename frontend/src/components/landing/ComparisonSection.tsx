@@ -89,7 +89,7 @@ export default function ComparisonSection({ index = '03' }: { index?: string }) 
                   py: 2,
                   width: '40%',
                   color: 'primary.main',
-                  bgcolor: isLight ? '#fbeaea' : 'rgba(230, 0, 0, 0.12)',
+                  bgcolor: isLight ? '#e6f3f8' : 'rgba(7, 105, 166, 0.12)',
                   borderLeft: '1px solid',
                   borderColor: 'divider',
                 }}
@@ -121,7 +121,7 @@ export default function ComparisonSection({ index = '03' }: { index?: string }) 
                   sx={{
                     verticalAlign: 'top',
                     py: 2.25,
-                    bgcolor: isLight ? 'rgba(230, 0, 0, 0.015)' : 'rgba(230, 0, 0, 0.03)',
+                    bgcolor: isLight ? 'rgba(7, 105, 166, 0.015)' : 'rgba(7, 105, 166, 0.03)',
                     borderLeft: '1px solid',
                     borderColor: 'divider',
                   }}

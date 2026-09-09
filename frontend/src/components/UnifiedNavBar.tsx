@@ -32,22 +32,19 @@ export interface UnifiedNavBarProps {
     centerContent?: React.ReactNode;
     alignLinks?: 'center' | 'right';
     compact?: boolean;
-    /** Hide the product wordmark; UBS logo remains. Landing page only. */
+    /** Hide the product wordmark; Cognizant logo remains. Landing page only. */
     showProductName?: boolean;
     /** Pin the bar to the viewport so page content scrolls underneath. */
     pinned?: boolean;
 }
 
 /**
- * UBS logo, optional hairline pipe and Agent (red) HUB (body).
+ * Cognizant mark, optional hairline pipe and Agent (red) HUB (body).
  */
 export const UnifiedBrand: React.FC<{ onClick?: () => void; showProductName?: boolean }> = ({
     onClick,
     showProductName = true,
 }) => {
-    const theme = useTheme();
-    const isLight = theme.palette.mode === 'light';
-
     return (
         <Box
             onClick={onClick}
@@ -61,19 +58,8 @@ export const UnifiedBrand: React.FC<{ onClick?: () => void; showProductName?: bo
                 userSelect: 'none',
             }}
         >
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                    '& svg': { height: { xs: 22, md: 26 }, width: 'auto' },
-                }}
-            >
-                <UbsLogoFull
-                    height={26}
-                    keysColor={isLight ? theme.palette.text.primary : theme.palette.primary.main}
-                    wordmarkColor={isLight ? theme.palette.primary.main : '#FFFFFF'}
-                />
+            <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                <UbsLogoFull height={28} />
             </Box>
             {showProductName && (
                 <>
@@ -85,7 +71,152 @@ export const UnifiedBrand: React.FC<{ onClick?: () => void; showProductName?: bo
     );
 };
 
-/** Horizontal inset shared by the nav bar and the landing footer so the UBS mark lines up. */
+/** Placeholder signed-in identity — not wired to auth. */
+function AdminMark({ size = 28 }: { size?: number }) {
+    return (
+        <Box
+            aria-hidden
+            sx={{
+                width: size,
+                height: size,
+                flexShrink: 0,
+                borderRadius: '50%',
+                bgcolor: 'primary.main',
+                color: '#fff',
+                border: 0,
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: size >= 36 ? '0.6875rem' : '0.5625rem',
+                fontWeight: 500,
+                letterSpacing: '0.08em',
+                lineHeight: 1,
+            }}
+        >
+            AM
+        </Box>
+    );
+}
+
+function AdminPlaceholder({ expanded = false }: { expanded?: boolean }) {
+    const theme = useTheme();
+    const isLight = theme.palette.mode === 'light';
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+
+    return (
+        <>
+            <Box
+                component="button"
+                type="button"
+                onClick={(e) => setAnchorEl(e.currentTarget)}
+                aria-label="Account menu"
+                aria-haspopup="true"
+                aria-expanded={open ? 'true' : undefined}
+                sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    m: 0,
+                    px: 0.5,
+                    py: 0,
+                    border: 0,
+                    bgcolor: 'transparent',
+                    color: 'text.primary',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    font: 'inherit',
+                    minHeight: 40,
+                    '&:hover .admin-name': { color: 'primary.main' },
+                }}
+            >
+                <AdminMark size={expanded ? 32 : 28} />
+                <Box
+                    sx={{
+                        display: expanded ? 'flex' : { xs: 'none', md: 'flex' },
+                        flexDirection: 'column',
+                        alignItems: 'flex-end',
+                        minWidth: 0,
+                    }}
+                >
+                    <Typography
+                        className="admin-name"
+                        component="span"
+                        sx={{
+                            fontSize: '0.8125rem',
+                            fontWeight: 400,
+                            letterSpacing: '-0.01em',
+                            whiteSpace: 'nowrap',
+                            lineHeight: 1.2,
+                            transition: 'color 0.15s ease',
+                        }}
+                    >
+                        Aniket Marwadi
+                    </Typography>
+                    <Typography
+                        component="span"
+                        sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: 400,
+                            letterSpacing: 0,
+                            color: 'primary.main',
+                            whiteSpace: 'nowrap',
+                            lineHeight: 1.2,
+                            mt: 0.15,
+                        }}
+                    >
+                        (Admin)
+                    </Typography>
+                </Box>
+            </Box>
+            <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={() => setAnchorEl(null)}
+                disableScrollLock
+                transitionDuration={0}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                MenuListProps={{ disablePadding: true, sx: { py: 0.5 } }}
+                slotProps={{
+                    paper: {
+                        elevation: 0,
+                        sx: {
+                            mt: 1,
+                            minWidth: 280,
+                            borderRadius: '2px',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: 'background.paper',
+                            boxShadow: isLight ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                            overflow: 'hidden',
+                        },
+                    },
+                }}
+            >
+                <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                    <AdminMark size={36} />
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography sx={{ fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.25, whiteSpace: 'nowrap' }}>
+                            Aniket Marwadi
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.75rem', color: 'primary.main', mt: 0.25, whiteSpace: 'nowrap' }}>
+                            Platform Administrator
+                        </Typography>
+                    </Box>
+                </Box>
+                <Divider />
+                <MenuItem disabled sx={{ fontSize: '0.8125rem', py: 1.1, px: 2, borderRadius: 0 }}>
+                    Account settings
+                </MenuItem>
+                <MenuItem disabled sx={{ fontSize: '0.8125rem', py: 1.1, px: 2, borderRadius: 0 }}>
+                    Sign out
+                </MenuItem>
+            </Menu>
+        </>
+    );
+}
+
+/** Horizontal inset shared by the nav bar and the landing footer so the brand mark lines up. */
 export const NAV_CHROME_GUTTER = { px: { xs: 2, md: 3 } } as const;
 
 /**
@@ -99,7 +230,7 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
     onLogoClick,
     actions,
     centerContent,
-    alignLinks = 'center',
+    alignLinks: _alignLinks = 'center',
     compact: compactProp,
     showProductName = true,
     pinned = false,
@@ -257,12 +388,12 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                         display: 'flex',
                         alignItems: 'stretch',
                         justifyContent: 'space-between',
-                        gap: 1.5,
+                        gap: 2,
                         ...NAV_CHROME_GUTTER,
                         width: '100%',
                         maxWidth: '100%',
                         position: 'relative',
-                        overflow: 'hidden',
+                        overflow: 'visible',
                         flexShrink: 0,
                     }}
                 >
@@ -270,30 +401,43 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                         <UnifiedBrand onClick={onLogoClick} showProductName={showProductName} />
                     </Box>
 
-                    {alignLinks === 'center' && (
+                    <Box
+                        sx={{
+                            display: { xs: 'none', md: 'flex' },
+                            position: 'absolute',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            alignItems: 'stretch',
+                            height: '100%',
+                            minWidth: 0,
+                            maxWidth: 'min(720px, calc(100% - 420px))',
+                        }}
+                    >
+                        {centerContent || renderNavButtons()}
+                    </Box>
+
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: { xs: 0.25, md: 0.5 },
+                            flexShrink: 0,
+                            zIndex: 1,
+                        }}
+                    >
+                        <AdminPlaceholder />
                         <Box
                             sx={{
-                                display: { xs: 'none', md: 'flex' },
-                                position: 'absolute',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                alignItems: 'stretch',
-                                minWidth: 0,
-                                maxWidth: '64vw',
-                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                pl: { xs: 0.25, md: 0.5 },
+                                ml: { xs: 0.25, md: 0.5 },
+                                borderLeft: '1px solid',
+                                borderColor: 'divider',
                             }}
                         >
-                            {centerContent || renderNavButtons()}
+                            {actions}
                         </Box>
-                    )}
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, flexShrink: 0, zIndex: 1 }}>
-                        {alignLinks === 'right' && (
-                            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'stretch', height: '100%' }}>
-                                {centerContent || renderNavButtons()}
-                            </Box>
-                        )}
-                        {actions}
                         {(items.length > 0 || (useCases && useCases.length > 0)) && (
                             <IconButton
                                 aria-label="Open navigation menu"
@@ -402,6 +546,9 @@ export const UnifiedNavBar: React.FC<UnifiedNavBarProps> = ({
                         </IconButton>
                     </Box>
                     <Divider sx={{ mb: 1 }} />
+                    <Box sx={{ mb: 2 }}>
+                        <AdminPlaceholder expanded />
+                    </Box>
                     <List sx={{ px: 0, py: 0 }}>
                         <Typography variant="overline" sx={{ px: 1, color: 'text.secondary' }}>
                             Platform

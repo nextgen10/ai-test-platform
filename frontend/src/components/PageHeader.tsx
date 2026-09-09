@@ -10,7 +10,7 @@ interface PageHeaderProps {
     inlineSubtitle?: boolean;
 }
 
-/** Product page title: Light Frutiger, hierarchy from size — the UBS page voice. */
+/** Product page title: light weight, hierarchy from size. */
 export default function PageHeader({ title, subtitle, actions, inlineSubtitle }: PageHeaderProps) {
     return (
         <Box

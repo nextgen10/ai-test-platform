@@ -7,40 +7,12 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   Frutiger for UBS.
-
-   The face is licensed, so it is not vendored here. Drop the licensed
-   FrutigerforUBSWeb-{Lt,Md}.woff2 files into /public/fonts/ and these rules
-   pick them up; without them the browser falls through to Arial/Helvetica,
-   which is UBS's own declared fallback. Note the weight ranges: UBS maps
-   300–499 to Light and 500 to Medium, so there is deliberately no bold face.
-   -------------------------------------------------------------------------- */
-@font-face {
-  font-family: "Frutiger";
-  src: url("/fonts/FrutigerforUBSWeb-Lt.woff2") format("woff2"),
-       url("/fonts/FrutigerforUBSWeb-Lt.woff") format("woff");
-  font-weight: 300 499;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Frutiger";
-  src: url("/fonts/FrutigerforUBSWeb-Md.woff2") format("woff2"),
-       url("/fonts/FrutigerforUBSWeb-Md.woff") format("woff");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* --------------------------------------------------------------------------
-   Colour tokens — UBS FIT, light mode
+   Colour tokens — light mode
    -------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
 
-  --ubs-font: "Frutiger", "Frutiger for UBS", "FrutigerforUBSWeb", Arial, Helvetica, sans-serif;
-  /* Retained alias: earlier code referenced --font-ubs-brand. */
+  --ubs-font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
   --font-ubs-brand: var(--ubs-font);
 
   /* Backgrounds */
@@ -50,8 +22,8 @@
   --col-background-ui-30: #f4f3ee;
   --col-background-ui-40: #fbf9ee;
   --col-background-ui-80: #404040;
-  --col-background-brand: #e60000;
-  --col-background-brand-hovered: #8a000a;
+  --col-background-brand: #0769A6;
+  --col-background-brand-hovered: #05557F;
   --col-background-primary: #1c1c1c;
   --col-background-disabled: #cccabc;
   --col-background-error: #da0000;
@@ -64,18 +36,18 @@
   --col-text-readonly: #5a5d5c;
   --col-text-disabled: #b8b3a2;
   --col-text-inverted: #ffffff;
-  --col-text-highlight: #da0000;
+  --col-text-highlight: #0769A6;
 
   /* Borders */
   --col-border-primary: #1c1c1c;
   --col-border-subtle: #5a5d5c;
   --col-border-light: #8e8d83;
   --col-border-illustrative: #cccabc;
-  --col-border-brand: #da0000;
+  --col-border-brand: #0769A6;
 
   /* Links & focus */
-  --col-link-text-brand: #da0000;
-  --col-link-text-brand-hovered: #8a000a;
+  --col-link-text-brand: #0769A6;
+  --col-link-text-brand-hovered: #05557F;
   --col-focus-ring: #0769a6;
   --col-focus-gap: #ffffff;
 
@@ -105,8 +77,8 @@
   --col-background-ui-30: #2a2a2a;
   --col-background-ui-40: #2a2a2a;
   --col-background-ui-80: #cccabc;
-  --col-background-brand: #d83b31;
-  --col-background-brand-hovered: #ff8c70;
+  --col-background-brand: #0769A6;
+  --col-background-brand-hovered: #05557F;
   --col-background-primary: #f4f3ee;
   --col-background-disabled: #5a5d5c;
   --col-background-error: #e8696f;
@@ -118,17 +90,17 @@
   --col-text-readonly: #b8b3a2;
   --col-text-disabled: #5a5d5c;
   --col-text-inverted: #1c1c1c;
-  --col-text-highlight: #fe6f5d;
+  --col-text-highlight: #0769A6;
 
   --col-border-primary: #f9f9f7;
   --col-border-subtle: #e0dfd7;
   --col-border-light: #b8b3a2;
   --col-border-illustrative: #7a7870;
-  --col-border-brand: #d83b31;
+  --col-border-brand: #0769A6;
 
-  --col-link-text-brand: #fe6f5d;
-  --col-link-text-brand-hovered: #ff8c70;
-  --col-focus-ring: #4ca5e1;
+  --col-link-text-brand: #0769A6;
+  --col-link-text-brand-hovered: #05557F;
+  --col-focus-ring: #0769A6;
   --col-focus-gap: #1c1c1c;
 
   --scrollbar-track: #2a2a2a;
@@ -147,8 +119,8 @@
     --col-background-ui-30: #2a2a2a;
     --col-background-ui-40: #2a2a2a;
     --col-background-ui-80: #cccabc;
-    --col-background-brand: #d83b31;
-    --col-background-brand-hovered: #ff8c70;
+    --col-background-brand: #0769A6;
+    --col-background-brand-hovered: #05557F;
     --col-background-primary: #f4f3ee;
     --col-background-disabled: #5a5d5c;
     --col-background-error: #e8696f;
@@ -158,17 +130,17 @@
     --col-text-readonly: #b8b3a2;
     --col-text-disabled: #5a5d5c;
     --col-text-inverted: #1c1c1c;
-    --col-text-highlight: #fe6f5d;
+    --col-text-highlight: #0769A6;
 
     --col-border-primary: #f9f9f7;
     --col-border-subtle: #e0dfd7;
     --col-border-light: #b8b3a2;
     --col-border-illustrative: #7a7870;
-    --col-border-brand: #d83b31;
+    --col-border-brand: #0769A6;
 
-    --col-link-text-brand: #fe6f5d;
-    --col-link-text-brand-hovered: #ff8c70;
-    --col-focus-ring: #4ca5e1;
+    --col-link-text-brand: #0769A6;
+    --col-link-text-brand-hovered: #05557F;
+    --col-focus-ring: #0769A6;
     --col-focus-gap: #1c1c1c;
 
     --scrollbar-track: #2a2a2a;

@@ -5,9 +5,8 @@
  * published stylesheets at ubs.com (`/etc.clientlibs/ubs/fit/design/...`).
  *
  * Four rules define the UBS look, and they are why this file exists:
- *   1. Typography is Frutiger, and only ever Light or Medium. The web font maps
- *      weight 300-499 to Light and 500 to Medium, so anything above 500 is not
- *      a heavier UBS face -- it is a synthetic bold the brand does not use.
+ *   1. Typography is system sans, Light or Medium only. Weight 300-499 maps
+ *      to Light and 500 to Medium, so anything above 500 is a synthetic bold.
  *   2. Corners are 2px. Not rounded, not square.
  *   3. Neutrals are warm stone (#f4f3ee, #b8b3a2), never blue-grey.
  *   4. Hierarchy comes from size and colour, never from weight.
@@ -32,8 +31,8 @@ const T = {
     bgUi80: ['#404040', '#CCCABC'],
 
     // -- Backgrounds: semantic ------------------------------------------------
-    bgBrand: ['#E60000', '#D83B31'],
-    bgBrandHovered: ['#8A000A', '#FF8C70'],
+    bgBrand: ['#0769A6', '#0769A6'],
+    bgBrandHovered: ['#05557F', '#05557F'],
     bgPrimary: ['#1C1C1C', '#F4F3EE'],
     bgPrimaryHovered: ['#5A5D5C', '#B8B3A2'],
     bgSubtle: ['#5A5D5C', '#B8B3A2'],
@@ -43,7 +42,7 @@ const T = {
     bgError: ['#DA0000', '#E8696F'],
     bgWarning: ['#E4A911', '#875F03'],
     bgSuccess: ['#CAD67A', '#CAD67A'],
-    bgHighlight01: ['#8A000A', '#FE6F5D'],
+    bgHighlight01: ['#0769A6', '#0769A6'],
     bgHighlight02: ['#86671D', '#AF8626'],
     bgTags01: ['#F4F3EE', '#404040'],
     bgTags02: ['#E1EAA9', '#596318'],
@@ -57,30 +56,30 @@ const T = {
     textDisabled: ['#B8B3A2', '#5A5D5C'],
     textInverted: ['#FFFFFF', '#1C1C1C'],
     textInvertedStatic: ['#FFFFFF', '#F9F9F7'],
-    textHighlight: ['#DA0000', '#FE6F5D'],
+    textHighlight: ['#0769A6', '#0769A6'],
 
     // -- Borders --------------------------------------------------------------
     borderPrimary: ['#1C1C1C', '#F9F9F7'],
     borderSubtle: ['#5A5D5C', '#E0DFD7'],
     borderLight: ['#8E8D83', '#B8B3A2'],
     borderIllustrative: ['#CCCABC', '#7A7870'],
-    borderBrand: ['#DA0000', '#D83B31'],
+    borderBrand: ['#0769A6', '#0769A6'],
     borderDisabled: ['#B8B3A2', '#5A5D5C'],
     borderError: ['#DA0000', '#E8696F'],
 
     // -- Icons ----------------------------------------------------------------
     iconPrimary: ['#1C1C1C', '#F9F9F7'],
     iconSubtle: ['#5A5D5C', '#E0DFD7'],
-    iconBrand: ['#DA0000', '#FE6F5D'],
+    iconBrand: ['#0769A6', '#0769A6'],
     iconDisabled: ['#B8B3A2', '#5A5D5C'],
 
     // -- Links ----------------------------------------------------------------
     linkPrimary: ['#1C1C1C', '#F9F9F7'],
-    linkBrand: ['#DA0000', '#FE6F5D'],
-    linkBrandHovered: ['#8A000A', '#FF8C70'],
+    linkBrand: ['#0769A6', '#0769A6'],
+    linkBrandHovered: ['#05557F', '#05557F'],
 
     // -- Focus (UBS uses a blue ring, deliberately not the brand red) ----------
-    focusRing: ['#0769A6', '#4CA5E1'],
+    focusRing: ['#0769A6', '#0769A6'],
     focusGap: ['#FFFFFF', '#1C1C1C'],
 } as const satisfies Record<string, Pair>;
 
@@ -92,7 +91,7 @@ const CHART: readonly Pair[] = [
     ['#0C7EC6', '#0C7EC6'], ['#654D16', '#CAA444'], ['#804C95', '#BF8CD4'],
     ['#45999C', '#45999C'], ['#4972AC', '#7D9FCF'], ['#CC707A', '#E2A2A9'],
     ['#295B40', '#92CEA9'], ['#545A9C', '#BBBEDD'], ['#785E4A', '#8D715E'],
-    ['#07476F', '#83C5F1'], ['#620004', '#D83B31'],
+    ['#07476F', '#83C5F1'], ['#0769A6', '#0769A6'],
 ];
 
 /** Neutral (monochrome) graph ramp, `--col-graph-chart-01..05`. */
@@ -138,7 +137,7 @@ export const getTokens = (mode: 'light' | 'dark') => {
         primary: {
             main: t('bgBrand'),
             hover: t('bgBrandHovered'),
-            light: mode === 'light' ? '#FBEAEA' : 'rgba(216, 59, 49, 0.16)',
+            light: mode === 'light' ? '#E6F3F8' : 'rgba(7, 105, 166, 0.16)',
         },
         secondary: {
             main: t('bgPrimary'),
@@ -235,16 +234,11 @@ export const grid = {
 } as const;
 
 // ============================================================================
-// Typography -- Frutiger for UBS. Light (300-499) and Medium (500) only.
+// Typography -- system sans. Light (300-499) and Medium (500) only.
 // ============================================================================
 
-/**
- * "Frutiger for UBS" is a licensed face. We reference it by family name and
- * fall back to UBS's own declared stack (Arial/Helvetica), so the app renders
- * correctly whether or not the licensed files are present. See globals.css.
- */
 export const ubsFontStack =
-    '"Frutiger", "Frutiger for UBS", "FrutigerforUBSWeb", Arial, Helvetica, sans-serif';
+    'system-ui, -apple-system, "Segoe UI", Roboto, Arial, Helvetica, sans-serif';
 
 export const ubsBrandFont = ubsFontStack;
 
@@ -361,7 +355,7 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
             MuiCssBaseline: {
                 styleOverrides: {
                     body: { fontFamily: ubsFontStack, backgroundColor: c.background.primary },
-                    // Never let a browser synthesise a bold Frutiger.
+                    // Never let a browser synthesise a heavier face.
                     'strong, b': { fontWeight: weight.medium },
                     ':focus-visible': focusVisible,
                 },
@@ -374,8 +368,12 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
                 },
             },
 
+            // Do not set `defaultProps.disableGutters` / `elevation` here. On
+            // this Next/MUI stack those props apply on the client but are
+            // skipped during SSR, so FAQ accordions hydrate with extra
+            // `MuiAccordionSummary-gutters` classes and different Emotion hashes.
+            // Flat, gutter-free look is enforced via styleOverrides + call sites.
             MuiAccordion: {
-                defaultProps: { elevation: 0, disableGutters: true },
                 styleOverrides: {
                     root: {
                         backgroundImage: 'none',
@@ -624,7 +622,30 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
                         },
                     },
                     outlined: { borderColor: c.border.light },
-                    filled: { backgroundColor: c.tag.neutral, color: c.text.primary },
+                    filled: {
+                        backgroundColor: c.tag.neutral,
+                        color: c.text.primary,
+                        '&.MuiChip-colorSuccess': {
+                            backgroundColor: c.tag.green,
+                            color: '#1C1C1C',
+                        },
+                        '&.MuiChip-colorWarning': {
+                            backgroundColor: c.tag.amber,
+                            color: '#1C1C1C',
+                        },
+                        '&.MuiChip-colorError': {
+                            backgroundColor: alpha(c.error, isLight ? 0.14 : 0.22),
+                            color: c.error,
+                        },
+                        '&.MuiChip-colorInfo': {
+                            backgroundColor: c.tag.amber,
+                            color: '#1C1C1C',
+                        },
+                        '&.MuiChip-colorPrimary': {
+                            backgroundColor: c.primary.main,
+                            color: '#FFFFFF',
+                        },
+                    },
                 },
             },
             MuiTableCell: {
@@ -637,14 +658,23 @@ export const getUnifiedTheme = (mode: 'light' | 'dark') => {
             MuiDivider: { styleOverrides: { root: { borderColor: c.border.subtle } } },
             MuiLinearProgress: {
                 styleOverrides: {
-                    root: { borderRadius: 0, height: 4, backgroundColor: c.background.tertiary },
-                    bar: { borderRadius: 0, backgroundColor: c.primary.main },
+                    root: {
+                        borderRadius: 0,
+                        height: 4,
+                        backgroundColor: c.background.tertiary,
+                        '&.MuiLinearProgress-colorPrimary .MuiLinearProgress-bar': { backgroundColor: c.primary.main },
+                        '&.MuiLinearProgress-colorSuccess .MuiLinearProgress-bar': { backgroundColor: c.success },
+                        '&.MuiLinearProgress-colorWarning .MuiLinearProgress-bar': { backgroundColor: c.warning },
+                        '&.MuiLinearProgress-colorError .MuiLinearProgress-bar': { backgroundColor: c.error },
+                        '&.MuiLinearProgress-colorInfo .MuiLinearProgress-bar': { backgroundColor: c.warning },
+                    },
+                    bar: { borderRadius: 0 },
                 },
             },
             MuiAlert: {
                 styleOverrides: {
                     root: { borderRadius: shape.md, border: hairline, fontSize: '0.875rem' },
-                    standardError: { backgroundColor: c.primary.light, color: c.text.primary, borderColor: c.border.brand },
+                    standardError: { backgroundColor: alpha(c.error, isLight ? 0.08 : 0.16), color: c.text.primary, borderColor: c.error },
                     standardSuccess: { backgroundColor: c.tag.green, color: '#1C1C1C' },
                     standardWarning: { backgroundColor: c.tag.amber, color: '#1C1C1C' },
                     standardInfo: { backgroundColor: c.background.accent, color: c.text.primary },

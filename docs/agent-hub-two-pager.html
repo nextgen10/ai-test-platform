@@ -1,0 +1,649 @@
+<title>Agent HUB Two-Pager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@200;300;400;600&display=swap">
+<style>
+  /* ------------------------------------------------------------------
+     Palette and type are lifted from the platform's own MUI theme
+     (frontend/src/theme/index.ts): warm stone neutrals, never blue-grey;
+     Frutiger at Light/Medium only, with Source Sans 3 standing in where
+     the licensed face is absent.
+     ------------------------------------------------------------------ */
+  :root {
+    --sans: "Frutiger", "Frutiger for UBS", "FrutigerforUBSWeb", "Source Sans 3", Arial, Helvetica, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --paper:      #F4F3EE;   /* workbench ground behind the slides */
+    --slide:      #FFFFFF;
+    --panel:      #F9F9F7;
+    --ink:        #1C1C1C;
+    --muted:      #5A5D5C;
+    --faint:      #8E8D83;
+    --rule:       #CCCABC;
+    --rule-soft:  rgba(28, 28, 28, 0.10);
+    --brand:      #4A7AD6;
+    --brand-soft: rgba(74, 122, 214, 0.09);
+    --gate:       #86671D;
+    --gate-soft:  rgba(134, 103, 29, 0.10);
+    --shadow:     0 1px 2px rgba(28,28,28,.05), 0 12px 34px -18px rgba(28,28,28,.28);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #141414;
+      --slide:      #1C1C1C;
+      --panel:      #232323;
+      --ink:        #F9F9F7;
+      --muted:      #B8B3A2;
+      --faint:      #8E8D83;
+      --rule:       #4A4A46;
+      --rule-soft:  rgba(204, 202, 188, 0.16);
+      --brand:      #7BA3E5;
+      --brand-soft: rgba(123, 163, 229, 0.13);
+      --gate:       #D8B45A;
+      --gate-soft:  rgba(216, 180, 90, 0.12);
+      --shadow:     0 1px 2px rgba(0,0,0,.4), 0 14px 38px -20px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #141414;
+    --slide:      #1C1C1C;
+    --panel:      #232323;
+    --ink:        #F9F9F7;
+    --muted:      #B8B3A2;
+    --faint:      #8E8D83;
+    --rule:       #4A4A46;
+    --rule-soft:  rgba(204, 202, 188, 0.16);
+    --brand:      #7BA3E5;
+    --brand-soft: rgba(123, 163, 229, 0.13);
+    --gate:       #D8B45A;
+    --gate-soft:  rgba(216, 180, 90, 0.12);
+    --shadow:     0 1px 2px rgba(0,0,0,.4), 0 14px 38px -20px rgba(0,0,0,.8);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+    padding: 30px 24px 56px;
+  }
+  .deck { display: flex; flex-direction: column; gap: 30px; max-width: 1400px; margin: 0 auto; }
+
+  /* Each slide is its own query container, so every measure below is a
+     fraction of the slide's width and the 16:9 canvas never overflows. */
+  .slide {
+    container-type: inline-size;
+    aspect-ratio: 16 / 9;
+    background: var(--slide);
+    border: 1px solid var(--rule-soft);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    padding: 2.6cqw 3cqw 2.2cqw;
+    overflow: hidden;
+  }
+
+  /* --- slide chrome ------------------------------------------------ */
+  .chrome { display: flex; align-items: baseline; justify-content: space-between; gap: 2cqw;
+            border-bottom: 1px solid var(--rule-soft); padding-bottom: .85cqw; }
+  .chrome .mark { display: flex; align-items: center; gap: .9cqw; }
+  .chrome .bar { width: 1.7cqw; height: .18cqw; background: var(--brand); }
+  .eyebrow { font-family: var(--mono); font-size: .78cqw; letter-spacing: .16em;
+             text-transform: uppercase; color: var(--muted); }
+  .folio { font-family: var(--mono); font-size: .78cqw; letter-spacing: .14em; color: var(--faint); }
+  .folio b { color: var(--ink); font-weight: 500; }
+
+  h1 { font-size: 3.0cqw; font-weight: 200; letter-spacing: -0.015em; line-height: 1.04;
+       margin: 1.3cqw 0 0; text-wrap: balance; }
+  .thesis { font-size: 1.14cqw; font-weight: 300; line-height: 1.38; color: var(--muted);
+            max-width: 62cqw; margin-top: .8cqw; }
+  .thesis em { font-style: normal; color: var(--ink); border-bottom: .1cqw solid var(--brand);
+               padding-bottom: .05cqw; }
+
+  /* --- slide 1 body ------------------------------------------------ */
+  .cols { display: grid; grid-template-columns: 1.06fr 1fr; gap: 2.6cqw; margin-top: 1.5cqw; flex: 1; min-height: 0; }
+  .stack { display: flex; flex-direction: column; gap: 1.15cqw; min-width: 0; }
+
+  h2 { font-size: .76cqw; font-family: var(--mono); font-weight: 500; letter-spacing: .15em;
+       text-transform: uppercase; color: var(--faint); margin: 0 0 .5cqw;
+       display: flex; align-items: center; gap: .7cqw; }
+  h2::after { content: ""; flex: 1; height: 1px; background: var(--rule-soft); }
+
+  p, li { font-size: .92cqw; line-height: 1.34; margin: 0; }
+  .sub { color: var(--muted); }
+
+  /* the three-term definition of the split */
+  .defs { display: flex; flex-direction: column; gap: .4cqw; }
+  .def { display: grid; grid-template-columns: 7.2cqw 1fr; gap: .9cqw; align-items: baseline; }
+  .def dt { font-family: var(--mono); font-size: .82cqw; font-weight: 500; color: var(--brand); }
+  .def dd { margin: 0; font-size: .92cqw; line-height: 1.32; }
+  .kicker { font-size: .92cqw; line-height: 1.34; margin-top: .55cqw; padding-left: .9cqw;
+            border-left: .16cqw solid var(--brand); color: var(--ink); }
+
+  /* primitives table */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-family: var(--mono); font-size: .68cqw; font-weight: 500;
+       letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+       padding: 0 0 .35cqw; border-bottom: 1px solid var(--rule-soft); }
+  td { padding: .34cqw 0; border-bottom: 1px solid var(--rule-soft); font-size: .88cqw;
+       vertical-align: baseline; line-height: 1.28; }
+  tr:last-child td { border-bottom: 0; }
+  td.name { font-weight: 600; width: 7.6cqw; }
+  td.path { font-family: var(--mono); font-size: .76cqw; color: var(--muted); width: 15.5cqw; }
+  td.count { font-family: var(--mono); font-size: .8cqw; text-align: right; width: 4.6cqw;
+             color: var(--brand); font-variant-numeric: tabular-nums; }
+  .layers td.name { width: 8.6cqw; }
+  .layers td.path { width: 11.4cqw; }
+
+  .note { font-size: .8cqw; line-height: 1.34; color: var(--muted); margin-top: .5cqw; }
+  .note code, .inline { font-family: var(--mono); font-size: .76cqw; color: var(--ink); }
+
+  /* bullets that carry a mono key */
+  .keys { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .34cqw; }
+  .keys li { display: grid; grid-template-columns: auto 1fr; gap: .7cqw; align-items: baseline;
+             font-size: .9cqw; line-height: 1.3; }
+  .keys .k { font-family: var(--mono); font-size: .74cqw; color: var(--muted);
+             background: var(--panel); border: 1px solid var(--rule-soft);
+             padding: .1cqw .42cqw; white-space: nowrap; }
+  .keys.guard .k { color: var(--gate); background: var(--gate-soft); border-color: transparent; }
+
+  /* the two consumption surfaces */
+  .surfaces { display: grid; grid-template-columns: 1fr 1fr; gap: .9cqw; }
+  .surface { background: var(--panel); border: 1px solid var(--rule-soft); padding: .7cqw .8cqw; }
+  .surface h3 { margin: 0 0 .25cqw; font-size: .94cqw; font-weight: 600; }
+  .surface p { font-size: .84cqw; color: var(--muted); line-height: 1.34; }
+  .surface .r { font-family: var(--mono); font-size: .74cqw; color: var(--brand); display: block; margin-top: .35cqw; }
+
+  /* lifecycle strip */
+  .lifecycle { margin-top: 1.1cqw; border-top: 1px solid var(--rule-soft); padding-top: .8cqw;
+               display: flex; align-items: center; gap: .55cqw; flex-wrap: wrap; }
+  .lifecycle .st { font-family: var(--mono); font-size: .72cqw; letter-spacing: .04em;
+                   padding: .22cqw .5cqw; border: 1px solid var(--rule); color: var(--ink); }
+  .lifecycle .st.gate { border-color: var(--gate); color: var(--gate); background: var(--gate-soft); }
+  .lifecycle .st.done { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
+  .lifecycle .arw { color: var(--faint); font-size: .72cqw; }
+  .lifecycle .tail { font-size: .76cqw; color: var(--muted); margin-left: auto; }
+  .lifecycle .tail b { font-family: var(--mono); font-weight: 400; color: var(--ink); font-size: .72cqw; }
+
+  /* --- slide 2 ------------------------------------------------------ */
+  .figure-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-top: 1.1cqw; }
+  figure { margin: 0; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .arch { width: 100%; height: 100%; display: block; color: var(--ink); }
+  figcaption { font-size: .82cqw; color: var(--muted); line-height: 1.4; margin-top: .55cqw;
+               border-top: 1px solid var(--rule-soft); padding-top: .55cqw; }
+  figcaption b { font-weight: 600; color: var(--ink); }
+
+  /* SVG type roles */
+  .t-title { font-family: var(--mono); font-size: 12.5px; font-weight: 500; fill: currentColor; }
+  .t-line  { font-family: "Source Sans 3", Arial, sans-serif; font-size: 11.5px; fill: currentColor; opacity: .72; }
+  .t-rail  { font-family: var(--mono); font-size: 11px; letter-spacing: .13em; fill: currentColor; opacity: .45; }
+  .t-edge  { font-family: var(--mono); font-size: 10.5px; fill: currentColor; opacity: .62; }
+  .t-node  { font-family: var(--mono); font-size: 10.5px; font-weight: 500; fill: currentColor; }
+  .t-strip { font-family: "Source Sans 3", Arial, sans-serif; font-size: 11.5px; fill: currentColor; opacity: .78; }
+  .box   { fill: var(--panel); stroke: var(--rule); stroke-width: 1; }
+  .box-o { fill: none; stroke: var(--rule); stroke-width: 1; }
+  .box-b { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 1.2; }
+  .box-g { fill: var(--gate-soft); stroke: var(--gate); stroke-width: 1.2; stroke-dasharray: 4 3; }
+  .box-x { fill: none; stroke: var(--faint); stroke-width: 1; stroke-dasharray: 5 4; }
+  .edge  { stroke: currentColor; stroke-width: 1.3; fill: none; opacity: .55; }
+  .edge-b { stroke: var(--brand); stroke-width: 1.5; fill: none; }
+  .hair  { stroke: currentColor; stroke-width: 1; opacity: .12; }
+  .bound { fill: none; stroke: var(--gate); stroke-width: 1.2; stroke-dasharray: 6 5; opacity: .8; }
+  .swatch { fill: var(--brand); }
+
+  /* --- narrow screens: stop pretending to be a projector ------------ */
+  @media (max-width: 860px) {
+    body { padding: 18px 12px 40px; }
+    .slide { aspect-ratio: auto; padding: 22px 18px 20px; container-type: normal; }
+    .eyebrow, .folio { font-size: 10px; }
+    .chrome .bar { width: 22px; height: 2px; }
+    h1 { font-size: 30px; margin-top: 16px; }
+    .thesis { font-size: 15px; max-width: none; margin-top: 10px; }
+    .cols { grid-template-columns: 1fr; gap: 22px; margin-top: 20px; }
+    .stack { gap: 16px; }
+    h2 { font-size: 10px; margin-bottom: 8px; gap: 8px; }
+    p, li, .def dd { font-size: 14px; }
+    .def { grid-template-columns: 86px 1fr; }
+    .def dt { font-size: 12px; }
+    .kicker { font-size: 14px; padding-left: 10px; border-left-width: 2px; }
+    th { font-size: 10px; padding-bottom: 5px; }
+    td { font-size: 13px; padding: 6px 0; }
+    td.name, td.path, td.count, .layers td.name, .layers td.path { width: auto; }
+    td.path { font-size: 11px; }
+    .note, .surface p { font-size: 12px; }
+    .keys li { font-size: 13px; }
+    .keys .k { font-size: 11px; padding: 1px 5px; }
+    .surfaces { grid-template-columns: 1fr; gap: 10px; }
+    .surface h3 { font-size: 14px; }
+    .surface .r, .lifecycle .st, .lifecycle .arw, .lifecycle .tail b { font-size: 11px; }
+    .lifecycle { gap: 6px; padding-top: 12px; margin-top: 18px; }
+    .lifecycle .st { padding: 3px 6px; }
+    .lifecycle .tail { font-size: 12px; margin-left: 0; }
+    .figure-wrap { margin-top: 14px; }
+    .arch { height: auto; }
+    figcaption { font-size: 12px; margin-top: 10px; padding-top: 10px; }
+  }
+
+  @media print {
+    /* One slide per landscape page: pin the box to the page size in mm
+       rather than letting aspect-ratio round itself onto a second sheet. */
+    @page { size: 297mm 167mm; margin: 0; }
+    body { padding: 0; background: #fff; }
+    .deck { gap: 0; max-width: none; }
+    .slide {
+      width: 297mm; height: 166.4mm; aspect-ratio: auto;
+      box-sizing: border-box; box-shadow: none; border: 0;
+      break-after: page; break-inside: avoid;
+    }
+    .slide:last-child { break-after: auto; }
+    /* A percentage height on the diagram resolves to zero in paginated
+       layout, so give it a definite box: 128mm tall at the viewBox's
+       1640:1010 ratio is 192mm wide, well inside the 279mm text block,
+       and leaves room for the chrome and a four-line caption. */
+    .figure-wrap, figure { display: block; flex: none; }
+    .arch { display: block; margin: 0 auto; width: auto; height: 118mm; }
+  }
+</style>
+
+<div class="deck">
+
+  <!-- ============================ SLIDE 1 ============================ -->
+  <section class="slide" aria-labelledby="s1-title">
+    <header class="chrome">
+      <div class="mark">
+        <span class="bar"></span>
+        <span class="eyebrow">Agent HUB Platform &nbsp;·&nbsp; Enterprise multi-agent control plane</span>
+      </div>
+      <span class="folio">The framework &nbsp; <b>01</b> / 02</span>
+    </header>
+
+    <h1 id="s1-title">One HUB. Every agent.</h1>
+    <p class="thesis">
+      This is not one large AI application. It is a <em>generic agent execution platform</em> with
+      workflows installed on it — which is why the next use case is a set of files, not a release.
+    </p>
+
+    <div class="cols">
+      <!-- LEFT -->
+      <div class="stack">
+        <section>
+          <h2>The separation that makes it a platform</h2>
+          <dl class="defs">
+            <div class="def"><dt>Platform</dt><dd>Submits jobs, runs containers, authenticates, stores results, tracks status, enforces limits and security.</dd></div>
+            <div class="def"><dt>Skill</dt><dd>Knows a domain — how test-case generation, or document OCR, is actually done.</dd></div>
+            <div class="def"><dt>Agent</dt><dd>Knows one step of reasoning, and declares the only tools it is allowed to touch.</dd></div>
+          </dl>
+          <p class="kicker">Each layer knows only the one beneath it — the orchestrator cannot tell whether generation used Copilot or the mock engine, and the runner cannot tell what started it.</p>
+        </section>
+
+        <section>
+          <h2>Four primitives — all of them files</h2>
+          <table>
+            <thead><tr><th>Primitive</th><th>Lives at</th><th>Is</th><th style="text-align:right">Live</th></tr></thead>
+            <tbody>
+              <tr><td class="name">Agents</td><td class="path">agents/*.agent.md</td><td>System prompt + declared tools</td><td class="count">15</td></tr>
+              <tr><td class="name">Skills</td><td class="path">skills/&lt;id&gt;/SKILL.md</td><td>Domain instruction bundle</td><td class="count">2</td></tr>
+              <tr><td class="name">Prompts</td><td class="path">prompts/*.prompt.md</td><td>Reusable prompt templates</td><td class="count">2</td></tr>
+              <tr><td class="name">Workflows</td><td class="path">workflows/*.workflow.yaml</td><td>The pipeline: stages, gates, schema</td><td class="count">4</td></tr>
+            </tbody>
+          </table>
+          <p class="note">Drop a file in, the registry reconciles it against <code>registry.yaml</code>, and it is live in the catalog, the Console picker and the job API — no redeploy, no migration. A workflow naming an agent that does not exist is rejected at write time.</p>
+        </section>
+
+        <section>
+          <h2>Two surfaces, one registry</h2>
+          <div class="surfaces">
+            <div class="surface">
+              <h3>Agent Console</h3>
+              <p>Any registered workflow, streamed over SSE. Read and search tools only, in a throwaway directory.</p>
+              <span class="r">/chat</span>
+            </div>
+            <div class="surface">
+              <h3>Custom UI</h3>
+              <p>When the work needs its own instrument — approval cards, score panels, CSV export — the workflow declares its route.</p>
+              <span class="r">has_custom_ui: true → /generate</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="stack">
+        <section>
+          <h2>Five layers</h2>
+          <table class="layers">
+            <thead><tr><th>Layer</th><th>Where</th><th>Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td class="name">Control plane</td><td class="path">frontend/</td><td>Submit, observe, download</td></tr>
+              <tr><td class="name">Orchestration</td><td class="path">backend/</td><td>Job lifecycle, state, limits, artifacts</td></tr>
+              <tr><td class="name">Execution</td><td class="path">executors/ · k8s/</td><td>Isolation, resource limits, disposability</td></tr>
+              <tr><td class="name">Generation</td><td class="path">runner/ · agent-hub/</td><td>Reasoning, drafting, review</td></tr>
+              <tr><td class="name">Contract</td><td class="path">schemas/</td><td>What valid output <em>is</em></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Execution model</h2>
+          <ul class="keys">
+            <li><span class="k">1 req = 1 Job</span><span>No shared long-lived process — isolation, cleanup, per-job limits, honest retries.</span></li>
+            <li><span class="k">leased row</span><span>Claimed by conditional UPDATE and renewed while it runs, never a background task; a dead replica’s jobs return to the queue.</span></li>
+            <li><span class="k">transition()</span><span>An illegal state move raises; every move appends a <code>job_events</code> row.</span></li>
+            <li><span class="k">3 executors</span><span>local, docker and kubernetes behind one protocol — the cluster path calls the API, never <code>kubectl</code>.</span></li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Trust boundary — the requirement is attacker-controlled text</h2>
+          <ul class="keys guard">
+            <li><span class="k">data, not instruction</span><span>Embedded directives are ignored and recorded under <code>assumptions</code>.</span></li>
+            <li><span class="k">no shell / no fetch</span><span>The registry refuses to persist an agent declaring either.</span></li>
+            <li><span class="k">no interpolation</span><span>Input is a file referenced by path, never part of a command line.</span></li>
+            <li><span class="k">confinement</span><span>Non-root, caps dropped, <code>/workspace</code> only, default-deny egress.</span></li>
+            <li><span class="k">output distrusted</span><span>Nothing completes a job until it is schema- and rule-validated.</span></li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <footer class="lifecycle">
+      <span class="st">QUEUED</span><span class="arw">→</span>
+      <span class="st">STARTING</span><span class="arw">→</span>
+      <span class="st">ANALYZING</span><span class="arw">→</span>
+      <span class="st gate">AWAITING_APPROVAL</span><span class="arw">→</span>
+      <span class="st">RUNNING</span><span class="arw">→</span>
+      <span class="st">VALIDATING</span><span class="arw">→</span>
+      <span class="st">EVALUATING</span><span class="arw">→</span>
+      <span class="st done">COMPLETED</span>
+      <span class="tail">Any in-flight state may end <b>FAILED</b> · <b>TIMEOUT</b> · <b>CANCELLED</b>; the human gate refuses with <b>REJECTED</b>.</span>
+    </footer>
+  </section>
+
+  <!-- ============================ SLIDE 2 ============================ -->
+  <section class="slide" aria-labelledby="s2-title">
+    <header class="chrome">
+      <div class="mark">
+        <span class="bar"></span>
+        <span class="eyebrow">Agent HUB Platform &nbsp;·&nbsp; Reference architecture</span>
+      </div>
+      <span class="folio">One request, end to end &nbsp; <b>02</b> / 02</span>
+    </header>
+
+    <div class="figure-wrap">
+      <figure>
+        <svg class="arch" viewBox="0 0 1640 1010" preserveAspectRatio="xMidYMid meet" role="img"
+             aria-label="Reference architecture of the Agent HUB Platform: browser and API clients reach a two-replica FastAPI orchestrator, which persists to PostgreSQL and two RWX volumes, dispatches one Kubernetes Job per request through a common executor protocol, and runs an ephemeral runner pod whose agent chain produces schema-validated artifacts; only the runner's egress on port 443 leaves the sandbox.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" opacity=".55"></path>
+            </marker>
+            <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--brand)"></path>
+            </marker>
+          </defs>
+
+          <!-- band rails -->
+          <text class="t-rail" x="110" y="80"  text-anchor="end">CONTROL</text>
+          <text class="t-rail" x="110" y="98"  text-anchor="end">PLANE</text>
+          <text class="t-rail" x="110" y="292" text-anchor="end">ORCHES-</text>
+          <text class="t-rail" x="110" y="310" text-anchor="end">TRATION</text>
+          <text class="t-rail" x="110" y="518" text-anchor="end">EXECUTION</text>
+          <text class="t-rail" x="110" y="726" text-anchor="end">GENERATION</text>
+          <text class="t-rail" x="110" y="936" text-anchor="end">CONTRACT</text>
+
+          <line class="hair" x1="122" y1="152" x2="1600" y2="152"></line>
+          <line class="hair" x1="146" y1="580" x2="1210" y2="580"></line>
+          <line class="hair" x1="146" y1="870" x2="1546" y2="870"></line>
+
+          <!-- ---------- BAND 1 · control plane ---------- -->
+          <rect class="box" x="132" y="28" width="300" height="110"></rect>
+          <text class="t-title" x="148" y="54">Next.js 15 · React 19 UI</text>
+          <text class="t-line"  x="148" y="76">:3100 · MUI, Frutiger theme</text>
+          <text class="t-line"  x="148" y="96">/generate /chat /use-cases</text>
+          <text class="t-line"  x="148" y="116">/jobs /hub /insights /docs</text>
+
+          <rect class="box" x="462" y="28" width="230" height="110"></rect>
+          <text class="t-title" x="478" y="54">BFF route handlers</text>
+          <text class="t-line"  x="478" y="76">same-origin /api proxy</text>
+          <text class="t-line"  x="478" y="96">forwards no credential</text>
+          <text class="t-line"  x="478" y="116">AUTH_MODE=disabled</text>
+
+          <rect class="box" x="722" y="28" width="266" height="110"></rect>
+          <text class="t-title" x="738" y="54">API &amp; SSE clients</text>
+          <text class="t-line"  x="738" y="76">curl · CI · bulk submit</text>
+          <text class="t-line"  x="738" y="96">cron-scheduled runs</text>
+          <text class="t-line"  x="738" y="116">OpenAPI at /docs</text>
+
+          <rect class="box-x" x="1246" y="28" width="374" height="110"></rect>
+          <text class="t-title" x="1262" y="54">Outside the namespace</text>
+          <text class="t-line"  x="1262" y="76">GitHub Copilot CLI → models</text>
+          <text class="t-line"  x="1262" y="96">customer webhook endpoint (https)</text>
+          <text class="t-line"  x="1262" y="116">public hosts only, re-resolved per POST</text>
+
+          <line class="edge" x1="432" y1="83" x2="456" y2="83" marker-end="url(#ah)"></line>
+          <line class="edge" x1="577" y1="138" x2="577" y2="164" marker-end="url(#ah)"></line>
+          <text class="t-edge" x="590" y="160">HTTP · X-Request-ID on every log line</text>
+          <line class="edge" x1="855" y1="138" x2="855" y2="164" marker-end="url(#ah)"></line>
+
+          <!-- ---------- BAND 2 · orchestration ---------- -->
+          <rect class="box-o" x="132" y="168" width="1078" height="260"></rect>
+          <text class="t-title" x="148" y="192">FastAPI orchestrator · uvicorn :8100 · replicas 2 · PodDisruptionBudget</text>
+
+          <rect class="box" x="146" y="204" width="252" height="76"></rect>
+          <text class="t-node" x="158" y="224">api/routes.py</text>
+          <text class="t-line" x="158" y="244">jobs · approve / reject</text>
+          <text class="t-line" x="158" y="264">reprocess · artifacts · ocr</text>
+
+          <rect class="box-b" x="408" y="204" width="252" height="76"></rect>
+          <text class="t-node" x="420" y="224">job_service.transition()</text>
+          <text class="t-line" x="420" y="244">enforced state machine</text>
+          <text class="t-line" x="420" y="264">appends job_events audit row</text>
+
+          <rect class="box" x="670" y="204" width="252" height="76"></rect>
+          <text class="t-node" x="682" y="224">queue.py · worker</text>
+          <text class="t-line" x="682" y="244">claim · renew · reclaim_expired</text>
+          <text class="t-line" x="682" y="264">limits 5 / user · 20 total</text>
+
+          <rect class="box" x="932" y="204" width="252" height="76"></rect>
+          <text class="t-node" x="944" y="224">hub_registry.py</text>
+          <text class="t-line" x="944" y="244">files ↔ registry.yaml reconcile</text>
+          <text class="t-line" x="944" y="264">rejects shell / fetch agents</text>
+
+          <rect class="box" x="146" y="294" width="252" height="76"></rect>
+          <text class="t-node" x="158" y="314">chat_orchestrator.py</text>
+          <text class="t-line" x="158" y="334">SSE · read + search only</text>
+          <text class="t-line" x="158" y="354">2 per user · 8 total · 300 s</text>
+
+          <rect class="box" x="408" y="294" width="252" height="76"></rect>
+          <text class="t-node" x="420" y="314">scheduler.py · cron.py</text>
+          <text class="t-line" x="420" y="334">recurring + bulk submission</text>
+          <text class="t-line" x="420" y="354">webhook delivery &amp; retry</text>
+
+          <rect class="box" x="670" y="294" width="252" height="76"></rect>
+          <text class="t-node" x="682" y="314">agent_lab · insights.py</text>
+          <text class="t-line" x="682" y="334">single-agent test bench</text>
+          <text class="t-line" x="682" y="354">fingerprint · run comparison</text>
+
+          <rect class="box" x="932" y="294" width="252" height="76"></rect>
+          <text class="t-node" x="944" y="314">url_guard · retention · metrics</text>
+          <text class="t-line" x="944" y="334">private / loopback / metadata denied</text>
+          <text class="t-line" x="944" y="354">Prometheus text, counts only</text>
+
+          <rect class="box" x="146" y="382" width="1038" height="34"></rect>
+          <text class="t-strip" x="160" y="404">1 request = 1 Job — never a shared long-lived agent process. Work is a leased row, so any replica can claim it and a dead replica's jobs return to the queue.</text>
+
+          <!-- storage column -->
+          <rect class="box" x="1246" y="168" width="300" height="84"></rect>
+          <text class="t-node" x="1260" y="190">PostgreSQL</text>
+          <text class="t-line" x="1260" y="210">jobs · job_events · chat_sessions</text>
+          <text class="t-line" x="1260" y="230">schedules · webhook_deliveries</text>
+
+          <rect class="box" x="1246" y="264" width="300" height="84"></rect>
+          <text class="t-node" x="1260" y="286">PVC ai-test-artifacts</text>
+          <text class="t-line" x="1260" y="306">RWX 20Gi · subPath = job id</text>
+          <text class="t-line" x="1260" y="326">input/ intermediate/ output/</text>
+
+          <rect class="box" x="1246" y="360" width="300" height="68"></rect>
+          <text class="t-node" x="1260" y="382">PVC ai-test-hub</text>
+          <text class="t-line" x="1260" y="402">orchestrator RW · runner READ-ONLY</text>
+          <text class="t-line" x="1260" y="420">seeded from the image once at startup</text>
+
+          <line class="edge" x1="1210" y1="210" x2="1242" y2="210" marker-end="url(#ah)"></line>
+          <line class="edge" x1="1210" y1="300" x2="1242" y2="300" marker-end="url(#ah)"></line>
+          <line class="edge" x1="1210" y1="392" x2="1242" y2="392" marker-end="url(#ah)"></line>
+
+          <!-- ---------- sandbox boundary ---------- -->
+          <rect class="bound" x="122" y="448" width="1478" height="548"></rect>
+          <rect x="140" y="986" width="404" height="20" fill="var(--slide)"></rect>
+          <text class="t-edge" x="148" y="1001" style="opacity:.85; fill:var(--gate)">namespace ai-testing · restricted Pod Security · default-deny NetworkPolicy</text>
+
+          <!-- ---------- BAND 3 · execution ---------- -->
+          <rect class="box" x="146" y="468" width="236" height="98"></rect>
+          <text class="t-node" x="158" y="492">executors/base.py</text>
+          <text class="t-line" x="158" y="514">one protocol:</text>
+          <text class="t-line" x="158" y="534">run(job_id, workspace)</text>
+          <text class="t-line" x="158" y="554">→ success or failure</text>
+
+          <rect class="box" x="410" y="468" width="150" height="98"></rect>
+          <text class="t-node" x="422" y="492">local</text>
+          <text class="t-line" x="422" y="514">subprocess</text>
+          <text class="t-line" x="422" y="534">no isolation</text>
+          <text class="t-line" x="422" y="554">development</text>
+
+          <rect class="box" x="574" y="468" width="150" height="98"></rect>
+          <text class="t-node" x="586" y="492">docker</text>
+          <text class="t-line" x="586" y="514">container</text>
+          <text class="t-line" x="586" y="534">pre-cluster</text>
+          <text class="t-line" x="586" y="554">verification</text>
+
+          <rect class="box-b" x="738" y="468" width="184" height="98"></rect>
+          <text class="t-node" x="750" y="492">kubernetes</text>
+          <text class="t-line" x="750" y="514">pod · quota · netpol</text>
+          <text class="t-line" x="750" y="534">python client API,</text>
+          <text class="t-line" x="750" y="554">never shells to kubectl</text>
+
+          <rect class="box" x="956" y="468" width="254" height="98"></rect>
+          <text class="t-node" x="968" y="492">build_manifest() → batch/v1</text>
+          <text class="t-line" x="968" y="514">ttl 3600 s · timeout 2700 s</text>
+          <text class="t-line" x="968" y="534">cpu 500m–2 · mem 1–4Gi</text>
+          <text class="t-line" x="968" y="554">runAsNonRoot · caps dropped</text>
+
+          <line class="edge" x1="264" y1="428" x2="264" y2="464" marker-end="url(#ah)"></line>
+          <text class="t-edge" x="276" y="450">dispatch</text>
+          <line class="edge" x1="382" y1="517" x2="406" y2="517" marker-end="url(#ah)"></line>
+          <line class="edge" x1="922" y1="517" x2="952" y2="517" marker-end="url(#ah)"></line>
+          <line class="edge-b" x1="1083" y1="566" x2="1083" y2="592" marker-end="url(#ahb)"></line>
+          <text class="t-edge" x="1071" y="586" text-anchor="end">one Kubernetes Job per request</text>
+
+          <!-- ---------- BAND 4 · generation ---------- -->
+          <rect class="box-o" x="146" y="596" width="1064" height="260"></rect>
+          <text class="t-title" x="162" y="620">Ephemeral runner pod · mounts artifacts at subPath=&lt;job id&gt; (rw) and the hub read-only</text>
+
+          <rect class="box" x="162" y="634" width="320" height="62"></rect>
+          <text class="t-node" x="174" y="654">agent_chain.py — bespoke</text>
+          <text class="t-line" x="174" y="674">human gate · schema retry loop</text>
+          <text class="t-line" x="174" y="690">MAX_REVIEW_ATTEMPTS = 3</text>
+
+          <rect class="box" x="498" y="634" width="340" height="62"></rect>
+          <text class="t-node" x="510" y="654">generic_runner.py — declarative</text>
+          <text class="t-line" x="510" y="674">walks *.workflow.yaml · depends_on</text>
+          <text class="t-line" x="510" y="690">parallel waves · checkpoint &amp; resume</text>
+
+          <rect class="box" x="854" y="634" width="340" height="62"></rect>
+          <text class="t-node" x="866" y="654">copilot_cli.py</text>
+          <text class="t-line" x="866" y="674">ENGINE = copilot | mock</text>
+          <text class="t-line" x="866" y="690">prompt read from file · model fallback</text>
+
+          <!-- agent chain -->
+          <rect class="box" x="176" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="228" y="734" text-anchor="middle">requirement</text>
+          <text class="t-line" x="228" y="754" text-anchor="middle">input/*.md</text>
+
+          <rect class="box" x="300" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="352" y="734" text-anchor="middle">analyst</text>
+          <text class="t-line" x="352" y="754" text-anchor="middle">INVEST × 8</text>
+
+          <rect class="box-g" x="424" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="476" y="734" text-anchor="middle" style="fill:var(--gate)">human gate</text>
+          <text class="t-line" x="476" y="754" text-anchor="middle" style="fill:var(--gate); opacity:.9">approve / reject</text>
+
+          <rect class="box" x="548" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="600" y="734" text-anchor="middle">designer</text>
+          <text class="t-line" x="600" y="754" text-anchor="middle">scenarios</text>
+
+          <rect class="box" x="672" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="724" y="734" text-anchor="middle">generator</text>
+          <text class="t-line" x="724" y="754" text-anchor="middle">draft cases</text>
+
+          <rect class="box" x="796" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="848" y="734" text-anchor="middle">reviewer</text>
+          <text class="t-line" x="848" y="754" text-anchor="middle">independent</text>
+
+          <rect class="box" x="920" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="972" y="734" text-anchor="middle">evaluator</text>
+          <text class="t-line" x="972" y="754" text-anchor="middle">5-D score</text>
+
+          <rect class="box" x="1044" y="712" width="104" height="58"></rect>
+          <text class="t-node" x="1096" y="734" text-anchor="middle">gap-closer</text>
+          <text class="t-line" x="1096" y="754" text-anchor="middle">amend suite</text>
+
+          <line class="edge" x1="280" y1="741" x2="296" y2="741" marker-end="url(#ah)"></line>
+          <line class="edge" x1="404" y1="741" x2="420" y2="741" marker-end="url(#ah)"></line>
+          <line class="edge" x1="528" y1="741" x2="544" y2="741" marker-end="url(#ah)"></line>
+          <line class="edge" x1="652" y1="741" x2="668" y2="741" marker-end="url(#ah)"></line>
+          <line class="edge" x1="776" y1="741" x2="792" y2="741" marker-end="url(#ah)"></line>
+          <line class="edge" x1="900" y1="741" x2="916" y2="741" marker-end="url(#ah)"></line>
+          <line class="edge" x1="1024" y1="741" x2="1040" y2="741" marker-end="url(#ah)"></line>
+
+          <text class="t-line" x="176" y="794">Structured JSON passes between every stage — test_design.json → draft_test_cases.json → review.json → test_cases.json. No agent regenerates upstream work.</text>
+
+          <rect class="box" x="162" y="806" width="1032" height="34"></rect>
+          <text class="t-strip" x="176" y="828">Requirement text is data, never instruction · no shell and no fetch tool · nothing interpolated into a command line · reads and writes confined to /workspace</text>
+
+          <!-- egress corridor out of the sandbox -->
+          <polyline class="edge-b" points="1210,700 1585,700 1585,142" marker-end="url(#ahb)"></polyline>
+          <rect x="1300" y="432" width="298" height="18" fill="var(--slide)"></rect>
+          <text class="t-edge" x="1594" y="446" text-anchor="end" style="opacity:.85; fill:var(--brand)">egress :443 only — RFC1918, metadata &amp; IPv6 ULA denied</text>
+          <text class="t-edge" x="1572" y="690" text-anchor="end">the one path that leaves the sandbox</text>
+
+          <!-- ---------- BAND 5 · contract ---------- -->
+          <rect class="box" x="146" y="886" width="300" height="100"></rect>
+          <text class="t-node" x="158" y="910">validate_output.py</text>
+          <text class="t-line" x="158" y="932">5 JSON Schema contracts</text>
+          <text class="t-line" x="158" y="952">business rules · deduplication</text>
+          <text class="t-line" x="158" y="972">coverage &amp; traceability checks</text>
+
+          <rect class="box" x="478" y="886" width="300" height="100"></rect>
+          <text class="t-node" x="490" y="910">Quality gates</text>
+          <text class="t-line" x="490" y="932">phase 1 — INVEST requirement score</text>
+          <text class="t-line" x="490" y="952">phase 2 — 5-D suite evaluation</text>
+          <text class="t-line" x="490" y="972">1–4 scale, arithmetic mean, 85 %</text>
+
+          <rect class="box-b" x="810" y="886" width="400" height="100"></rect>
+          <text class="t-node" x="822" y="910">Outcome</text>
+          <text class="t-line" x="822" y="932">COMPLETED — summary on the row, files in artifact storage</text>
+          <text class="t-line" x="822" y="952">gate fails → back to the reviewer, up to 3 attempts → FAILED</text>
+          <text class="t-line" x="822" y="972">callback POSTed to the customer webhook, guarded and logged</text>
+
+          <rect class="box" x="1246" y="886" width="300" height="100"></rect>
+          <text class="t-node" x="1258" y="910">Provenance per job</text>
+          <text class="t-line" x="1258" y="932">engine · skill &amp; runner version</text>
+          <text class="t-line" x="1258" y="952">Copilot CLI version · per-phase timing</text>
+          <text class="t-line" x="1258" y="972">SHA-256 of input and of output</text>
+
+          <line class="edge" x1="296" y1="856" x2="296" y2="882" marker-end="url(#ah)"></line>
+          <line class="edge" x1="628" y1="856" x2="628" y2="882" marker-end="url(#ah)"></line>
+          <line class="edge" x1="1010" y1="856" x2="1010" y2="882" marker-end="url(#ah)"></line>
+        </svg>
+
+        <figcaption>
+          <b>One request, end to end.</b> Everything inside the dashed boundary is disposable: the runner pod is created for a single job and deleted after it,
+          reaching only the artifact subPath it owns and a read-only copy of the hub. The orchestrator never sees model output it has not schema-checked,
+          and the only route out of the namespace is the runner's egress on 443.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+</div>

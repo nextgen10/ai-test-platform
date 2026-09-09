@@ -139,11 +139,44 @@ export default function SettingsPage() {
                                 </Typography>
                             </Box>
                         </Box>
-                        <Chip
-                            label={settings.generationEngine === 'copilot' ? 'Live Copilot CLI' : 'Deterministic Mock'}
-                            color={settings.generationEngine === 'copilot' ? 'primary' : 'default'}
-                            sx={{ fontWeight: 500, fontSize: '0.76rem', height: 26 }}
-                        />
+                        {settings.generationEngine === 'copilot' ? (
+                            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+                                <Box
+                                    sx={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        bgcolor: isLight ? '#DA0000' : '#E8696F',
+                                        animation: 'hubLive 1.8s cubic-bezier(0.38, 0.19, 0.32, 0.95) infinite',
+                                        '@keyframes hubLive': {
+                                            '0%': { boxShadow: `0 0 0 0 ${alpha(isLight ? '#DA0000' : '#E8696F', 0.7)}` },
+                                            '70%': { boxShadow: `0 0 0 12px ${alpha(isLight ? '#DA0000' : '#E8696F', 0)}` },
+                                            '100%': { boxShadow: `0 0 0 0 ${alpha(isLight ? '#DA0000' : '#E8696F', 0)}` },
+                                        },
+                                        '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+                                    }}
+                                />
+                                <Typography
+                                    component="span"
+                                    sx={{
+                                        color: isLight ? '#5A5D5C' : '#cccabc',
+                                        fontSize: '0.6875rem',
+                                        letterSpacing: '0.1em',
+                                        fontWeight: 500,
+                                        lineHeight: 1,
+                                        textTransform: 'uppercase',
+                                    }}
+                                >
+                                    Live
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <Chip
+                                label="Deterministic Mock"
+                                color="warning"
+                                sx={{ fontWeight: 500, fontSize: '0.76rem', height: 26 }}
+                            />
+                        )}
                     </Box>
 
                     <Divider sx={{ mb: 2.5 }} />
@@ -164,7 +197,7 @@ export default function SettingsPage() {
                                     border: '2px solid',
                                     borderColor: settings.generationEngine === 'copilot' ? 'primary.main' : 'divider',
                                     bgcolor: settings.generationEngine === 'copilot'
-                                        ? (isLight ? '#fbeaea' : alpha(theme.palette.primary.main, 0.08))
+                                        ? (isLight ? '#e6f3f8' : alpha(theme.palette.primary.main, 0.08))
                                         : 'transparent',
                                     transition: 'all 0.2s',
                                     '&:hover': { borderColor: 'primary.main' },

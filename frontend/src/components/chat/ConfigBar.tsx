@@ -9,6 +9,7 @@ import {
   InputLabel,
   Tooltip,
   useTheme,
+  alpha,
   TextField,
   Collapse,
   Button,
@@ -278,63 +279,103 @@ export const ConfigBar: React.FC<{ compact?: boolean }> = ({ compact = false }) 
           </Select>
         </FormControl>
 
-        {/* Engine — per request, never server state */}
-        <FormControl size="small" sx={selectFrame(148)}>
-          <InputLabel id="engine-select-label" sx={{ fontSize: '0.82rem' }}>
-            Engine
-          </InputLabel>
-          <Select
-            labelId="engine-select-label"
-            value={config.engine || ''}
-            label="Engine"
-            fullWidth
-            onChange={(e) =>
-              updateConfig({ engine: (e.target.value as 'mock' | 'copilot') || null })
-            }
-            renderValue={(value) => {
-              if (value === 'copilot') return 'Copilot (live)';
-              if (value === 'mock') return 'Mock (offline)';
-              return '';
-            }}
-            sx={selectSx}
-          >
-            <MenuItem value="">
-              <em>Platform ({platform?.engine ?? '…'})</em>
-            </MenuItem>
-            <MenuItem value="copilot">Copilot (live)</MenuItem>
-            <MenuItem value="mock">Mock (offline)</MenuItem>
-          </Select>
-        </FormControl>
+        {/* Engine — per request, never server state. Mock sits on this control, not in the empty toolbar gap. */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+          <FormControl size="small" sx={selectFrame(148)}>
+            <InputLabel id="engine-select-label" sx={{ fontSize: '0.82rem' }}>
+              Engine
+            </InputLabel>
+            <Select
+              labelId="engine-select-label"
+              value={config.engine || ''}
+              label="Engine"
+              fullWidth
+              onChange={(e) =>
+                updateConfig({ engine: (e.target.value as 'mock' | 'copilot') || null })
+              }
+              renderValue={(value) => {
+                if (value === 'copilot') return 'Copilot (live)';
+                if (value === 'mock') return 'Mock (offline)';
+                return platform?.engine ? `Platform (${platform.engine})` : 'Platform default';
+              }}
+              sx={selectSx}
+            >
+              <MenuItem value="">
+                <em>Platform ({platform?.engine ?? '…'})</em>
+              </MenuItem>
+              <MenuItem value="copilot">Copilot (live)</MenuItem>
+              <MenuItem value="mock">Mock (offline)</MenuItem>
+            </Select>
+          </FormControl>
+
+          {effectiveEngine === 'mock' ? (
+            <Tooltip title="Responses are deterministic stand-ins, not real generation.">
+              <Chip
+                label="Mock"
+                size="small"
+                color="warning"
+                sx={{ fontSize: '0.68rem', height: 22, fontWeight: 500, flexShrink: 0 }}
+              />
+            </Tooltip>
+          ) : (
+            <Tooltip title="Runs go through GitHub Copilot CLI.">
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  flexShrink: 0,
+                  cursor: 'default',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: isLight ? '#DA0000' : '#E8696F',
+                    animation: 'hubLive 1.8s cubic-bezier(0.38, 0.19, 0.32, 0.95) infinite',
+                    '@keyframes hubLive': {
+                      '0%': { boxShadow: `0 0 0 0 ${alpha(isLight ? '#DA0000' : '#E8696F', 0.7)}` },
+                      '70%': { boxShadow: `0 0 0 12px ${alpha(isLight ? '#DA0000' : '#E8696F', 0)}` },
+                      '100%': { boxShadow: `0 0 0 0 ${alpha(isLight ? '#DA0000' : '#E8696F', 0)}` },
+                    },
+                    '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+                  }}
+                />
+                <Typography
+                  component="span"
+                  sx={{
+                    color: isLight ? '#5A5D5C' : '#cccabc',
+                    fontSize: '0.6875rem',
+                    letterSpacing: '0.1em',
+                    fontWeight: 500,
+                    lineHeight: 1,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Live
+                </Typography>
+              </Box>
+            </Tooltip>
+          )}
+        </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto', flexShrink: 0, minHeight: 32 }}>
-          <Box sx={{ width: 52, display: 'flex', justifyContent: 'flex-end' }}>
-            {effectiveEngine === 'mock' && (
-              <Tooltip title="Responses are deterministic stand-ins, not real generation.">
-                <Chip
-                  label="Mock"
-                  size="small"
-                  sx={{ fontSize: '0.68rem', height: 22, fontWeight: 500 }}
-                />
-              </Tooltip>
-            )}
-          </Box>
-
-          <Box sx={{ width: 72, display: 'flex', justifyContent: 'flex-end' }}>
-            {hasActiveConfig && (
-              <Tooltip title="Clear the agent, workflow, model and engine selection">
-                <Button
-                  size="small"
-                  variant="text"
-                  color="inherit"
-                  startIcon={<RotateCcw size={13} />}
-                  onClick={handleResetConfig}
-                  sx={{ fontSize: '0.75rem', textTransform: 'none', px: 1 }}
-                >
-                  Reset
-                </Button>
-              </Tooltip>
-            )}
-          </Box>
+          {hasActiveConfig && (
+            <Tooltip title="Clear the agent, workflow, model and engine selection">
+              <Button
+                size="small"
+                variant="text"
+                color="inherit"
+                startIcon={<RotateCcw size={13} />}
+                onClick={handleResetConfig}
+                sx={{ fontSize: '0.75rem', textTransform: 'none', px: 1 }}
+              >
+                Reset
+              </Button>
+            </Tooltip>
+          )}
 
           <Button
             size="small"

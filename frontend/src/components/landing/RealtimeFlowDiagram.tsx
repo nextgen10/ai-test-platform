@@ -5,7 +5,7 @@ import { Box, alpha, useTheme } from '@mui/material';
 
 const AMBER = '#af8626';
 const GREEN = '#469a6c';
-const RED = '#e60000';
+const RED = '#0769A6';
 const BLUE = '#00759e';
 
 export default function RealtimeFlowDiagram() {
@@ -79,8 +79,8 @@ export default function RealtimeFlowDiagram() {
           </circle>
 
           {/* Path 2b: Approval Gate REJECT branch (UPWARDS to avoid overlap) */}
-          <path d="M 720 70 L 720 46" fill="none" stroke="#da0000" strokeWidth="2.2" strokeDasharray="4 4" markerEnd="url(#arrow-red)" />
-          <circle r="4" fill="#da0000">
+          <path d="M 720 70 L 720 46" fill="none" stroke="#0769A6" strokeWidth="2.2" strokeDasharray="4 4" markerEnd="url(#arrow-red)" />
+          <circle r="4" fill="#0769A6">
             <animateMotion path="M 720 70 L 720 46" dur="1.2s" repeatCount="indefinite" />
           </circle>
 
@@ -207,8 +207,8 @@ export default function RealtimeFlowDiagram() {
 
           {/* REJECT TERMINATION BOX (Cleanly situated UPWARDS at y=10) */}
           <g transform="translate(630, 10)">
-            <rect width="180" height="34" rx="7" fill={isLight ? '#fbeaea' : '#2a2a2a'} stroke="#da0000" strokeWidth="1.2" strokeDasharray="3 3" />
-            <text x="90" y="18" fill="#da0000" fontSize="10.5" fontWeight="500" textAnchor="middle">Rejected ➔ Run Halt</text>
+            <rect width="180" height="34" rx="7" fill={isLight ? '#e6f3f8' : '#2a2a2a'} stroke="#0769A6" strokeWidth="1.2" strokeDasharray="3 3" />
+            <text x="90" y="18" fill="#0769A6" fontSize="10.5" fontWeight="500" textAnchor="middle">Rejected ➔ Run Halt</text>
             <text x="90" y="28" fill={mutedColor} fontSize="8" textAnchor="middle">Reason Logged &bull; No Tokens Wasted</text>
           </g>
 

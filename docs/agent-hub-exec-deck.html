@@ -1,0 +1,598 @@
+<title>Agent HUB Executive Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@200;300;400;600&display=swap">
+<style>
+  /* Same brand tokens as the platform's own theme (frontend/src/theme/index.ts),
+     but an executive treatment: far fewer words, larger type, more air. */
+  :root {
+    --sans: "Frutiger", "Frutiger for UBS", "FrutigerforUBSWeb", "Source Sans 3", Arial, Helvetica, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+    --paper:      #F4F3EE;
+    --slide:      #FFFFFF;
+    --panel:      #F9F9F7;
+    --panel-alt:  #F4F3EE;
+    --ink:        #1C1C1C;
+    --muted:      #5A5D5C;
+    --faint:      #8E8D83;
+    --rule:       #CCCABC;
+    --rule-soft:  rgba(28, 28, 28, 0.10);
+    --brand:      #4A7AD6;
+    --brand-ink:  #2F5AA8;
+    --brand-soft: rgba(74, 122, 214, 0.08);
+    --gate:       #86671D;
+    --gate-soft:  rgba(134, 103, 29, 0.10);
+    --shadow:     0 1px 2px rgba(28,28,28,.05), 0 12px 34px -18px rgba(28,28,28,.28);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #141414; --slide: #1C1C1C; --panel: #232323; --panel-alt: #262626;
+      --ink: #F9F9F7; --muted: #B8B3A2; --faint: #8E8D83;
+      --rule: #4A4A46; --rule-soft: rgba(204,202,188,.16);
+      --brand: #7BA3E5; --brand-ink: #9CBCEC; --brand-soft: rgba(123,163,229,.12);
+      --gate: #D8B45A; --gate-soft: rgba(216,180,90,.12);
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 38px -20px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141414; --slide: #1C1C1C; --panel: #232323; --panel-alt: #262626;
+    --ink: #F9F9F7; --muted: #B8B3A2; --faint: #8E8D83;
+    --rule: #4A4A46; --rule-soft: rgba(204,202,188,.16);
+    --brand: #7BA3E5; --brand-ink: #9CBCEC; --brand-soft: rgba(123,163,229,.12);
+    --gate: #D8B45A; --gate-soft: rgba(216,180,90,.12);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 38px -20px rgba(0,0,0,.8);
+  }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+    padding: 30px 24px 56px;
+  }
+  .deck { display: flex; flex-direction: column; gap: 30px; max-width: 1400px; margin: 0 auto; }
+
+  .slide {
+    container-type: inline-size;
+    aspect-ratio: 16 / 9;
+    background: var(--slide);
+    border: 1px solid var(--rule-soft);
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+    padding: 3.4cqw 4cqw 3cqw;
+    overflow: hidden;
+  }
+
+  /* --- chrome ------------------------------------------------------- */
+  .chrome { display: flex; align-items: baseline; justify-content: space-between; gap: 2cqw;
+            padding-bottom: 1.1cqw; border-bottom: 1px solid var(--rule-soft); }
+  .chrome .mark { display: flex; align-items: center; gap: 1cqw; }
+  .chrome .bar { width: 2cqw; height: .2cqw; background: var(--brand); }
+  .eyebrow { font-family: var(--mono); font-size: .82cqw; letter-spacing: .18em;
+             text-transform: uppercase; color: var(--muted); }
+  .folio { font-family: var(--mono); font-size: .82cqw; letter-spacing: .16em; color: var(--faint); }
+  .folio b { color: var(--ink); font-weight: 500; }
+
+  h1 { font-size: 3.5cqw; font-weight: 200; line-height: 1.06; letter-spacing: -0.018em;
+       margin: 2.2cqw 0 0; max-width: 78cqw; text-wrap: balance; }
+  h1 .hl { color: var(--brand-ink); }
+  .lede { font-size: 1.45cqw; font-weight: 300; line-height: 1.42; color: var(--muted);
+          max-width: 64cqw; margin-top: 1.1cqw; }
+
+  .body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center;
+          margin: 1.8cqw 0; }
+
+  h2 { font-family: var(--mono); font-size: .82cqw; font-weight: 500; letter-spacing: .16em;
+       text-transform: uppercase; color: var(--faint); margin: 0 0 .8cqw; }
+  p { margin: 0; }
+
+  /* --- three-up columns (slide 2) ----------------------------------- */
+  .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.8cqw; }
+  .trio .col { display: flex; flex-direction: column; gap: .9cqw;
+               border-top: .2cqw solid var(--brand); padding-top: 1.4cqw; }
+  .trio h3 { margin: 0; font-size: 1.78cqw; font-weight: 400; line-height: 1.2; }
+  .trio p { font-size: 1.2cqw; line-height: 1.48; color: var(--muted); }
+
+  /* --- before / after (slide 1) ------------------------------------- */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 2cqw; align-items: stretch; }
+  .pane { padding: 2.1cqw 2.3cqw; display: flex; flex-direction: column; gap: 1cqw; }
+  .pane.now { background: var(--panel-alt); }
+  .pane.next { background: var(--brand-soft); border-left: .22cqw solid var(--brand); }
+  .pane h3 { margin: 0; font-size: 1.46cqw; font-weight: 600; }
+  .pane ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .68cqw; }
+  .pane li { font-size: 1.2cqw; line-height: 1.42; color: var(--muted);
+             padding-left: 1.3cqw; position: relative; }
+  .pane li::before { content: ""; position: absolute; left: 0; top: .62em;
+                     width: .55cqw; height: 1px; background: var(--faint); }
+  .pane.next li::before { background: var(--brand); }
+
+  /* --- fact strip --------------------------------------------------- */
+  .facts { display: flex; align-items: baseline; gap: 2.6cqw; border-top: 1px solid var(--rule-soft);
+           padding-top: 1.1cqw; }
+  .fact { display: flex; align-items: baseline; gap: .6cqw; }
+  .fact b { font-size: 2.5cqw; font-weight: 300; color: var(--brand-ink);
+            font-variant-numeric: tabular-nums; line-height: 1; }
+  .fact span { font-size: 1.08cqw; color: var(--muted); }
+  .facts .tag { margin-left: auto; font-family: var(--mono); font-size: .88cqw; color: var(--faint);
+                letter-spacing: .08em; text-transform: uppercase; }
+
+  /* --- controls list (slide 3) -------------------------------------- */
+  .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.3cqw; margin-top: 2.8cqw; }
+  .control { display: flex; flex-direction: column; gap: .45cqw; }
+  .control h4 { margin: 0; font-size: 1.3cqw; font-weight: 600; }
+  .control p { font-size: 1.12cqw; line-height: 1.44; color: var(--muted); }
+
+  /* --- proof (slide 4) ---------------------------------------------- */
+  .proof { display: grid; grid-template-columns: 1.25fr 1fr; gap: 2.6cqw; align-items: start; }
+  .live { background: var(--panel); border-left: .24cqw solid var(--brand); padding: 1.9cqw 2.1cqw;
+          display: flex; flex-direction: column; gap: 1.05cqw; }
+  .live .badge { font-family: var(--mono); font-size: .84cqw; letter-spacing: .14em;
+                 text-transform: uppercase; color: var(--brand-ink); }
+  .live h3 { margin: 0; font-size: 2.05cqw; font-weight: 400; }
+  .live .flow { display: flex; align-items: center; flex-wrap: wrap; gap: .5cqw;
+                font-family: var(--mono); font-size: .95cqw; color: var(--ink); }
+  .live .flow i { font-style: normal; background: var(--slide); border: 1px solid var(--rule);
+                  padding: .28cqw .55cqw; }
+  .live .flow u { text-decoration: none; color: var(--faint); }
+  .live ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .6cqw; }
+  .live li { font-size: 1.16cqw; line-height: 1.42; color: var(--muted);
+             padding-left: 1.2cqw; position: relative; }
+  .live li::before { content: ""; position: absolute; left: 0; top: .6em; width: .5cqw; height: 1px;
+                     background: var(--brand); }
+  .others { display: flex; flex-direction: column; gap: 1.5cqw; }
+  .other { border-top: 1px solid var(--rule-soft); padding-top: 1cqw; }
+  .other h4 { margin: 0 0 .35cqw; font-size: 1.3cqw; font-weight: 600; }
+  .other p { font-size: 1.1cqw; line-height: 1.42; color: var(--muted); }
+
+  .closing { margin-top: 2.4cqw; border-top: 1px solid var(--rule-soft); padding-top: 1.4cqw;
+             font-size: 1.3cqw; line-height: 1.44; }
+  .closing b { font-weight: 600; }
+  .thesis-line { font-size: 1.34cqw; font-weight: 300; line-height: 1.4; color: var(--ink); }
+
+  /* --- the ask (slide 5) -------------------------------------------- */
+  .asks { display: flex; flex-direction: column; gap: 1.6cqw; }
+  .ask { display: grid; grid-template-columns: 2.6cqw 1fr; gap: 1.2cqw; align-items: baseline; }
+  .ask .n { font-family: var(--mono); font-size: 1.24cqw; color: var(--brand); font-weight: 500; }
+  .ask h3 { margin: 0 0 .38cqw; font-size: 1.58cqw; font-weight: 600; line-height: 1.25; }
+  .ask p { font-size: 1.18cqw; line-height: 1.44; color: var(--muted); }
+  .harden { background: var(--panel-alt); padding: 1.8cqw 2cqw; display: flex; flex-direction: column; gap: .85cqw; }
+  .harden h4 { margin: 0; font-family: var(--mono); font-size: .88cqw; letter-spacing: .14em;
+               text-transform: uppercase; color: var(--gate); }
+  .harden ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .6cqw; }
+  .harden li { font-size: 1.1cqw; line-height: 1.42; color: var(--muted);
+               padding-left: 1.2cqw; position: relative; }
+  .harden li::before { content: ""; position: absolute; left: 0; top: .6em; width: .5cqw; height: 1px;
+                       background: var(--gate); }
+  .harden li b { color: var(--ink); font-weight: 600; }
+  .split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 2.6cqw; align-items: start; }
+
+  /* --- slide 3 diagram ---------------------------------------------- */
+  .flowfig { margin: 0; }
+  .flowsvg { width: 100%; height: auto; display: block; color: var(--ink); }
+  .fs-box { fill: var(--panel); stroke: var(--rule); stroke-width: 1.2; }
+  .fs-gate { fill: var(--gate-soft); stroke: var(--gate); stroke-width: 1.4; stroke-dasharray: 5 3; }
+  .fs-out { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 1.4; }
+  .fs-t { font-family: var(--sans); font-size: 17px; font-weight: 600; fill: currentColor; }
+  .fs-s { font-family: var(--sans); font-size: 14px; fill: currentColor; opacity: .68; }
+  .fs-e { stroke: currentColor; stroke-width: 1.4; fill: none; opacity: .5; }
+  .fs-loop { stroke: var(--gate); stroke-width: 1.3; fill: none; stroke-dasharray: 4 3; }
+  .fs-lab { font-family: var(--mono); font-size: 12.5px; fill: var(--gate); }
+
+  /* --- slide 5 onboarding pipeline ---------------------------------- */
+  .onboardfig { margin: 0; }
+  .onboardsvg { width: 100%; height: auto; display: block; color: var(--ink); }
+  .ob-zone { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; fill: currentColor; opacity: .42; }
+  .ob-card { fill: var(--panel); stroke: var(--rule); stroke-width: 1.2; }
+  .ob-accent { fill: var(--faint); }
+  .ob-alt { fill: var(--gate-soft); stroke: var(--gate); stroke-width: 1.3; stroke-dasharray: 5 3; }
+  .ob-gate { fill: var(--panel); stroke: currentColor; stroke-width: 2; }
+  .ob-pill { fill: var(--brand); }
+  .ob-pill-t { font-family: var(--mono); font-size: 16px; font-weight: 500; letter-spacing: .16em; fill: var(--slide); }
+  .ob-box { fill: var(--panel); stroke: var(--rule); stroke-width: 1.2; }
+  .ob-key { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 1.5; }
+  .ob-bar { fill: var(--panel-alt); stroke: none; }
+  .ob-spine { stroke: currentColor; stroke-width: 2; fill: none; opacity: .5; }
+  .ob-thin { stroke: currentColor; stroke-width: 1.3; fill: none; opacity: .35; }
+  .ob-opt { stroke: var(--brand); stroke-width: 1.7; fill: none; stroke-dasharray: 6 4; }
+  .ob-rej { stroke: var(--gate); stroke-width: 1.6; fill: none; }
+  .ob-t { font-family: var(--sans); font-size: 16px; font-weight: 600; fill: currentColor; }
+  .ob-f { font-family: var(--mono); font-size: 14px; font-weight: 500; fill: currentColor; }
+  .ob-s { font-family: var(--sans); font-size: 13px; fill: currentColor; opacity: .7; }
+  .ob-g { font-family: var(--sans); font-size: 13px; fill: var(--gate); }
+  .ob-lab { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; fill: var(--gate); opacity: .85; }
+
+  @media (max-width: 860px) {
+    body { padding: 18px 12px 40px; }
+    .slide { aspect-ratio: auto; container-type: normal; padding: 24px 20px; }
+    .eyebrow, .folio { font-size: 10px; }
+    .chrome .bar { width: 24px; height: 2px; }
+    h1 { font-size: 28px; margin-top: 18px; max-width: none; }
+    .lede { font-size: 15px; max-width: none; margin-top: 12px; }
+    .body { margin: 20px 0; display: block; }
+    h2 { font-size: 10px; margin-bottom: 10px; }
+    .trio, .compare, .controls, .proof, .split { grid-template-columns: 1fr; gap: 18px; }
+    .trio h3 { font-size: 18px; } .trio p { font-size: 14px; }
+    .pane { padding: 14px 16px; gap: 8px; } .pane h3 { font-size: 15px; }
+    .pane li, .live li, .harden li, .control p, .ask p, .other p { font-size: 13px; padding-left: 14px; }
+    .pane li::before, .live li::before, .harden li::before { width: 7px; top: .7em; }
+    .facts { flex-wrap: wrap; gap: 16px; padding-top: 14px; }
+    .fact b { font-size: 24px; } .fact span, .facts .tag { font-size: 12px; }
+    .facts .tag { margin-left: 0; }
+    .control h4, .other h4 { font-size: 15px; }
+    .live { padding: 14px 16px; } .live h3 { font-size: 19px; }
+    .live .flow { font-size: 11px; } .live .flow i { padding: 3px 6px; }
+    .closing { font-size: 14px; margin-top: 18px; padding-top: 14px; }
+    .ask { grid-template-columns: 24px 1fr; gap: 10px; }
+    .ask .n { font-size: 14px; } .ask h3 { font-size: 16px; }
+    .harden { padding: 14px 16px; } .harden h4 { font-size: 10px; }
+    .controls { margin-top: 18px; }
+  }
+
+  @media print {
+    @page { size: 297mm 167mm; margin: 0; }
+    body { padding: 0; background: #fff; }
+    .deck { gap: 0; max-width: none; }
+    .slide { width: 297mm; height: 166.4mm; aspect-ratio: auto; box-sizing: border-box;
+             box-shadow: none; border: 0; break-after: page; }
+    .slide:last-child { break-after: auto; }
+  }
+</style>
+
+<div class="deck">
+
+  <!-- ===================== 1 · THE SHIFT ===================== -->
+  <section class="slide">
+    <header class="chrome">
+      <div class="mark"><span class="bar"></span><span class="eyebrow">Agent HUB Platform</span></div>
+      <span class="folio">The shift &nbsp; <b>01</b> / 06</span>
+    </header>
+
+    <h1>We keep buying the same platform<br>once per use case.</h1>
+    <p class="lede">Every agentic idea arrives as its own project — its own codebase, its own security review,
+      its own deployment and its own operating model. The cost and the risk are paid again from scratch each time.</p>
+
+    <div class="body">
+      <div class="compare">
+        <div class="pane now">
+          <h3>A use case as a project</h3>
+          <ul>
+            <li>New codebase and new infrastructure</li>
+            <li>A fresh security and compliance review</li>
+            <li>Its own deployment, monitoring and runbook</li>
+            <li>Quality and audit handled differently every time</li>
+          </ul>
+        </div>
+        <div class="pane next">
+          <h3>A use case on Agent HUB</h3>
+          <ul>
+            <li>The platform is already built, reviewed and running</li>
+            <li>The use case is a set of files it knows how to execute</li>
+            <li>Same isolation, same limits, same audit trail as every other</li>
+            <li>Published through the registry — no redeploy, no migration</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><b>4</b><span>workflows live</span></div>
+      <div class="fact"><b>15</b><span>agents onboarded</span></div>
+      <div class="fact"><b>1</b><span>execution path for all of them</span></div>
+      <span class="tag">Running on Kubernetes today</span>
+    </div>
+  </section>
+
+  <!-- ===================== 2 · WHAT IT IS ===================== -->
+  <section class="slide">
+    <header class="chrome">
+      <div class="mark"><span class="bar"></span><span class="eyebrow">Agent HUB Platform</span></div>
+      <span class="folio">What it is &nbsp; <b>02</b> / 06</span>
+    </header>
+
+    <h1>One control plane where agents become <span class="hl">reusable assets</span>.</h1>
+    <p class="lede">Not a chatbot and not an application. A place where agent work is registered,
+      governed, executed and evidenced the same way every time.</p>
+
+    <div class="body">
+      <div class="trio">
+        <div class="col">
+          <h3>Bring capability in as assets</h3>
+          <p>Agents, skills, prompts and workflows live in one registry as versioned files. Adding a capability
+            means publishing files the platform validates — not writing a new system.</p>
+        </div>
+        <div class="col">
+          <h3>Run it all the same way</h3>
+          <p>Every request gets its own isolated, disposable job with enforced limits, timeouts and cancellation.
+            No shared sessions, and no one request able to affect another.</p>
+        </div>
+        <div class="col">
+          <h3>Consume it two ways</h3>
+          <p>A single console runs any registered workflow. When a use case deserves its own screen —
+            approvals, scorecards, exports — it declares one and the platform surfaces it.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="facts">
+      <span class="thesis-line">The platform knows how to run work. The workflow knows the domain.
+        That separation is the whole idea.</span>
+    </div>
+  </section>
+
+  <!-- ===================== 3 · GOVERNANCE ===================== -->
+  <section class="slide">
+    <header class="chrome">
+      <div class="mark"><span class="bar"></span><span class="eyebrow">Agent HUB Platform</span></div>
+      <span class="folio">Control &nbsp; <b>03</b> / 06</span>
+    </header>
+
+    <h1>Governed by design, not by policy document.</h1>
+
+    <div class="body">
+      <figure class="flowfig">
+        <svg class="flowsvg" viewBox="0 0 1500 200" role="img"
+             aria-label="A request passes a quality gate, waits for human approval, runs through a chain of specialist agents, is validated against a contract, and produces a result with a full audit trail.">
+          <defs>
+            <marker id="fa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" opacity=".5"></path>
+            </marker>
+          </defs>
+
+          <rect class="fs-box" x="4"    y="34" width="228" height="86"></rect>
+          <text class="fs-t" x="118" y="72" text-anchor="middle">Request</text>
+          <text class="fs-s" x="118" y="95" text-anchor="middle">business input, from a</text>
+          <text class="fs-s" x="118" y="112" text-anchor="middle">person or a schedule</text>
+
+          <rect class="fs-box" x="272"  y="34" width="228" height="86"></rect>
+          <text class="fs-t" x="386" y="72" text-anchor="middle">Quality gate</text>
+          <text class="fs-s" x="386" y="95" text-anchor="middle">is the input good enough</text>
+          <text class="fs-s" x="386" y="112" text-anchor="middle">to act on at all?</text>
+
+          <rect class="fs-gate" x="540" y="34" width="228" height="86"></rect>
+          <text class="fs-t" x="654" y="72" text-anchor="middle">Human approval</text>
+          <text class="fs-s" x="654" y="95" text-anchor="middle">work pauses for sign-off</text>
+          <text class="fs-s" x="654" y="112" text-anchor="middle">before it proceeds</text>
+
+          <rect class="fs-box" x="808"  y="34" width="228" height="86"></rect>
+          <text class="fs-t" x="922" y="72" text-anchor="middle">Specialist agents</text>
+          <text class="fs-s" x="922" y="95" text-anchor="middle">each does one step, and</text>
+          <text class="fs-s" x="922" y="112" text-anchor="middle">one reviews the others</text>
+
+          <rect class="fs-out" x="1076" y="34" width="228" height="86"></rect>
+          <text class="fs-t" x="1190" y="72" text-anchor="middle">Validation</text>
+          <text class="fs-s" x="1190" y="95" text-anchor="middle">output checked against</text>
+          <text class="fs-s" x="1190" y="112" text-anchor="middle">an agreed contract</text>
+
+          <rect class="fs-out" x="1344" y="34" width="152" height="86"></rect>
+          <text class="fs-t" x="1420" y="72" text-anchor="middle">Result</text>
+          <text class="fs-s" x="1420" y="95" text-anchor="middle">+ full audit</text>
+          <text class="fs-s" x="1420" y="112" text-anchor="middle">trail</text>
+
+          <line class="fs-e" x1="232"  y1="77" x2="266"  y2="77" marker-end="url(#fa)"></line>
+          <line class="fs-e" x1="500"  y1="77" x2="534"  y2="77" marker-end="url(#fa)"></line>
+          <line class="fs-e" x1="768"  y1="77" x2="802"  y2="77" marker-end="url(#fa)"></line>
+          <line class="fs-e" x1="1036" y1="77" x2="1070" y2="77" marker-end="url(#fa)"></line>
+          <line class="fs-e" x1="1304" y1="77" x2="1338" y2="77" marker-end="url(#fa)"></line>
+
+          <polyline class="fs-loop" points="1190,120 1190,162 922,162 922,124" marker-end="url(#fa)"></polyline>
+          <text class="fs-lab" x="1056" y="180" text-anchor="middle">fails the contract → back for rework, then it stops and says so</text>
+        </svg>
+      </figure>
+
+      <div class="controls">
+        <div class="control">
+          <h4>A person stays accountable</h4>
+          <p>Where the work warrants it, nothing proceeds until a named reviewer approves — and the refusal is recorded too.</p>
+        </div>
+        <div class="control">
+          <h4>Isolated by default</h4>
+          <p>One disposable job per request. No shared agent session, so no request can see or affect another's data.</p>
+        </div>
+        <div class="control">
+          <h4>Nothing trusted blind</h4>
+          <p>The model does not get the last word: output must satisfy an agreed structure and business rules to complete.</p>
+        </div>
+        <div class="control">
+          <h4>Evidence, not assurances</h4>
+          <p>Every state change, version and input–output fingerprint is recorded, so any result can be explained months later.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 4 · PROOF AND SCALE ===================== -->
+  <section class="slide">
+    <header class="chrome">
+      <div class="mark"><span class="bar"></span><span class="eyebrow">Agent HUB Platform</span></div>
+      <span class="folio">Proof &nbsp; <b>04</b> / 06</span>
+    </header>
+
+    <h1>Proven on one use case. Built for the next twenty.</h1>
+
+    <div class="body">
+      <div class="proof">
+        <div class="live">
+          <span class="badge">Live today · the example, not the product</span>
+          <h3>Test Design &amp; Evaluation</h3>
+          <div class="flow">
+            <i>Business requirement</i><u>→</u><i>Quality score</i><u>→</u><i>Approval</i><u>→</u><i>Traceable test suite</i>
+          </div>
+          <ul>
+            <li>The requirement itself is scored before anyone spends effort generating from it</li>
+            <li>A reviewer agent critiques the draft independently of the agent that wrote it</li>
+            <li>The finished suite is scored across five quality dimensions and traced back to the requirement</li>
+            <li>Exports to Excel for the teams who live in spreadsheets</li>
+          </ul>
+        </div>
+
+        <div class="others">
+          <h2>Already onboarded beside it</h2>
+          <div class="other">
+            <h4>Document extraction</h4>
+            <p>Pulls structured content out of documents and images.</p>
+          </div>
+          <div class="other">
+            <h4>Incident postmortem</h4>
+            <p>Turns incident evidence into contributing factors and customer impact.</p>
+          </div>
+          <div class="other">
+            <h4>Workflow Builder</h4>
+            <p>Describe a new workflow in plain English; the platform designs it, critiques it, writes the agents and installs them — live, without a release.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="closing"><b>What adding the next use case costs:</b> the domain expertise to write it down, and a registry
+        publish. Not a new platform, a new security review, or a new deployment.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 5 · SCALING ===================== -->
+  <section class="slide">
+    <header class="chrome">
+      <div class="mark"><span class="bar"></span><span class="eyebrow">Agent HUB Platform</span></div>
+      <span class="folio">Scaling &nbsp; <b>05</b> / 06</span>
+    </header>
+
+    <h1>A new capability is authored, published, and live.</h1>
+
+    <div class="body">
+      <figure class="onboardfig">
+        <svg class="onboardsvg" viewBox="0 0 1500 620" role="img"
+             aria-label="Onboarding pipeline: authored files, and optionally the Workflow Builder, feed a registry validation gate that rejects bad definitions before they go live; what passes is published and immediately available in the Agent Console and the API, with a bespoke screen as an optional branch. Every path inherits the same platform guarantees.">
+          <defs>
+            <marker id="oa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" opacity=".5"></path>
+            </marker>
+            <marker id="ob" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--brand)"></path>
+            </marker>
+            <marker id="og" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--gate)"></path>
+            </marker>
+          </defs>
+
+          <!-- ---- author ---- -->
+          <text class="ob-zone" x="20" y="168">WHAT A TEAM WRITES</text>
+          <rect class="ob-card" x="20" y="182" width="182" height="40"></rect>
+          <rect class="ob-accent" x="20" y="182" width="4" height="40"></rect>
+          <text class="ob-f" x="38" y="207">agent.md</text>
+          <rect class="ob-card" x="20" y="230" width="182" height="40"></rect>
+          <rect class="ob-accent" x="20" y="230" width="4" height="40"></rect>
+          <text class="ob-f" x="38" y="255">workflow.yaml</text>
+          <rect class="ob-card" x="20" y="278" width="182" height="40"></rect>
+          <rect class="ob-accent" x="20" y="278" width="4" height="40"></rect>
+          <text class="ob-f" x="38" y="303">SKILL.md</text>
+
+          <line class="ob-thin" x1="202" y1="202" x2="226" y2="202"></line>
+          <line class="ob-thin" x1="202" y1="250" x2="226" y2="250"></line>
+          <line class="ob-thin" x1="202" y1="298" x2="226" y2="298"></line>
+          <line class="ob-thin" x1="226" y1="202" x2="226" y2="298"></line>
+          <line class="ob-spine" x1="226" y1="250" x2="334" y2="250" marker-end="url(#oa)"></line>
+
+          <rect class="ob-alt" x="20" y="364" width="182" height="56"></rect>
+          <text class="ob-t" x="36" y="388">Workflow Builder</text>
+          <text class="ob-s" x="36" y="408">describe it in English</text>
+          <polyline class="ob-thin" points="202,392 264,392 264,258" marker-end="url(#oa)"></polyline>
+          <circle class="ob-accent" cx="264" cy="250" r="3.5"></circle>
+
+          <!-- ---- validate ---- -->
+          <text class="ob-zone" x="340" y="194">VALIDATE</text>
+          <rect class="ob-gate" x="340" y="206" width="140" height="88" rx="3"></rect>
+          <text class="ob-t" x="410" y="244" text-anchor="middle">Registry</text>
+          <text class="ob-s" x="410" y="266" text-anchor="middle">checks it</text>
+
+          <line class="ob-rej" x1="410" y1="294" x2="410" y2="352" marker-end="url(#og)"></line>
+          <text class="ob-g" x="410" y="374" text-anchor="middle">rejected here — never in front of a user</text>
+          <text class="ob-g" x="410" y="394" text-anchor="middle" style="opacity:.75">unknown agent · shell or network tools</text>
+
+          <line class="ob-spine" x1="480" y1="250" x2="554" y2="250" marker-end="url(#oa)"></line>
+
+          <!-- ---- publish ---- -->
+          <rect class="ob-pill" x="558" y="223" width="204" height="54" rx="27"></rect>
+          <text class="ob-pill-t" x="660" y="257" text-anchor="middle">PUBLISHED</text>
+          <text class="ob-s" x="660" y="301" text-anchor="middle">live immediately — no redeploy, no migration</text>
+
+          <!-- ---- available ---- -->
+          <line class="ob-spine" x1="762" y1="250" x2="830" y2="250"></line>
+          <polyline class="ob-spine" points="830,250 830,90 1184,90" marker-end="url(#oa)"></polyline>
+          <line class="ob-spine" x1="830" y1="250" x2="1184" y2="250" marker-end="url(#oa)"></line>
+          <polyline class="ob-opt" points="830,250 830,430 1184,430" marker-end="url(#ob)"></polyline>
+
+          <text class="ob-zone" x="1190" y="50">AVAILABLE</text>
+          <rect class="ob-box" x="1190" y="64" width="290" height="52"></rect>
+          <text class="ob-t" x="1206" y="88">Agent Console</text>
+          <text class="ob-s" x="1206" y="108">automatic — no screen to build</text>
+
+          <rect class="ob-box" x="1190" y="224" width="290" height="52"></rect>
+          <text class="ob-t" x="1206" y="248">API, schedules, bulk</text>
+          <text class="ob-s" x="1206" y="268">automatic — the same job API</text>
+
+          <rect class="ob-key" x="1190" y="393" width="290" height="74"></rect>
+          <text class="ob-t" x="1206" y="417">Bespoke screen</text>
+          <text class="ob-s" x="1206" y="437">optional — declare it, copy the</text>
+          <text class="ob-s" x="1206" y="455">template, build on the same API</text>
+
+          <!-- ---- the constant ---- -->
+          <rect class="ob-bar" x="0" y="540" width="1500" height="58"></rect>
+          <text class="ob-lab" x="20" y="575">UNCHANGED ON EVERY PATH</text>
+          <text class="ob-s" x="270" y="575" style="opacity:.85">one isolated job per request · enforced limits and timeouts · human approval where the workflow declares it · output validated against its contract · full audit trail</text>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================== 6 · THE ASK ===================== -->
+  <section class="slide">
+    <header class="chrome">
+      <div class="mark"><span class="bar"></span><span class="eyebrow">Agent HUB Platform</span></div>
+      <span class="folio">The ask &nbsp; <b>06</b> / 06</span>
+    </header>
+
+    <h1>Make Agent HUB the <span class="hl">default place</span> agent work lands.</h1>
+
+    <div class="body">
+      <div class="split">
+        <div class="asks">
+          <div class="ask">
+            <span class="n">01</span>
+            <div>
+              <h3>Endorse it as the standard</h3>
+              <p>When a team has an agentic use case, the first question becomes “what does this look like on the HUB?”
+                rather than “what stack shall we build?”</p>
+            </div>
+          </div>
+          <div class="ask">
+            <span class="n">02</span>
+            <div>
+              <h3>Route the next use cases through it</h3>
+              <p>Name two or three candidates so the platform is proven across domains, not just in quality engineering.</p>
+            </div>
+          </div>
+          <div class="ask">
+            <span class="n">03</span>
+            <div>
+              <h3>Back the hardening before wide rollout</h3>
+              <p>The platform is production-shaped, and the remaining gaps are known, small and worth closing deliberately.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="harden">
+          <h4>What we would close first</h4>
+          <ul>
+            <li><b>Sign-in and identity.</b> There is deliberately no login today; access is controlled by network isolation. SSO is the first item before any wider audience.</li>
+            <li><b>Managed secrets.</b> Credentials sit in Kubernetes secrets; a managed vault is the next step.</li>
+            <li><b>Quality over time.</b> Every run is scored, but we do not yet track whether quality moves release over release.</li>
+            <li><b>Artifact storage.</b> Results sit on cluster storage today; object storage is the scale answer.</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="closing">The expensive part — isolation, governance, audit, execution — is built and running.
+        <b>What we are asking for is the mandate to make it the shared foundation</b>, so the next use case
+        costs a workflow file instead of a project.</p>
+    </div>
+  </section>
+
+</div>

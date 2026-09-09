@@ -13,7 +13,7 @@ import { ChevronDown } from 'lucide-react';
 import SectionHeader from './SectionHeader';
 import { AccentTag } from './Tags';
 
-const RED = '#e60000';
+const RED = '#0769A6';
 
 const FAQS = [
   {
@@ -75,6 +75,7 @@ export default function TechnicalFAQ({ index = '07' }: { index?: string }) {
               expanded={isPanelExpanded}
               onChange={handleChange(panelId)}
               elevation={0}
+              disableGutters
               sx={{
                 borderColor: isPanelExpanded ? 'primary.main' : 'divider',
                 overflow: 'hidden',

@@ -1,33 +1,39 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography, alpha, useTheme } from '@mui/material';
 
-const AMBER = '#af8626';
-const GREEN = '#469a6c';
-const RED = '#e60000';
-const TEAL = '#00759e';
-const PLUM = '#804c95';
+const BRAND = '#0769A6';
+
+/** Light / dark pairs picked to stay distinct from brand blue on both plates. */
+type Tone = readonly [light: string, dark: string];
+
+const TONE = {
+  gold: ['#A67C12', '#E8C15A'] as Tone,
+  aqua: ['#0D7F8C', '#5ED4DC'] as Tone,
+  orchid: ['#8B47B8', '#D4A8F0'] as Tone,
+  green: ['#2F8F58', '#7ED9A0'] as Tone,
+};
 
 const NODES = [
-  { id: 'registry', step: '01', kicker: 'Onboard', label: 'Registry', detail: 'agents · workflows · skills', accent: AMBER },
-  { id: 'console', step: '02A', kicker: 'Run', label: 'Agent Console', detail: 'SSE · any model', accent: TEAL },
-  { id: 'custom', step: '02B', kicker: 'Run', label: 'Custom UI', detail: 'Test Design · Workflow Builder', accent: PLUM },
-  { id: 'jobs', step: '03', kicker: 'Trace', label: 'Jobs', detail: 'artifacts · audit trail', accent: GREEN },
+  { id: 'registry', step: '01', kicker: 'Onboard', label: 'Registry', detail: 'agents · workflows · skills', tone: TONE.gold },
+  { id: 'console', step: '02A', kicker: 'Run', label: 'Agent Console', detail: 'SSE · any model', tone: TONE.aqua },
+  { id: 'custom', step: '02B', kicker: 'Run', label: 'Custom UI', detail: 'Test Design · Workflow Builder', tone: TONE.orchid },
+  { id: 'jobs', step: '03', kicker: 'Trace', label: 'Jobs', detail: 'artifacts · audit trail', tone: TONE.green },
 ];
 
 /**
  * Control-plane stage: four nodes around Agent HUB, with a live pulse.
- * Same diagram in both themes — only ink and plate invert.
+ * Accents swap luminance in dark mode so gold / aqua / orchid / green still read.
  */
 export default function HubPlatformFlow({ inverse = false }: { inverse?: boolean }) {
   const theme = useTheme();
   const isDark = inverse || theme.palette.mode === 'dark';
+  const pick = (tone: Tone) => (isDark ? tone[1] : tone[0]);
   const text = isDark ? '#f9f9f7' : '#1c1c1c';
-  const muted = isDark ? '#b8b3a2' : '#5A5D5C';
-  const line = isDark ? 'rgba(204, 202, 188, 0.28)' : 'rgba(230, 0, 0, 0.28)';
-  const cardBg = isDark ? 'rgba(249, 249, 247, 0.04)' : 'rgba(230, 0, 0, 0.05)';
-  const cardHover = isDark ? 'rgba(249, 249, 247, 0.08)' : 'rgba(230, 0, 0, 0.08)';
+  const muted = isDark ? '#cccabc' : '#5A5D5C';
+  const line = isDark ? 'rgba(204, 202, 188, 0.36)' : 'rgba(7, 105, 166, 0.22)';
+  const live = isDark ? '#E8696F' : '#DA0000';
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -42,41 +48,41 @@ export default function HubPlatformFlow({ inverse = false }: { inverse?: boolean
       >
         <Typography
           variant="overline"
-          sx={{ color: isDark ? '#b8b3a2' : '#5A5D5C', letterSpacing: '0.08em' }}
+          sx={{ color: muted, letterSpacing: '0.08em' }}
         >
           How Agent HUB Platform runs
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box
             sx={{
-              width: 7,
-              height: 7,
+              width: 8,
+              height: 8,
               borderRadius: '50%',
-              bgcolor: RED,
-              boxShadow: `0 0 0 0 ${RED}`,
+              bgcolor: live,
               animation: 'hubLive 1.8s cubic-bezier(0.38, 0.19, 0.32, 0.95) infinite',
               '@keyframes hubLive': {
-                '0%': { boxShadow: `0 0 0 0 rgba(230, 0, 0, 0.55)` },
-                '70%': { boxShadow: `0 0 0 8px rgba(230, 0, 0, 0)` },
-                '100%': { boxShadow: `0 0 0 0 rgba(230, 0, 0, 0)` },
+                '0%': { boxShadow: `0 0 0 0 ${alpha(live, 0.7)}` },
+                '70%': { boxShadow: `0 0 0 12px ${alpha(live, 0)}` },
+                '100%': { boxShadow: `0 0 0 0 ${alpha(live, 0)}` },
               },
               '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
             }}
           />
-          <Typography variant="overline" sx={{ color: isDark ? '#b8b3a2' : '#5A5D5C', lineHeight: 1 }}>
+          <Typography
+            variant="overline"
+            sx={{ color: muted, lineHeight: 1, fontSize: '0.6875rem', letterSpacing: '0.1em', fontWeight: 500 }}
+          >
             Live
           </Typography>
         </Box>
       </Box>
 
-      {/* Narrow: stacked nodes */}
       <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1.25 }}>
         {NODES.map((node) => (
-          <NodeCard key={node.id} node={node} text={text} muted={muted} cardBg={cardBg} cardHover={cardHover} />
+          <NodeCard key={node.id} node={node} accent={pick(node.tone)} text={text} muted={muted} isDark={isDark} />
         ))}
       </Box>
 
-      {/* Wide: diamond around the hub */}
       <Box
         sx={{
           display: { xs: 'none', md: 'grid' },
@@ -88,15 +94,15 @@ export default function HubPlatformFlow({ inverse = false }: { inverse?: boolean
         }}
       >
         <Box />
-        <NodeCard node={NODES[1]} text={text} muted={muted} cardBg={cardBg} cardHover={cardHover} align="center" />
+        <NodeCard node={NODES[1]} accent={pick(NODES[1].tone)} text={text} muted={muted} isDark={isDark} align="center" />
         <Box />
 
-        <NodeCard node={NODES[0]} text={text} muted={muted} cardBg={cardBg} cardHover={cardHover} />
+        <NodeCard node={NODES[0]} accent={pick(NODES[0].tone)} text={text} muted={muted} isDark={isDark} />
         <HubMark text={text} line={line} />
-        <NodeCard node={NODES[3]} text={text} muted={muted} cardBg={cardBg} cardHover={cardHover} align="right" />
+        <NodeCard node={NODES[3]} accent={pick(NODES[3].tone)} text={text} muted={muted} isDark={isDark} align="right" />
 
         <Box />
-        <NodeCard node={NODES[2]} text={text} muted={muted} cardBg={cardBg} cardHover={cardHover} align="center" />
+        <NodeCard node={NODES[2]} accent={pick(NODES[2].tone)} text={text} muted={muted} isDark={isDark} align="center" />
         <Box />
       </Box>
     </Box>
@@ -118,6 +124,7 @@ function HubMark({ text, line }: { text: string; line: string }) {
         border: '1px solid',
         borderColor: line,
         borderRadius: 2,
+        bgcolor: alpha(BRAND, 0.06),
         '&::before, &::after': {
           content: '""',
           position: 'absolute',
@@ -132,12 +139,12 @@ function HubMark({ text, line }: { text: string; line: string }) {
     >
       <Typography
         variant="overline"
-        sx={{ color: RED, letterSpacing: '0.16em', mb: 0.75, lineHeight: 1 }}
+        sx={{ color: BRAND, letterSpacing: '0.16em', mb: 0.75, lineHeight: 1 }}
       >
         Control plane
       </Typography>
       <Typography sx={{ fontWeight: 300, fontSize: { md: '0.9375rem', lg: '1.0625rem' }, letterSpacing: '-0.02em', lineHeight: 1.2, textAlign: 'center', whiteSpace: 'nowrap' }}>
-        <Box component="span" sx={{ color: RED }}>Agent HUB</Box>
+        <Box component="span" sx={{ color: BRAND }}>Agent HUB</Box>
         <Box component="span" sx={{ color: text }}> Platform</Box>
       </Typography>
     </Box>
@@ -146,17 +153,17 @@ function HubMark({ text, line }: { text: string; line: string }) {
 
 function NodeCard({
   node,
+  accent,
   text,
   muted,
-  cardBg,
-  cardHover,
+  isDark,
   align = 'left',
 }: {
   node: (typeof NODES)[number];
+  accent: string;
   text: string;
   muted: string;
-  cardBg: string;
-  cardHover: string;
+  isDark: boolean;
   align?: 'left' | 'center' | 'right';
 }) {
   return (
@@ -164,22 +171,22 @@ function NodeCard({
       sx={{
         minWidth: 0,
         p: 2,
-        bgcolor: cardBg,
+        bgcolor: alpha(accent, isDark ? 0.12 : 0.08),
         border: '1px solid',
-        borderColor: 'transparent',
-        borderTop: `2px solid ${node.accent}`,
+        borderColor: alpha(accent, isDark ? 0.45 : 0.35),
+        borderTop: `3px solid ${accent}`,
         borderRadius: 2,
         textAlign: align,
         transition: 'background-color 0.2s cubic-bezier(0.38, 0.19, 0.32, 0.95), transform 0.2s cubic-bezier(0.38, 0.19, 0.32, 0.95)',
         '&:hover': {
-          bgcolor: cardHover,
+          bgcolor: alpha(accent, isDark ? 0.18 : 0.12),
           transform: 'translateY(-2px)',
         },
       }}
     >
       <Typography
         variant="overline"
-        sx={{ color: node.accent, display: 'block', lineHeight: 1, mb: 0.75, letterSpacing: '0.08em' }}
+        sx={{ color: accent, display: 'block', lineHeight: 1, mb: 0.75, letterSpacing: '0.08em' }}
       >
         {node.step}  {node.kicker}
       </Typography>

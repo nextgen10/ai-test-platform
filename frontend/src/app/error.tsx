@@ -28,7 +28,7 @@ export default function GlobalError({
                     gap: 3,
                 }}
             >
-                <AlertTriangle size={64} color="#e60000" />
+                <AlertTriangle size={64} color="#0769A6" />
                 <Box>
                     <Typography variant="h4" fontWeight={500} gutterBottom>
                         Something went wrong!

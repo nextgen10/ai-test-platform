@@ -41,7 +41,7 @@ export default function ConsolePreview() {
               width: 6,
               height: 6,
               borderRadius: '50%',
-              bgcolor: '#e60000',
+              bgcolor: '#0769A6',
               animation: 'hubLive 1.8s cubic-bezier(0.38, 0.19, 0.32, 0.95) infinite',
               '@keyframes hubLive': {
                 '0%': { opacity: 1 },
@@ -61,7 +61,7 @@ export default function ConsolePreview() {
           <Typography
             variant="caption"
             sx={{
-              color: line.role === 'you' ? '#e60000' : '#8e8d83',
+              color: line.role === 'you' ? '#0769A6' : '#8e8d83',
               minWidth: 36,
               pt: '1px',
               fontVariantNumeric: 'tabular-nums',
@@ -87,7 +87,7 @@ export default function ConsolePreview() {
                   width: 7,
                   height: '0.9em',
                   ml: 0.5,
-                  bgcolor: '#e60000',
+                  bgcolor: '#0769A6',
                   verticalAlign: 'text-bottom',
                   animation: 'caret 1s steps(1) infinite',
                   '@keyframes caret': {

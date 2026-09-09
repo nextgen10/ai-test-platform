@@ -2,7 +2,7 @@
 
 import { Box } from '@mui/material';
 
-/** Vertical hairline between the UBS logo and the product name. */
+/** Vertical hairline between the Cognizant logo and the product name. */
 export const BrandPipe = () => (
     <Box
         component="span"

@@ -9,8 +9,8 @@ export const metadata: Metadata = {
     title: "Agent HUB Platform — Enterprise Multi-Agent Orchestration",
     description: "Agent HUB Platform — Onboard, orchestrate, and run autonomous multi-agent workflows, skills, and prompts. Includes a universal Agent Console and bespoke use-case UIs.",
     icons: {
-        icon: "/icon.svg?v=3",
-        shortcut: "/icon.svg?v=3",
+        icon: "/CTSH.svg",
+        shortcut: "/CTSH.svg",
     },
 };
 
@@ -44,10 +44,9 @@ export default async function RootLayout({
     return (
         <html lang="en" data-theme={initialMode} style={{ colorScheme: initialMode }} suppressHydrationWarning>
             <head>
-                <link rel="icon" href="/icon.svg?v=3" type="image/svg+xml" />
+                <link rel="icon" href="/CTSH.svg" type="image/svg+xml" />
                 <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
             </head>
-            {/* Font family comes from the UBS theme (Frutiger); see globals.css. */}
             <body>
                 <ThemeRegistry initialMode={initialMode}>
                     <AppShell>{children}</AppShell>

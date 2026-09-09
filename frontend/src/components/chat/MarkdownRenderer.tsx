@@ -375,7 +375,7 @@ function renderInline(text: string): React.ReactNode {
             fontFamily: 'SFMono-Regular, Consolas, monospace',
             bgcolor: (t) =>
               t.palette.mode === 'light' ? 'rgba(175,184,193,0.2)' : 'rgba(110,118,129,0.4)',
-            color: (t) => (t.palette.mode === 'light' ? '#da0000' : '#fe6f5d'),
+            color: (t) => t.palette.primary.main,
           }}
         >
           {token.slice(1, -1)}

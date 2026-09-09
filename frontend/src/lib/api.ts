@@ -402,18 +402,27 @@ export const STATUS_COLOR: Record<
     JobStatus,
     'default' | 'info' | 'success' | 'error' | 'warning' | 'secondary'
 > = {
-    QUEUED: 'default',
-    STARTING: 'info',
-    ANALYZING: 'info',
+    QUEUED: 'warning',
+    STARTING: 'warning',
+    ANALYZING: 'warning',
     AWAITING_APPROVAL: 'warning',
-    RUNNING: 'info',
-    VALIDATING: 'info',
-    EVALUATING: 'info',
+    RUNNING: 'warning',
+    VALIDATING: 'warning',
+    EVALUATING: 'warning',
     COMPLETED: 'success',
     REJECTED: 'error',
     FAILED: 'error',
     CANCELLED: 'default',
     TIMEOUT: 'error',
+};
+
+/** LinearProgress accepts a subset of Chip tones. */
+export const statusBarColor = (
+    status: JobStatus,
+): 'inherit' | 'success' | 'error' | 'warning' => {
+    const tone = STATUS_COLOR[status];
+    if (tone === 'success' || tone === 'error' || tone === 'warning') return tone;
+    return 'inherit';
 };
 
 export const RATING_COLOR: Record<Rating, 'error' | 'warning' | 'info' | 'success'> = {

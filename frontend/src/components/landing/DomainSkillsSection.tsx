@@ -19,7 +19,7 @@ import { useRouter } from 'next/navigation';
 import SectionHeader from './SectionHeader';
 import { CardHead, MetaTag } from './Tags';
 
-const RED = '#e60000';
+const RED = '#0769A6';
 const GREEN = '#469a6c';
 const AMBER = '#af8626';
 const BLUE = '#00759e';

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, useTheme, keyframes } from '@mui/material';
+import { Box, Typography, useTheme, keyframes, alpha } from '@mui/material';
 import { Bot } from 'lucide-react';
 
 const pulse = keyframes`
@@ -29,9 +29,9 @@ export const StreamingIndicator: React.FC<{ statusText?: string }> = ({
         px: 1.75,
         py: 0.75,
         borderRadius: 2,
-        bgcolor: isLight ? 'rgba(230, 0, 0, 0.05)' : 'rgba(230, 0, 0, 0.12)',
+        bgcolor: isLight ? alpha(theme.palette.warning.main, 0.08) : alpha(theme.palette.warning.main, 0.16),
         border: '1px solid',
-        borderColor: isLight ? 'rgba(230, 0, 0, 0.15)' : 'rgba(230, 0, 0, 0.25)',
+        borderColor: isLight ? alpha(theme.palette.warning.main, 0.28) : alpha(theme.palette.warning.main, 0.4),
         mt: 1,
       }}
     >
@@ -40,7 +40,7 @@ export const StreamingIndicator: React.FC<{ statusText?: string }> = ({
           display: 'flex',
           alignItems: 'center',
           gap: 0.5,
-          color: 'primary.main',
+          color: 'warning.main',
         }}
       >
         <Bot size={15} />
@@ -49,7 +49,7 @@ export const StreamingIndicator: React.FC<{ statusText?: string }> = ({
             width: 6,
             height: 6,
             borderRadius: '50%',
-            bgcolor: 'primary.main',
+            bgcolor: 'warning.main',
             animation: `${pulse} 1.2s infinite ease-in-out`,
           }}
         />
@@ -58,7 +58,7 @@ export const StreamingIndicator: React.FC<{ statusText?: string }> = ({
             width: 6,
             height: 6,
             borderRadius: '50%',
-            bgcolor: 'primary.main',
+            bgcolor: 'warning.main',
             animation: `${pulse} 1.2s infinite ease-in-out 0.2s`,
           }}
         />
@@ -67,7 +67,7 @@ export const StreamingIndicator: React.FC<{ statusText?: string }> = ({
             width: 6,
             height: 6,
             borderRadius: '50%',
-            bgcolor: 'primary.main',
+            bgcolor: 'warning.main',
             animation: `${pulse} 1.2s infinite ease-in-out 0.4s`,
           }}
         />

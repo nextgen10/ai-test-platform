@@ -22,7 +22,7 @@ import {
 
 const AMBER = '#af8626';
 const GREEN = '#469a6c';
-const RED = '#e60000';
+const RED = '#0769A6';
 const BLUE = '#00759e';
 
 export interface FlowNode {

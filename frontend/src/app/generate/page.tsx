@@ -20,7 +20,7 @@ import {
 import { api, type ModelOption } from '@/lib/api';
 import { getSavedSettings, getSessionGithubToken } from '@/lib/settings';
 
-const RED = '#e60000';
+const RED = '#0769A6';
 const GREEN = '#469a6c';
 /** Banner colour for an OCR result the backend could not really extract. */
 const AMBER = '#af8626';
@@ -666,15 +666,15 @@ export default function GeneratePage() {
                         {extractingOcr && (
                             <Chip
                                 size="small"
-                                icon={<CircularProgress size={12} sx={{ color: RED }} />}
+                                icon={<CircularProgress size={12} sx={{ color: AMBER }} />}
                                 label="Running document-ocr skill..."
                                 sx={{
                                     height: 28,
                                     fontSize: '0.72rem',
                                     fontWeight: 500,
-                                    bgcolor: alpha(RED, 0.08),
-                                    color: RED,
-                                    border: `1px solid ${alpha(RED, 0.2)}`,
+                                    bgcolor: alpha(AMBER, 0.08),
+                                    color: AMBER,
+                                    border: `1px solid ${alpha(AMBER, 0.2)}`,
                                 }}
                             />
                         )}

@@ -27,7 +27,7 @@ import { AccentTag } from './Tags';
 
 const AMBER = '#af8626';
 const GREEN = '#469a6c';
-const RED = '#e60000';
+const RED = '#0769A6';
 const BLUE = '#00759e';
 
 export interface StageInfo {
@@ -519,7 +519,7 @@ export default function PipelineExplorer({ index }: { index?: string }) {
                 borderBottom: 'none',
               }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#da0000' }} />
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#0769A6' }} />
                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#e4a911' }} />
                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#469a6c' }} />
                   <Typography variant="caption" sx={{ ml: 1, fontWeight: 500, color: '#b8b3a2', fontSize: '0.72rem', fontFamily: 'monospace' }}>

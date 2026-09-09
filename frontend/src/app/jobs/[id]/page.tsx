@@ -22,7 +22,7 @@ import EvaluationPanel from '@/components/EvaluationPanel';
 import RunCostPanel from '@/components/RunCostPanel';
 import {
     api, platformApi, ACTIVE_STATUSES, CATEGORY_LABEL, formatDuration,
-    formatTimestamp, STATUS_COLOR,
+    formatTimestamp, STATUS_COLOR, statusBarColor,
     type Job, type JobBreakdown, type TestSuite, type ValidationReport, type Workflow,
 } from '@/lib/api';
 // Shared with the stepper and the Workflow Builder, so every view of a run
@@ -62,7 +62,7 @@ function LiveJobSidePanel({
             <Paper elevation={0} sx={{ p: 2.5, borderRadius: 2, border: '1px solid', borderColor: 'divider', minWidth: 0 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Activity size={16} color={running ? theme.palette.primary.main : theme.palette.text.secondary} />
+                        <Activity size={16} color={running ? theme.palette.warning.main : theme.palette.text.secondary} />
                         <Typography variant="subtitle2" fontWeight={500} sx={{ fontSize: '0.9rem' }}>
                             Job Status & Progress
                         </Typography>
@@ -71,6 +71,7 @@ function LiveJobSidePanel({
                 </Box>
 
                 <LinearProgress
+                    color={statusBarColor(job.status)}
                     variant={running && completedCount === 0 ? 'indeterminate' : 'determinate'}
                     value={PHASES.length ? (resolved / PHASES.length) * 100 : 0}
                     sx={{ mb: 2, height: 6, borderRadius: 2 }}
@@ -99,7 +100,7 @@ function LiveJobSidePanel({
                                     <Box
                                         sx={{
                                             display: 'flex',
-                                            color: 'info.main',
+                                            color: 'warning.main',
                                             flexShrink: 0,
                                             animation: 'spin-slow 1.2s linear infinite',
                                             '@keyframes spin-slow': {
@@ -119,7 +120,7 @@ function LiveJobSidePanel({
                                         flexGrow: 1,
                                         minWidth: 0,
                                         fontWeight: state === 'running' ? 500 : 400,
-                                        color: state === 'skipped' ? 'text.disabled' : state === 'pending' ? 'text.secondary' : 'text.primary',
+                                        color: state === 'skipped' ? 'text.disabled' : state === 'pending' ? 'text.secondary' : state === 'running' ? 'warning.main' : state === 'failed' ? 'error.main' : state === 'completed' ? 'success.main' : 'text.primary',
                                         fontSize: '0.78rem',
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis',
@@ -131,7 +132,7 @@ function LiveJobSidePanel({
                                 </Typography>
                                 <Typography
                                     variant="caption"
-                                    color="text.disabled"
+                                    color={state === 'running' ? 'warning.main' : 'text.disabled'}
                                     sx={{
                                         fontSize: '0.7rem',
                                         flexShrink: 0,
