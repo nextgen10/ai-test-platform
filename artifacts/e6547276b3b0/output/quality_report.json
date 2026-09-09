@@ -1,0 +1,75 @@
+{
+  "requirement_reference": "REQ-042",
+  "summary": "A registered user can reset their password via an emailed link that expires in 30 minutes, subject to password-length, reuse, and rate-limiting rules.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "good",
+      "rationale": "The flow ('sends a reset link to the email address if it is registered') is self-contained as a capability, but it implicitly depends on an unstated email-delivery/notification subsystem and an existing user-registration store to check 'if it is registered'.",
+      "improvement": "Explicitly note the dependency on the email delivery service and user account store so the team knows what must already exist."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "average",
+      "rationale": "Several implementation details are hard-coded rather than framed as negotiable outcomes: 'expires after 30 minutes', 'at least 12 characters', and 'three failed reset attempts within an hour' read as fixed specs with no stated business rationale for these exact values.",
+      "improvement": "Reframe numeric thresholds as configurable policy values or state the business reason behind them, leaving exact numbers open for negotiation during design."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "average",
+      "rationale": "The user benefit (self-service account recovery) is implied by 'A registered user should be able to reset their password' but no explicit statement of business or user value (e.g., reducing support tickets, improving account security) is given.",
+      "improvement": "Add a one-line 'so that...' benefit statement, e.g., 'so that users can regain access without contacting support.'"
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "good",
+      "rationale": "The bullet list gives concrete scope items (link expiry, password length, reuse check, lockout count) that a team could size, though the lockout/unlock behavior after the hour window is left vague.",
+      "improvement": "Clarify what happens after the one-hour lockout window elapses (auto-unlock? manual reset?) so effort for that sub-feature can be sized."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "average",
+      "rationale": "The requirement bundles multiple distinct behaviors under one story: email-based reset delivery, link expiry, password-strength validation, password-reuse prevention, and rate-limiting/lockout — five separable concerns.",
+      "improvement": "Split into smaller stories, e.g., 'reset link generation and expiry', 'new password validation rules', and 'rate limiting failed reset attempts'."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "good",
+      "rationale": "Most statements have observable outcomes (link expires at 30 minutes, password must be >=12 chars, blocked after 3 failures/hour), but the behavior when the email is NOT registered is unstated — 'if it is registered' implies a branch with no described observable response.",
+      "improvement": "State the expected observable behavior (or explicit non-disclosure response) when the submitted email is not registered."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "good",
+      "rationale": "The five bullet points function as enumerable pass/fail conditions (expiry time, min length, reuse rejection, lockout threshold), but they lack Given/When/Then structure and omit negative-path criteria such as invalid/unregistered email or expired-link error messaging.",
+      "improvement": "Add explicit acceptance criteria for negative paths: unregistered email submission, expired link usage, and lockout expiry/reset behavior."
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "good",
+      "rationale": "Numeric thresholds are precise ('30 minutes', 'at least 12 characters', 'three failed reset attempts within an hour'), avoiding vague terms, but 'if it is registered' leaves the unregistered-email response ambiguous and could unintentionally permit user enumeration.",
+      "improvement": "Specify the exact system response for an unregistered email (e.g., identical generic confirmation message to prevent account enumeration)."
+    }
+  ],
+  "overall": {
+    "score": 2.63,
+    "rating": "average",
+    "verdict": "The requirement has clear numeric thresholds but bundles multiple concerns, lacks explicit value and negative-path acceptance criteria, and needs clarification before reliable test design."
+  },
+  "blocking_issues": [],
+  "missing_information": [
+    "Expected system response when the submitted email address is not registered (error message vs. generic confirmation to avoid user enumeration).",
+    "Behavior after an expired reset link is used (specific error message, redirect, or option to request a new link).",
+    "Whether/how the one-hour lockout window resets (auto-unlock after 60 minutes, admin unlock, or sliding window).",
+    "Exact password composition rules beyond minimum length (e.g., character variety requirements).",
+    "Whether password reuse is checked against only the immediately previous password or a password history."
+  ]
+}

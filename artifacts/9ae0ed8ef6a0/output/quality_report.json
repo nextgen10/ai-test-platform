@@ -1,0 +1,78 @@
+{
+  "requirement_reference": "REQ-089",
+  "summary": "Provide a multi-tier refund processing API that handles partial refunds, 14-day original-method routing, fraud screening for high-risk accounts, chargeback dispute denial, and immutable audit logging.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "average",
+      "rationale": "The rule 'High-risk accounts flagged with chargeback ratio > 1.5% require automated fraud screening step' depends on an unstated fraud-screening service/system whose interface and pass/fail criteria are not defined here, coupling this requirement to unspecified external functionality.",
+      "improvement": "State whether the fraud screening service already exists, define its contract (inputs/outputs), or explicitly mark it as an external dependency with an owner."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "good",
+      "rationale": "Rules like 'Refunds requested within 14 days must route to original payment method without interchange penalties' describe business policy (the what) rather than a specific implementation, leaving room for negotiation on how routing is achieved.",
+      "improvement": "Clarify the business rationale (why) behind the 14-day threshold so alternative implementations can be evaluated against the same intent."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "average",
+      "rationale": "The document lists rules ('Partial refunds are permitted up to the total original transaction amount', 'Deny refund requests on settled chargeback disputes') but never states the merchant or business benefit explicitly, e.g. reduced fraud loss, compliance, or cost savings.",
+      "improvement": "Add an explicit value statement, e.g. 'so merchants avoid chargeback losses and remain PCI/compliance-audit ready'."
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "average",
+      "rationale": "Numeric thresholds are given (14 days, 1.5% chargeback ratio) which aids sizing, but there are no API contracts, data model, or integration details for 'route to original payment method' or 'generate immutable audit logs', making effort hard to estimate precisely.",
+      "improvement": "Add API endpoint definitions, request/response schemas, and integration points (payment gateway, fraud service, audit store) to support estimation."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "bad",
+      "rationale": "The requirement bundles five distinct capabilities: partial refund limits, 14-day routing/interchange rule, fraud screening for high-risk accounts, chargeback-dispute denial, and immutable audit logging with idempotency keys — each independently testable and deliverable.",
+      "improvement": "Split into separate requirements, e.g. REQ-089a (partial refund limits), REQ-089b (routing/interchange rule), REQ-089c (fraud screening), REQ-089d (chargeback denial), REQ-089e (audit logging)."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "average",
+      "rationale": "Statements such as 'Partial refunds are permitted up to the total original transaction amount' and 'chargeback ratio > 1.5%' have observable, verifiable outcomes, but 'require automated fraud screening step' does not state what constitutes pass/fail for that screening, so its outcome cannot be verified.",
+      "improvement": "Define the observable result of the fraud screening step (e.g. approved/held/rejected) and the conditions that trigger each outcome."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "bad",
+      "rationale": "The requirement is a flat bullet list of business rules with no Given/When/Then or explicit pass/fail conditions tied to each rule; there is no dedicated acceptance criteria section at all.",
+      "improvement": "Add explicit, enumerable acceptance criteria per rule, e.g. 'Given a refund request within 14 days, when submitted, then it is routed to the original payment method and no interchange penalty is applied'."
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "average",
+      "rationale": "Thresholds like '14 days' and 'chargeback ratio > 1.5%' are precise, but terms such as 'immutable audit logs' (format/storage/retention undefined) and 'automated fraud screening step' (criteria undefined) are vague and open to interpretation.",
+      "improvement": "Define 'immutable' concretely (e.g. write-once storage, cryptographic hash chaining) and specify the exact inputs/outputs and decision thresholds for the fraud screening step."
+    }
+  ],
+  "overall": {
+    "score": 1.88,
+    "rating": "average",
+    "verdict": "The requirement has useful quantified thresholds but bundles multiple features, lacks explicit acceptance criteria, and leaves the fraud-screening step and audit-log format undefined, so it should be split and clarified before test design."
+  },
+  "blocking_issues": [
+    "No enumerable acceptance criteria are provided for any of the five bundled rules, making it impossible to derive a definitive pass/fail test oracle.",
+    "The 'automated fraud screening step' has no defined outcome states or decision logic, so tests for high-risk account handling cannot be designed reliably."
+  ],
+  "missing_information": [
+    "Exact behavior/error response when a refund request exceeds the original transaction amount (full or partial denial, error code/message).",
+    "Definition of 'settled chargeback dispute' status values and the system of record that determines this state.",
+    "Fraud screening service contract: inputs, possible outcomes (approve/hold/reject), and timeout/failure handling.",
+    "Format, storage mechanism, and retention period for 'immutable audit logs', and the idempotency key generation/validation rules.",
+    "Behavior for refund requests submitted after the 14-day window (denied, routed differently, or subject to interchange penalty)."
+  ]
+}

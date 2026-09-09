@@ -1,0 +1,28 @@
+{
+  "workflow_id": "openapi-spec-review",
+  "name": "OpenAPI Specification Review",
+  "description": "Reviews an OpenAPI specification for naming, versioning, error response, and status code issues, then prioritizes the resulting changes.",
+  "agents": [
+    {
+      "id": "naming-versioning-auditor",
+      "stage": "naming-versioning-audit",
+      "description": "Checks the OpenAPI specification for consistent resource, operation, parameter, schema, and version naming conventions.",
+      "depends_on": []
+    },
+    {
+      "id": "error-response-auditor",
+      "stage": "error-response-audit",
+      "description": "Checks error response definitions, HTTP status code usage, and consistency across the OpenAPI specification.",
+      "depends_on": []
+    },
+    {
+      "id": "openapi-reviewer",
+      "stage": "review-and-prioritize",
+      "description": "Merges findings from both audits, removes duplicates, and produces a prioritized list of recommended specification changes.",
+      "depends_on": [
+        "naming-versioning-audit",
+        "error-response-audit"
+      ]
+    }
+  ]
+}

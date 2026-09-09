@@ -1,0 +1,363 @@
+{
+  "requirement_reference": "REQ-042",
+  "assumptions": [
+    "REQ-042 has an explicit ID in the source document, so it is used as requirement_reference.",
+    "Assumed the system shows a generic confirmation message for reset requests regardless of whether the email is registered, to avoid account enumeration; the requirement does not state this.",
+    "Assumed a reset link is single-use and becomes invalid immediately after a successful password change, even if the 30-minute window has not elapsed; the requirement does not state this explicitly.",
+    "Assumed the three-failed-attempt lockout counter is scoped per account and resets on a rolling one-hour basis from the first failure; the requirement does not specify the counter's scope or exact reset mechanics.",
+    "Assumed no additional password complexity rules (character classes, symbols) apply beyond the stated 12-character minimum and the previous-password-mismatch rule.",
+    "Assumed the reset request form has a single email field and the reset completion form has a single new-password field, with no explicit confirm-password field mentioned in the requirement.",
+    "Assumed 'expires after 30 minutes' means the link remains valid at exactly the 30-minute mark since issuance and only becomes invalid once strictly more than 30 minutes have elapsed; the requirement does not state whether the boundary is inclusive or exclusive.",
+    "Assumed the system rejects reset tokens that were never issued or have been tampered with, in addition to rejecting expired or already-used tokens; the requirement does not explicitly state this but it is required for the stated expiry and single-use rules to be enforceable."
+  ],
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "title": "Request password reset with a registered email address",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A user account exists with a registered, verified email address"
+      ],
+      "steps": [
+        "Navigate to the password reset request page",
+        "Enter the registered email address in the Email field",
+        "Submit the reset request form"
+      ],
+      "expected_result": "A confirmation message is displayed and a password reset link is sent to the registered email address",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-002",
+      "title": "Successfully set a new password via a valid unexpired reset link",
+      "category": "functional",
+      "priority": "critical",
+      "preconditions": [
+        "A registered user has requested a password reset and holds a valid, unexpired reset link"
+      ],
+      "steps": [
+        "Click the reset link from the email within 30 minutes of issuance",
+        "Enter a new password that is at least 12 characters long and different from the previous password",
+        "Submit the new-password form"
+      ],
+      "expected_result": "The password is updated successfully and a confirmation of the password change is displayed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-003",
+      "title": "Log in successfully using the newly set password after a completed reset",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "The user has successfully completed a password reset with a new password"
+      ],
+      "steps": [
+        "Navigate to the login page",
+        "Enter the registered email address and the newly set password",
+        "Submit the login form"
+      ],
+      "expected_result": "The user is authenticated and granted access to their account using the new password",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-004",
+      "title": "Request password reset with an unregistered email address",
+      "category": "negative",
+      "priority": "medium",
+      "preconditions": [
+        "No account exists for the email address to be entered"
+      ],
+      "steps": [
+        "Navigate to the password reset request page",
+        "Enter an email address that is not registered in the system",
+        "Submit the reset request form"
+      ],
+      "expected_result": "A generic confirmation message is displayed identical to the registered-email case, and no reset email is sent, without revealing whether the email exists",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-005",
+      "title": "Attempt to use a reset link after it has expired",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "A reset link was issued to a registered user more than 30 minutes ago and has not been used"
+      ],
+      "steps": [
+        "Wait until more than 30 minutes have elapsed since the reset link was issued",
+        "Click the expired reset link",
+        "Attempt to submit a new password on the resulting form"
+      ],
+      "expected_result": "An error message indicating the reset link has expired is displayed and the password is not changed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-006",
+      "title": "Attempt to set a new password matching the previous password",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "A registered user holds a valid, unexpired reset link and knows their previous password"
+      ],
+      "steps": [
+        "Click the valid reset link",
+        "Enter the previous password as the new password",
+        "Submit the new-password form"
+      ],
+      "expected_result": "An error message indicating the new password must differ from the previous password is displayed and the password is not changed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-007",
+      "title": "Fourth reset attempt within one hour is blocked after three failures",
+      "category": "negative",
+      "priority": "critical",
+      "preconditions": [
+        "A registered user has already made three failed password reset attempts within the past hour"
+      ],
+      "steps": [
+        "Initiate a fourth password reset attempt for the same account within the same one-hour window",
+        "Submit the reset request or reset completion form"
+      ],
+      "expected_result": "The system blocks the attempt and displays a message indicating further reset attempts are temporarily blocked",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-008",
+      "title": "Attempt to reuse an already-successfully-used reset link",
+      "category": "negative",
+      "priority": "medium",
+      "preconditions": [
+        "A registered user has already successfully used a reset link to change their password"
+      ],
+      "steps": [
+        "Click the same reset link a second time",
+        "Attempt to enter and submit a new password on the resulting form"
+      ],
+      "expected_result": "An error message indicating the reset link is invalid or already used is displayed and the password is not changed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-009",
+      "title": "Attempt to use an invalid or tampered reset token",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "A registered user account exists",
+        "No reset link with the token value to be used has ever been issued by the system, or a previously issued token has been altered"
+      ],
+      "steps": [
+        "Construct a reset URL using a token value that was never issued by the system, or modify one character of a previously issued valid token",
+        "Submit the resulting URL to open the reset completion page",
+        "Attempt to enter and submit a new password on the resulting form"
+      ],
+      "expected_result": "An error message indicating the reset link is invalid is displayed and the password is not changed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-010",
+      "title": "Use the reset link at exactly the 30-minute expiry boundary",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A reset link was issued to a registered user exactly 30 minutes ago"
+      ],
+      "steps": [
+        "Click the reset link at precisely the 30-minute mark since issuance",
+        "Enter a new password that is at least 12 characters long and different from the previous password",
+        "Submit the new-password form"
+      ],
+      "expected_result": "The reset link is still accepted as valid at exactly the 30-minute mark since issuance, and the password reset succeeds",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-011",
+      "title": "Use the reset link a few seconds before the 30-minute expiry",
+      "category": "boundary",
+      "priority": "medium",
+      "preconditions": [
+        "A reset link was issued to a registered user just under 30 minutes ago"
+      ],
+      "steps": [
+        "Click the reset link a few seconds before the 30-minute expiry mark",
+        "Enter a new password that is at least 12 characters long and different from the previous password",
+        "Submit the new-password form"
+      ],
+      "expected_result": "The password reset succeeds because the link is still within the valid 30-minute window",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-012",
+      "title": "Set a new password that is exactly 12 characters long",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A registered user holds a valid, unexpired reset link"
+      ],
+      "steps": [
+        "Click the valid reset link",
+        "Enter a new password that is exactly 12 characters long and different from the previous password",
+        "Submit the new-password form"
+      ],
+      "expected_result": "The password reset succeeds since 12 characters meets the minimum length requirement",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-013",
+      "title": "Attempt to set a new password that is 11 characters long",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A registered user holds a valid, unexpired reset link"
+      ],
+      "steps": [
+        "Click the valid reset link",
+        "Enter a new password that is exactly 11 characters long",
+        "Submit the new-password form"
+      ],
+      "expected_result": "An error message indicating the password must be at least 12 characters is displayed and the password is not changed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-014",
+      "title": "Third failed reset attempt within the hour is still allowed",
+      "category": "boundary",
+      "priority": "critical",
+      "preconditions": [
+        "A registered user has already made two failed password reset attempts within the past hour"
+      ],
+      "steps": [
+        "Initiate a third password reset attempt for the same account within the same one-hour window",
+        "Cause the attempt to fail (e.g. by submitting an invalid new password)"
+      ],
+      "expected_result": "The third attempt is processed normally without being blocked, since the lockout threshold of three failures has not yet been exceeded",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-015",
+      "title": "Failed-attempt counter resets and reset succeeds after the one-hour window elapses",
+      "category": "boundary",
+      "priority": "medium",
+      "preconditions": [
+        "A registered user was blocked after three failed reset attempts within the past hour"
+      ],
+      "steps": [
+        "Wait until more than one hour has elapsed since the first counted failed attempt",
+        "Initiate a new password reset attempt for the same account",
+        "Complete the reset with a valid new password"
+      ],
+      "expected_result": "The reset attempt is allowed and succeeds because the failed-attempt counter has reset after the rolling one-hour window elapsed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-016",
+      "title": "Submit the reset request form with an empty email field",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "The user is on the password reset request page"
+      ],
+      "steps": [
+        "Leave the Email field empty",
+        "Submit the reset request form"
+      ],
+      "expected_result": "A validation error message indicating the email field is required is displayed and no reset email is sent",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-017",
+      "title": "Submit the reset request form with a malformed email address",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "The user is on the password reset request page"
+      ],
+      "steps": [
+        "Enter an invalid-format email address such as 'user@' in the Email field",
+        "Submit the reset request form"
+      ],
+      "expected_result": "A validation error message indicating the email format is invalid is displayed and no reset email is sent",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-018",
+      "title": "Submit the new-password form with an empty password field",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "A registered user holds a valid, unexpired reset link"
+      ],
+      "steps": [
+        "Click the valid reset link",
+        "Leave the new-password field empty",
+        "Submit the new-password form"
+      ],
+      "expected_result": "A validation error message indicating the password field is required is displayed and the password is not changed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-019",
+      "title": "Submit a new password containing only whitespace characters",
+      "category": "validation",
+      "priority": "low",
+      "preconditions": [
+        "A registered user holds a valid, unexpired reset link"
+      ],
+      "steps": [
+        "Click the valid reset link",
+        "Enter a password consisting only of whitespace characters (e.g. 12 space characters) in the new-password field",
+        "Submit the new-password form"
+      ],
+      "expected_result": "A validation error message indicating the password is invalid or empty is displayed and the password is not changed",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-020",
+      "title": "Reset flow succeeds for an email address with plus-addressing and mixed case",
+      "category": "data",
+      "priority": "low",
+      "preconditions": [
+        "A registered account exists with email address 'user@example.com'"
+      ],
+      "steps": [
+        "Enter 'User+Test@Example.com' in the Email field on the reset request page",
+        "Submit the reset request form",
+        "Complete the reset using the link sent to the matching registered account"
+      ],
+      "expected_result": "The reset request is matched to the registered account and the reset link is delivered and usable, confirming case-insensitive/canonical email matching",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-021",
+      "title": "Failed-attempt lockout counter is tracked per account, not globally",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Two distinct registered user accounts exist: Account A and Account B"
+      ],
+      "steps": [
+        "Cause three failed password reset attempts within one hour for Account A",
+        "Attempt a fourth reset for Account A and confirm it is blocked",
+        "Initiate a password reset attempt for Account B within the same time window"
+      ],
+      "expected_result": "Account B's reset attempt is processed normally and is not blocked, confirming the lockout counter is isolated per account",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-022",
+      "title": "Reset link expiry is consistent across requests issued in different time zones",
+      "category": "data",
+      "priority": "low",
+      "preconditions": [
+        "Registered user accounts exist and reset requests can be issued from clients in different time zones"
+      ],
+      "steps": [
+        "Request a password reset from a client configured in one time zone and note the issuance time",
+        "Request a password reset for another account from a client configured in a different time zone",
+        "Attempt to use each reset link at 31 minutes after its respective issuance time"
+      ],
+      "expected_result": "Both reset links expire consistently 30 minutes after issuance regardless of the requesting client's time zone, indicating expiry is computed on a consistent server-side clock",
+      "requirement_reference": "REQ-042"
+    }
+  ]
+}

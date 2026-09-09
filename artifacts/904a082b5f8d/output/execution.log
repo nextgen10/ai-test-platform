@@ -1,0 +1,13 @@
+[13:11:05]   staged .github/agents from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/agents
+[13:11:05]   staged .github/skills from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/skills
+[13:11:05] ENGINE=mock — deterministic stand-in, NOT real Copilot generation
+[13:11:05] Phase 1/3  test-designer -> test_design.json
+[13:11:05]   design ready: 8 scenarios
+[13:11:05] Phase 2/3  test-generator -> draft_test_cases.json
+[13:11:05]   draft ready: 8 cases
+[13:11:05] Phase 3/3  test-reviewer -> test_cases.json (attempt 1/2)
+[13:11:05]   PASS: 8 test cases, categories=boundary,data,functional,negative,validation, duplicate_rate=0.0%
+[13:11:05] Evaluation  test-evaluator -> evaluation.json
+[13:11:05]   PASS: evaluation.json conforms to evaluation.schema.json
+[13:11:05]   evaluation: very_good — score 100% (4.00/4.0)
+[13:11:05] Stage generate completed in 257ms

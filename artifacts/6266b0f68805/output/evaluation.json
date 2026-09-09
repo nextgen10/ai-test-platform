@@ -1,0 +1,25 @@
+{
+  "requirement_reference": "REQ-042",
+  "scores": [
+    { "id": "coverage", "name": "Coverage", "score": 90, "rationale": "All five categories (functional, negative, boundary, validation, data) are represented, and every explicit rule in the requirement (registered-email trigger, 30-minute expiry, 12-char minimum, no-reuse, three-strikes lockout) has at least one direct case plus boundary variants (TC-004/005, TC-006/007, TC-011/012). Coverage is proportionate to the requirement's five bullets and the quality report's flagged ambiguities (unregistered email, single-use link, lockout release) are also exercised." },
+    { "id": "completeness", "name": "Completeness", "score": 90, "rationale": "Nearly every case has concrete preconditions (specific emails, account states, elapsed times), numbered steps with literal input values, and an expected result stating both the system response and the persistence outcome (e.g. password changed or not). A few cases (TC-011, TC-019) rely on relative timing language ('shortly after') rather than fully concrete timestamps, slightly reducing reproducibility." },
+    { "id": "traceability", "name": "Traceability", "score": 88, "rationale": "Every case carries requirement_reference REQ-042 and the assumptions list explicitly maps invented behaviors (BR-5 through BR-8) back to specific bullets in the requirement, so there are no orphan cases. A few cases (TC-013 reuse, TC-014 tampered token, TC-017/18 email normalization) test behavior the requirement never states at all (it is silent on single-use links and email matching rules), which is reasonable extrapolation but is traced to assumptions rather than requirement text." },
+    { "id": "correctness", "name": "Correctness", "score": 78, "rationale": "Expected results for the explicitly stated rules (expiry, length, reuse, lockout) correctly mirror the requirement. However, several expected results assert specific behavior the quality report flagged as unstated and unconfirmed \u2014 exact lockout duration/release condition (TC-012), single-use link semantics (TC-013), and no-enumeration messaging (TC-003, TC-016, TC-018) \u2014 so their pass/fail criteria could be wrong if the real system behaves differently, and this should lower confidence in correctness until those points are clarified in the requirement." },
+    { "id": "uniqueness", "name": "Uniqueness", "score": 75, "rationale": "Most cases are genuinely distinct scenarios, but TC-015 (active account, valid email, reset link sent) is functionally a restatement of TC-001 with no new assertion or data condition beyond the word 'active', adding no incremental coverage." }
+  ],
+  "overall": {
+    "score": 86.7,
+    "rating": "very_good",
+    "verdict": "Strong, well-structured suite that covers all stated rules and the requirement's known ambiguities via documented assumptions; tighten correctness confidence on assumption-driven cases and remove the TC-001/TC-015 duplication."
+  },
+  "gaps": [
+    { "area": "uniqueness", "detail": "TC-015 ('active account' reset request) duplicates TC-001 (valid registered email reset request) with no distinguishing assertion beyond the account being explicitly 'active', which is already the implicit default state in TC-001.", "severity": "low" },
+    { "area": "completeness", "detail": "No case specifies the exact user-facing message, HTTP status code, or UI state for a blocked reset attempt (TC-011 only says 'a message stating further attempts are temporarily blocked'), matching the ambiguity the quality report flagged as unresolved in the requirement.", "severity": "medium" },
+    { "area": "coverage", "detail": "No case tests a mismatch between the new-password field and a confirm-password field on the reset form, a common validation scenario on password-reset UIs that steps in TC-002/006/007/008 imply exists (they mention 'Confirm the new password') but never test disagreement between the two.", "severity": "low" }
+  ],
+  "recommendations": [
+    { "action": "remove_or_merge_cases", "detail": "Remove TC-015 or repurpose it to test a scenario not already covered by TC-001, such as a reset request for an account that is active but has an unverified email address, so it adds distinct coverage instead of duplicating TC-001.", "target_ids": ["TC-015", "TC-001"] },
+    { "action": "add_cases", "detail": "Add a validation case where the user enters a new password that meets the length/reuse rules but does not match the confirm-password field, expecting a 'passwords do not match' validation error and no password change.", "target_ids": [] },
+    { "action": "clarify_expected_result", "detail": "Once the requirement is updated with the exact blocked-attempt response (per the quality report's missing_information item), update TC-011 and TC-012's expected_result to state the precise message text or HTTP/error code rather than the generic phrase currently used.", "target_ids": ["TC-011", "TC-012"] }
+  ]
+}

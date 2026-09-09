@@ -1,0 +1,91 @@
+{
+  "workflow_id": "workflow-builder",
+  "status": "completed",
+  "engine": "copilot",
+  "runner": "generic",
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "stages": [
+    {
+      "agent_id": "workflow-architect",
+      "stage": "architect",
+      "status": "completed",
+      "duration_ms": 38666,
+      "detail": "\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\n\u25cf List directory .\n  \u2514 5 files found\n\n\u25cf List directory schemas\n  \u2514 4 files found\n\nNo architecture schema present; I'll follow the format given in agent instructions.\n\n\u25cf Create architecture_draft.json +31\n  \u2514 intermediate/architecture_draft.json\n\nArchitecture designed: 4 agents \u2014 event extractor \u2192 parallel contributing-factors & customer-impact analyzers \u2192 merger producing the final blameless report with action items. Written to `intermediate/architecture_draft.json`.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 184,
+        "output_tokens": 133,
+        "total_tokens": 317,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "architecture-reviewer",
+      "stage": "review-architecture",
+      "status": "completed",
+      "duration_ms": 24326,
+      "detail": "\u25cf List directory schemas\n  \u2514 4 files found\n\n\u25cf Read architecture_draft.json\n  \u2502 intermediate/architecture_draft.json\n  \u2514 31 lines read\n\n\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\nThe draft architecture matches the requirement well: event extraction \u2192 parallel contributing-factors/customer-impact analysis \u2192 merge into report with action items. Dependencies are correct and no missing/overlapping agents. Approving as-is.\n\n\u25cf Create architecture_approved.json +31\n  \u2514 intermediate/architecture_approved.json\n\nReviewed the draft against the requirement: event extraction feeds two parallel analyses (contributing factors, customer impact) that merge into a final blameless report with action items \u2014 this fully and correctly satisfies the requirement with no missing agents, overlaps, or dependency issues. Approved unchanged and written to `intermediate/architecture_approved.json`.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 192,
+        "output_tokens": 225,
+        "total_tokens": 417,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "agent-writer",
+      "stage": "write-agents",
+      "status": "completed",
+      "duration_ms": 110865,
+      "detail": "\u25cf Read architecture_approved.json\n  \u2502 intermediate/architecture_approved.json\n  \u2514 31 lines read\n\n\u25cf List directory schemas\n  \u2514 4 files found\n\n\u25cf Create workflow-code_draft.md +196\n  \u2514 intermediate/workflow-code_draft.md\n\nGenerated `intermediate/workflow-code_draft.md` with the complete workflow YAML and all four agent files (event-extractor, contributing-factors-analyzer, customer-impact-analyzer, postmortem-merger), correctly chained via artifacts (input/requirement.md \u2192 event-extractor_result.md \u2192 two parallel analyses \u2192 output/result.md), matching the approved architecture's dependency graph, kebab-case IDs, and required Trust boundary sections.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 187,
+        "output_tokens": 163,
+        "total_tokens": 351,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "agent-code-reviewer",
+      "stage": "review-code",
+      "status": "completed",
+      "duration_ms": 127382,
+      "detail": "\u25cf List directory .\n  \u2514 6 files found\n\n\u25cf List directory ./intermediate\n  \u2514 3 files found\n\n\u25cf List directory ./schemas\n  \u2514 4 files found\n\n\u25cf List directory ./output\n  \u2514 1 file found\n\n\u25cf List directory ./input\n  \u2514 1 file found\n\n\u25cf Read requirement.md\n  \u2502 ./input/requirement.md\n  \u2514 1 line read\n\n\u25cf Read workflow-code_draft.md\n  \u2502 ./intermediate/workflow-code_draft.md\n  \u2514 196 lines read\n\n\u25cf Read architecture_approved.json\n  \u2502 ./intermediate/architecture_approved.json\n  \u2514 31 lines read\n\n\u25cf Read architecture_draft.json\n  \u2502 ./intermediate/architecture_draft.json\n  \u2514 31 lines read\n\nArchitecture matches approved spec. Found one bug in the draft: `postmortem-merger.agent.md` frontmatter lists only a single `input_artifact` but the body instructs reading three upstream files. I'll fix that and polish prompts, then write the final file.\n\n\u25cf Create workflow-code.md +217\n  \u2514 output/workflow-code.md\n\nReviewed the draft against the approved architecture (agents, stages, and `depends_on` all match \u2014 no architecture changes made).\n\n**Fixes applied:**\n1. **Bug**: `postmortem-merger.agent.md` frontmatter had a single `input_artifact` but its body reads 3 upstream files \u2014 changed `input_artifact` to a YAML list of all three.\n2. **Defensive prompting**: Added explicit \"do not fabricate\" constraints, mandated fixed section headers (with required \"None identified.\" fallback instead of optional gap sections), and added examples of prompt-injection phrasing to watch for in trust boundaries.\n3. **YAML polish**: Converted long single-line descriptions to `>-` folded blocks for readability/valid formatting; no semantic changes.\n\nFinal output written to `output/workflow-code.md`.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 185,
+        "output_tokens": 417,
+        "total_tokens": 602,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    }
+  ],
+  "total_duration_ms": 301239,
+  "usage": {
+    "input_tokens": 748,
+    "output_tokens": 938,
+    "total_tokens": 1687,
+    "estimated": true
+  },
+  "agents": [
+    "agent-code-reviewer",
+    "agent-writer",
+    "architecture-reviewer",
+    "workflow-architect"
+  ]
+}

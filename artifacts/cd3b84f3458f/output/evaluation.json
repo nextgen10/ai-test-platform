@@ -1,0 +1,79 @@
+{
+  "requirement_reference": "REQ-108",
+  "scores": [
+    {
+      "id": "coverage",
+      "name": "Coverage",
+      "score": 87,
+      "rationale": "All five bundled capabilities (dual-authorization, margin validation, 250ms SLA, circuit-breaker queuing, pacs.008 messaging) have functional, boundary, and negative cases (TC-001 through TC-022), including the previously missing negative/zero trade amount case (TC-022). Given the quality report rates the requirement 'bad' on negotiable/estimable/small due to bundling undefined thresholds, this is strong coverage of what is actually specified; it does not cover circuit-breaker recovery, confirmation-delivery failure, or dual-authorization timeout because the requirement never defines those behaviors, which the suite's assumptions explicitly acknowledge as a deliberate scoping choice rather than an oversight."
+    },
+    {
+      "id": "completeness",
+      "name": "Completeness",
+      "score": 90,
+      "rationale": "Nearly every case has concrete, distinct preconditions, ordered steps referencing specific dollar amounts or currency pairs, and a verifiable expected result (e.g. TC-006/TC-007 specify exact boundary amounts of $1,000,000.00 and $1,000,000.01). A few validation cases (TC-014, TC-015, TC-016, TC-022) share near-identical preconditions and step phrasing, slightly reducing depth per case, but each still names the distinct invalid field or value being tested."
+    },
+    {
+      "id": "traceability",
+      "name": "Traceability",
+      "score": 91,
+      "rationale": "Every one of the 22 cases carries requirement_reference REQ-108 and maps directly to a specific bullet in the requirement (threshold amount, margin validation, 250ms SLA, Tier-2 circuit breaker, pacs.008 messages). No orphan cases exist. The suite's assumptions list explicitly documents where it extrapolates beyond the literal text (e.g. exclusive $1,000,000 boundary, inclusive 250ms boundary, two-distinct-approver rule), keeping those extrapolations traceable rather than hidden."
+    },
+    {
+      "id": "correctness",
+      "name": "Correctness",
+      "score": 86,
+      "rationale": "Expected results match the requirement's stated behaviors (blocking unauthorized large orders, rejecting on insufficient margin, queuing on Tier-2 volatility, emitting pacs.008 on completion). Where the requirement is silent (exclusive vs inclusive boundaries, dual-authorization mechanics), the suite states its interpretation as an explicit assumption rather than asserting it as fact, which is the correct handling of a requirement rated 'bad' for unambiguous, but those interpretations remain unverified against real business rules."
+    },
+    {
+      "id": "uniqueness",
+      "name": "Uniqueness",
+      "score": 76,
+      "rationale": "Most cases are genuinely distinct scenarios (auth granted vs blocked vs single-approver vs same-approver-twice; margin pass vs fail vs exact-match; SLA at-boundary vs over-boundary). However TC-017/TC-018/TC-019 (USD/EUR, USD/JPY, GBP/USD) and TC-014/TC-015/TC-016/TC-022 (missing amount, malformed currency, missing counterparty, zero/negative amount) are template-repeated variations differing only in the substituted data value, which lowers the effective uniqueness of the suite even though each is individually justified in the assumptions."
+    }
+  ],
+  "overall": {
+    "score": 87.15,
+    "rating": "very_good",
+    "verdict": "Strong, well-traced coverage of every capability the requirement actually specifies, with mature and explicit handling of its ambiguities and previously identified gaps; remaining work is to reduce templated redundancy and add an explicit positive-path check for counterparty risk verification."
+  },
+  "gaps": [
+    {
+      "area": "coverage",
+      "detail": "No case explicitly asserts that bilateral counterparty risk verification executes and passes for a recognized counterparty; every passing case (e.g. TC-001, TC-002) treats a passing check only as an assumed precondition, never as an observed step with its own expected result.",
+      "severity": "medium"
+    },
+    {
+      "area": "circuit-breaker",
+      "detail": "No case covers what happens to a queued order once market volatility drops back below the Tier-2 threshold (recovery from the circuit-breaker state); the suite's own assumptions acknowledge this as an open gap tied to the requirement's undefined recovery rule and deliberately did not invent behavior for it.",
+      "severity": "low"
+    },
+    {
+      "area": "messaging",
+      "detail": "No case covers failure or retry behavior when pacs.008 confirmation message delivery itself fails after a successful settlement; the suite's own assumptions acknowledge this as an open gap tied to the requirement's silence on message delivery failure.",
+      "severity": "low"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "add_cases",
+      "detail": "Add a functional test case where a recognized counterparty is submitted and the test explicitly observes/asserts that the bilateral counterparty risk verification step returns a pass result as its own checkpoint, rather than only assuming it via precondition text.",
+      "target_ids": ["TC-001", "TC-002"]
+    },
+    {
+      "action": "consolidate_cases",
+      "detail": "Consolidate TC-017, TC-018, and TC-019 (USD/EUR, USD/JPY, GBP/USD settlement) into a single data-driven test case with three parameterized currency-pair rows sharing one set of steps and expected result, unless per-pair regulatory traceability requires them to remain separate cases.",
+      "target_ids": ["TC-017", "TC-018", "TC-019"]
+    },
+    {
+      "action": "consolidate_cases",
+      "detail": "Consolidate TC-014, TC-015, TC-016, and TC-022 (missing amount, malformed currency code, missing counterparty identifier, zero/negative amount) into a single parameterized field-validation test case with one row per invalid input, since steps and expected-result phrasing are otherwise identical across all four.",
+      "target_ids": ["TC-014", "TC-015", "TC-016", "TC-022"]
+    },
+    {
+      "action": "flag_requirement_gap",
+      "detail": "Before adding circuit-breaker recovery, dual-authorization timeout, or confirmation-delivery-failure test cases, request that the requirement define: (1) the numeric Tier-2 volatility threshold and the rule for returning a queued order to normal processing, (2) the timeout/expiry window for a pending second approver, and (3) the retry/alert behavior when pacs.008 delivery fails. Do not invent these behaviors in test cases until specified.",
+      "target_ids": []
+    }
+  ]
+}

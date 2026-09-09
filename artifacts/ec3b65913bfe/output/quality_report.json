@@ -1,0 +1,78 @@
+{
+  "requirement_reference": "REQ-042",
+  "summary": "A registered user can reset their password via a registered email address, subject to a 30-minute link expiry, a 12-character minimum on the new password, a rule against reusing the previous password, and a lockout after three failed attempts within an hour.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "good",
+      "rationale": "The flow ('using a registered email address') presumes an existing user registration and email-delivery capability, but does not require any other unstated feature to be built alongside it.",
+      "improvement": "State explicitly that registration and email delivery are pre-existing dependencies so the boundary of this requirement is unmistakable."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "good",
+      "rationale": "The bullets describe business rules (30-minute expiry, 12-character minimum, no reuse, 3-attempt lockout) rather than a specific implementation (no mention of tokens, APIs, or storage), leaving room for negotiation on how these are built.",
+      "improvement": "Confirm the numeric thresholds (30 minutes, 12 characters, 3 attempts) are business decisions open to revision rather than fixed constraints, to avoid them being treated as immutable."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "average",
+      "rationale": "The requirement states a user capability ('should be able to reset their password') but never states the business or user benefit (e.g., reducing support tickets, restoring account access, improving security).",
+      "improvement": "Add an explicit benefit statement, e.g. 'so users can regain account access without contacting support'."
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "good",
+      "rationale": "The five bullets give enough concrete rules (expiry time, password length, reuse rule, lockout count/window) that effort could be roughly sized, though the lockout's recovery behavior is unspecified.",
+      "improvement": "Clarify what happens after attempts are 'blocked' (duration, unlock method) so effort estimation covers that sub-feature too."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "average",
+      "rationale": "The requirement bundles several distinct capabilities: link generation/expiry, password-strength validation, password-reuse checking, and a brute-force lockout mechanism ('After three failed reset attempts within an hour, further attempts are blocked') — the lockout logic in particular is a separable feature from the core reset flow.",
+      "improvement": "Split the brute-force lockout rule into its own requirement so each can be independently built, tested, and delivered."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "good",
+      "rationale": "Most statements have observable outcomes (link sent, link expires at 30 minutes, password length >= 12, password must differ from previous, block after 3 failures/hour), but the behavior when the email is not registered is left unstated ('sends a reset link ... if it is registered' implies an untestable non-outcome for the negative case).",
+      "improvement": "State the observable system behavior when the submitted email is not registered (e.g., generic success message shown regardless, to prevent enumeration)."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "average",
+      "rationale": "The bullet list functions as a partial set of pass/fail conditions, but lacks enumerated conditions for negative/edge cases such as an expired link being used, a non-registered email being submitted, or the exact state after being 'blocked'.",
+      "improvement": "Add explicit acceptance criteria for each negative case, e.g. 'Given an expired link, when the user submits a new password, then the system displays an error and denies the reset.'"
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "average",
+      "rationale": "The phrase 'further attempts are blocked' does not specify for how long or how the block is lifted, and 'must not match the previous password' is ambiguous about whether it means only the single most recent password or a history of prior passwords.",
+      "improvement": "Replace vague phrasing with concrete terms, e.g. 'attempts are blocked for 60 minutes' and 'must not match any of the last 5 passwords used'."
+    }
+  ],
+  "overall": {
+    "score": 2.5,
+    "rating": "average",
+    "verdict": "The numeric rules (expiry, length, attempt count) are testable, but the lockout duration/recovery, previous-password scope, and unregistered-email behavior must be clarified before reliable test cases can be designed."
+  },
+  "blocking_issues": [
+    "Behavior for an email address that is not registered is unspecified ('sends a reset link to the email address if it is registered' implies an unstated alternate path), which is security-sensitive (user enumeration) and cannot be reliably tested as written."
+  ],
+  "missing_information": [
+    "Duration and recovery mechanism for the state after 'further attempts are blocked' (e.g., blocked for 60 minutes, requires admin reset, or permanent until support intervention).",
+    "Whether 'must not match the previous password' refers to only the single last password or a history of N prior passwords.",
+    "The exact user-visible response when a non-registered email is submitted to the reset form.",
+    "The exact user-visible error/response when an expired reset link is used.",
+    "The exact user-visible error/response when a new password fails the 12-character minimum.",
+    "Whether failed reset attempts are counted per user account, per email address, or per IP address."
+  ]
+}

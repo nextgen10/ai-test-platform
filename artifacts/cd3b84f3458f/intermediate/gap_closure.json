@@ -1,0 +1,31 @@
+{
+  "gaps_addressed": [
+    {
+      "area": "validation",
+      "detail": "Field-validation cases (TC-014, TC-015, TC-016) test missing/malformed fields but no case tests a negative or zero trade amount, which is a distinct boundary condition from a missing amount field.",
+      "resolution": "Added TC-022 covering both a zero-amount and a negative-amount trade order, expecting rejection before any clearing engine checks, extending the same generic field-validation inference already documented in the assumptions for TC-014 through TC-016.",
+      "case_ids": ["TC-022"]
+    }
+  ],
+  "gaps_not_addressed": [
+    {
+      "area": "circuit-breaker",
+      "detail": "No case verifies what happens to an order already in the queued settlement state once market volatility drops back below the Tier-2 threshold (does it auto-resume settlement, require resubmission, or stay queued indefinitely).",
+      "reason": "The requirement states only that an order transitions to a queued settlement state when volatility exceeds the Tier-2 threshold; it defines no rule for what happens once volatility subsides. Writing a testable expected result would require inventing auto-resume-vs-resubmission behavior not present in the requirement, which the process does not permit."
+    },
+    {
+      "area": "messaging",
+      "detail": "No case covers failure or non-delivery of the ISO 20022 pacs.008 confirmation message to one of the two counterparties after a successful settlement, even though the requirement's missing_information explicitly flags this as unresolved.",
+      "reason": "The requirement states only that pacs.008 confirmation messages are emitted upon completion; it specifies no retry, alerting, or failure-handling behavior for non-delivery. An expected result would have to invent retry/alert semantics not present in the requirement, so no case was added."
+    },
+    {
+      "area": "dual-authorization",
+      "detail": "No case covers a dual-authorization approval that times out or expires before the second approver signs off, leaving the order in an indeterminate authorization state.",
+      "reason": "The requirement mandates dual-authorization for orders above $1,000,000 USD but defines no timeout or expiry window for the second approval. No duration is stated anywhere in the requirement, so a concrete, testable expected result cannot be derived without inventing a timeout value."
+    }
+  ],
+  "cases_added": ["TC-022"],
+  "cases_modified": [],
+  "cases_removed": [],
+  "cases_preserved": 21
+}

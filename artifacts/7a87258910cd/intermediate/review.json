@@ -1,0 +1,16 @@
+{
+  "verdict": "pass",
+  "issues": [
+    {
+      "test_case_id": "TC-022",
+      "type": "weak_expected_result",
+      "detail": "Expected result stated the system 'applies the appropriate outcome (proceed, hold, or additional check) consistent with the platform's risk rules', which is not a single observable, verifiable outcome and invents an undocumented multi-branch risk-rules behaviour not present in the requirement or design assumptions. Rewrote as a deterministic, verifiable outcome (risk check passes and settlement proceeds with confirmations) and recorded the underlying assumption explicitly.",
+      "action": "rewrote"
+    }
+  ],
+  "coverage_gaps": [
+    "Neither the requirement, the test design's scenario list, nor the draft suite includes a negative case for the bilateral counterparty risk verification step itself failing (the design's negative coverage_dimensions list omits this even though bilateral risk verification is called out as a core, explicitly required check). Added a new negative test case covering a failed risk check blocking lock-in/settlement."
+  ],
+  "duplicates_removed": [],
+  "stats": { "reviewed": 25, "modified": 1, "removed": 0, "added": 1 }
+}

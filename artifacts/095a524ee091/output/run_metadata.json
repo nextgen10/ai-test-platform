@@ -1,0 +1,28 @@
+{
+  "engine": "mock",
+  "copilot_model": "default",
+  "stage": "quality",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "requirement-analyst"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": null,
+  "input_hash": "1b55de7ddf00fb373f51791bf035b1f566d47655840ae3615d84ae8b2f58f45f",
+  "output_hash": "c362745ffaf50c243e4fc9e9a398c2b35488dc2684256631bc29a703946297f4",
+  "max_review_attempts": 3,
+  "status": "completed",
+  "duration_ms": 499,
+  "review_attempts": 0,
+  "phases": [
+    {
+      "name": "requirement-analyst",
+      "status": "completed",
+      "duration_ms": 499,
+      "artifact": "output/quality_report.json",
+      "detail": "very_good (3.75/4)"
+    }
+  ]
+}

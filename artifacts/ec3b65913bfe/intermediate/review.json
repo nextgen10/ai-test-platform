@@ -1,0 +1,16 @@
+{
+  "verdict": "pass",
+  "issues": [
+    {
+      "test_case_id": "TC-009",
+      "type": "weak_expected_result",
+      "detail": "Expected result read 'the boundary behavior is clearly and consistently defined, or...' which is a hedge and is not an observable, testable outcome.",
+      "action": "rewrote"
+    }
+  ],
+  "coverage_gaps": [
+    "The design's scenario set (SC-1..SC-21) has no case covering an invalid, tampered, or non-existent reset token, distinct from an expired link (SC-5/SC-9/SC-10) or a reused link (SC-8). Added a new negative test case (TC-009 in the final numbering) to close this gap."
+  ],
+  "duplicates_removed": [],
+  "stats": { "reviewed": 21, "modified": 1, "removed": 0, "added": 1 }
+}

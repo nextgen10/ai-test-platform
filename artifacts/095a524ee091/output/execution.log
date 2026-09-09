@@ -1,0 +1,8 @@
+[14:54:52]   staged schemas/ from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/schemas
+[14:54:52]   staged .github/agents from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/agents
+[14:54:52]   staged .github/skills from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/skills
+[14:54:52] ENGINE=mock — deterministic stand-in, NOT real Copilot generation
+[14:54:52] Phase 1/1  requirement-analyst -> quality_report.json
+[14:54:53]   PASS: quality_report.json conforms to quality-report.schema.json
+[14:54:53]   quality: very_good — score 3.75/4
+[14:54:53] Stage quality completed in 499ms

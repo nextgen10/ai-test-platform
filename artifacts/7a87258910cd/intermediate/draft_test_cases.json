@@ -1,0 +1,423 @@
+{
+  "requirement_reference": "REQ-108",
+  "assumptions": [
+    "The requirement does not define an explicit requirement ID; REQ-108 (from the document heading) is used as the requirement_reference.",
+    "\"Above $1,000,000\" is assumed to mean strictly greater than; an order of exactly $1,000,000 is assumed not to require dual-authorization.",
+    "The requirement does not state the consequence of insufficient margin balance; it is assumed the clearing engine rejects or holds the trade and blocks settlement.",
+    "The requirement does not state the consequence of missing or partial dual-authorization; it is assumed the order is blocked from routing rather than auto-approved or auto-escalated.",
+    "The requirement does not specify the numeric value of the Tier-2 volatility threshold; scenarios treat it as a configurable trigger point to be simulated rather than a fixed number.",
+    "The requirement does not state what happens when a settlement exceeds the 250ms target; it is assumed this is logged/flagged as a breach rather than silently accepted or automatically retried.",
+    "The requirement does not enumerate required order fields or supported currency pairs; validation scenarios assume standard fields (amount, currency pair, counterparty identifier) are mandatory.",
+    "No instruction-like or injected content was found in the source requirement or design; none was excluded.",
+    "SC-15 (missing required field) and SC-17 (multiple currency pairs) and SC-18 (differing counterparty risk profiles) each yield multiple distinct test cases because the design specifies concrete distinct data variations for those scenarios."
+  ],
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "title": "Standard cross-currency trade below threshold settles within SLA",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "Trading account has sufficient margin balance for the trade",
+        "Market volatility is within normal (sub Tier-2) conditions",
+        "Two valid counterparties are configured for the trade"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $500,000 USD equivalent between two valid counterparties",
+        "Observe the clearing engine validate margin balance and lock in the trade",
+        "Measure the elapsed time for settlement completion"
+      ],
+      "expected_result": "The settlement completes within 250ms, the order does not require dual-authorization, and pacs.008 confirmation messages are emitted to both counterparties.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-002",
+      "title": "High-value order above $1,000,000 settles after dual-authorization approval",
+      "category": "functional",
+      "priority": "critical",
+      "preconditions": [
+        "Trading account has sufficient margin balance for the trade",
+        "Two designated dual-authorization approvers are available",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $2,500,000 USD",
+        "Have the first designated approver approve the order",
+        "Have the second designated approver approve the order",
+        "Observe the order route to the clearing engine and complete settlement"
+      ],
+      "expected_result": "The order is held pending both approvals, then routes to the clearing engine only after both approvals are recorded, settles successfully, and pacs.008 confirmations are sent to both counterparties.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-003",
+      "title": "Bilateral counterparty risk is verified for both parties before settlement",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "Two counterparties with valid, current risk profiles are configured",
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order between Counterparty A and Counterparty B",
+        "Observe the clearing engine perform a bilateral counterparty risk check for both parties prior to lock-in"
+      ],
+      "expected_result": "The system records a completed bilateral risk verification for both Counterparty A and Counterparty B before the trade is locked in, and settlement proceeds only after both checks pass.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-004",
+      "title": "Order above $1,000,000 without dual-authorization is blocked from routing",
+      "category": "negative",
+      "priority": "critical",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "No dual-authorization approvals have been obtained for the order"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $1,500,000 USD",
+        "Do not obtain any dual-authorization approvals",
+        "Attempt to allow the order to proceed to routing"
+      ],
+      "expected_result": "The order is blocked from routing to the clearing engine, no settlement occurs, and no pacs.008 confirmation messages are emitted.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-005",
+      "title": "Trade with insufficient margin balance is prevented from lock-in",
+      "category": "negative",
+      "priority": "critical",
+      "preconditions": [
+        "Trading account margin balance is configured to be less than the required amount for the submitted trade"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $300,000 USD against an account with insufficient margin balance",
+        "Observe the clearing engine's margin validation step prior to lock-in"
+      ],
+      "expected_result": "The clearing engine rejects or holds the trade before lock-in, no settlement occurs, and no pacs.008 confirmation messages are emitted.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-006",
+      "title": "One of two dual-authorization approvers rejects a high-value order",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Two designated dual-authorization approvers are available for the order"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $1,200,000 USD",
+        "Have the first designated approver approve the order",
+        "Have the second designated approver reject the order"
+      ],
+      "expected_result": "The order is not routed to the clearing engine, remains in an unrouted/rejected state, and no settlement or pacs.008 confirmation occurs.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-007",
+      "title": "Direct settlement attempt is rejected when Tier-2 circuit breaker is already active",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "Market volatility monitor reports volatility already exceeding the Tier-2 circuit-breaker threshold",
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $400,000 USD while the Tier-2 circuit breaker is active",
+        "Attempt to force an immediate settlement completion for the order"
+      ],
+      "expected_result": "The system rejects the immediate settlement attempt and instead transitions the order to a queued settlement state; no pacs.008 confirmation is emitted until the order later settles.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-008",
+      "title": "Order of exactly $1,000,000 does not require dual-authorization",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for exactly $1,000,000.00 USD",
+        "Observe whether the system requires dual-authorization before routing"
+      ],
+      "expected_result": "The order is routed to the clearing engine and settles without requiring dual-authorization, confirming the threshold is strictly greater-than $1,000,000.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-009",
+      "title": "Order of $1,000,000.01 requires dual-authorization",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $1,000,000.01 USD",
+        "Observe whether the system requires dual-authorization before routing"
+      ],
+      "expected_result": "The order is held pending dual-authorization and is not routed to the clearing engine until both approvals are obtained.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-010",
+      "title": "Order of $999,999.99 does not require dual-authorization",
+      "category": "boundary",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order for $999,999.99 USD",
+        "Observe whether the system requires dual-authorization before routing"
+      ],
+      "expected_result": "The order routes directly to the clearing engine and settles without requiring dual-authorization.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-011",
+      "title": "Settlement completing at exactly 250ms is treated as compliant",
+      "category": "boundary",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions",
+        "Settlement timing can be simulated or measured precisely"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order under normal market conditions",
+        "Simulate or measure the settlement completing at exactly 250ms"
+      ],
+      "expected_result": "The settlement at exactly 250ms is treated as compliant with the SLA and is not flagged as a performance breach.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-012",
+      "title": "Settlement exceeding 250ms under normal conditions is flagged as a performance breach",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions",
+        "Settlement timing can be simulated or measured precisely"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order under normal market conditions",
+        "Simulate or measure the settlement taking 251ms or longer to complete"
+      ],
+      "expected_result": "The settlement is flagged/logged as a performance SLA breach, even though the trade itself still completes.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-013",
+      "title": "Volatility reaching exactly the Tier-2 threshold transitions the order to queued state",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility can be simulated at the exact Tier-2 circuit-breaker threshold value"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order while simulating market volatility rising to exactly the Tier-2 threshold",
+        "Observe the settlement state assigned to the order"
+      ],
+      "expected_result": "The order automatically transitions to a queued settlement state rather than completing immediately.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-014",
+      "title": "Order with malformed or unsupported currency pair is rejected before settlement processing",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order with currency pair field set to an unsupported value 'XYZ/QQQ'",
+        "Observe the system's validation response prior to settlement processing"
+      ],
+      "expected_result": "The order is rejected with a validation error identifying the unsupported/malformed currency pair, and no settlement processing or pacs.008 confirmation occurs.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-015",
+      "title": "Order missing the trade amount field is rejected with a validation error",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order with the trade amount field omitted",
+        "Observe the system's validation response"
+      ],
+      "expected_result": "The order submission is rejected with a validation error indicating the trade amount is required, and no settlement occurs.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-016",
+      "title": "Order missing the currency pair field is rejected with a validation error",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order with the currency pair field omitted",
+        "Observe the system's validation response"
+      ],
+      "expected_result": "The order submission is rejected with a validation error indicating the currency pair is required, and no settlement occurs.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-017",
+      "title": "Order missing the counterparty identifier field is rejected with a validation error",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order with the counterparty identifier field omitted",
+        "Observe the system's validation response"
+      ],
+      "expected_result": "The order submission is rejected with a validation error indicating the counterparty identifier is required, and no settlement occurs.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-018",
+      "title": "Completed settlement emits a schema-valid ISO 20022 pacs.008 confirmation message",
+      "category": "validation",
+      "priority": "high",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit and complete a standard cross-currency trade settlement",
+        "Capture the pacs.008 confirmation messages emitted to both counterparties",
+        "Validate the captured messages against the ISO 20022 pacs.008 schema and mandatory field list"
+      ],
+      "expected_result": "Both emitted pacs.008 messages are schema-valid and contain all ISO 20022 mandatory fields, with no missing or malformed elements.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-019",
+      "title": "Settlement behaves consistently for a USD/EUR currency pair",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order using the USD/EUR currency pair",
+        "Observe settlement completion and confirmation messaging"
+      ],
+      "expected_result": "The settlement completes within 250ms and pacs.008 confirmations are correctly emitted for the USD/EUR pair.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-020",
+      "title": "Settlement behaves consistently for a USD/JPY currency pair",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order using the USD/JPY currency pair",
+        "Observe settlement completion and confirmation messaging"
+      ],
+      "expected_result": "The settlement completes within 250ms and pacs.008 confirmations are correctly emitted for the USD/JPY pair.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-021",
+      "title": "Settlement behaves consistently for a GBP/CHF currency pair",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Trading account has sufficient margin balance",
+        "Market volatility is within normal conditions"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order using the GBP/CHF currency pair",
+        "Observe settlement completion and confirmation messaging"
+      ],
+      "expected_result": "The settlement completes within 250ms and pacs.008 confirmations are correctly emitted for the GBP/CHF pair.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-022",
+      "title": "Bilateral risk verification behaves correctly for a high-risk-rated counterparty",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "One counterparty in the trade has a high-risk rating configured",
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order involving the high-risk-rated counterparty",
+        "Observe the bilateral counterparty risk verification outcome"
+      ],
+      "expected_result": "The risk verification step correctly evaluates the high-risk-rated counterparty and applies the appropriate outcome (proceed, hold, or additional check) consistent with the platform's risk rules.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-023",
+      "title": "Bilateral risk verification behaves correctly for a low-risk-rated counterparty",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Both counterparties in the trade have a low-risk rating configured",
+        "Trading account has sufficient margin balance"
+      ],
+      "steps": [
+        "Submit a cross-currency trade order involving two low-risk-rated counterparties",
+        "Observe the bilateral counterparty risk verification outcome"
+      ],
+      "expected_result": "The risk verification step passes for both low-risk-rated counterparties and the trade proceeds to settlement without additional holds.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-024",
+      "title": "High volume of concurrent settlements each complete within SLA with correct confirmations",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Trading accounts involved have sufficient margin balance",
+        "Market volatility is within normal conditions",
+        "The system is configured to accept a high volume of concurrent orders"
+      ],
+      "steps": [
+        "Submit a large batch of concurrent cross-currency trade settlement requests under normal market conditions",
+        "Measure the settlement completion time for each request",
+        "Verify pacs.008 confirmation messages are emitted for each completed settlement"
+      ],
+      "expected_result": "Every concurrent settlement completes within 250ms and each receives a correct, correctly addressed pacs.008 confirmation message with no cross-order mixing or loss.",
+      "requirement_reference": "REQ-108"
+    },
+    {
+      "id": "TC-025",
+      "title": "Orders route to the correct settlement path as market volatility fluctuates across a sequence",
+      "category": "data",
+      "priority": "high",
+      "preconditions": [
+        "Trading accounts involved have sufficient margin balance",
+        "Market volatility can be simulated to fluctuate between normal and Tier-2 threshold states"
+      ],
+      "steps": [
+        "Submit a sequence of cross-currency trade orders while simulating market volatility alternating between normal and Tier-2-exceeding states",
+        "Observe the settlement path assigned to each order in the sequence"
+      ],
+      "expected_result": "Each order in the sequence is routed to the correct settlement path: immediate completion when volatility is normal, and queued settlement state when volatility exceeds the Tier-2 threshold at submission time.",
+      "requirement_reference": "REQ-108"
+    }
+  ]
+}

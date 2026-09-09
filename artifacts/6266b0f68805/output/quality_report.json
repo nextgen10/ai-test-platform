@@ -1,0 +1,74 @@
+{
+  "requirement_reference": "REQ-042",
+  "summary": "A registered user can reset their password via a time-limited email link, subject to password-strength and reuse rules and a lockout after repeated failed attempts.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "good",
+      "rationale": "The feature (\"reset their password using a registered email address\") is self-contained business logic, but it implicitly depends on unstated systems: an email-delivery service and an existing user registration/authentication store are assumed to already exist.",
+      "improvement": "State the dependency on the email-delivery and account services explicitly, or confirm they are already built and stable."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "good",
+      "rationale": "Most bullets describe business rules (expiry window, password length, lockout) rather than a specific implementation, e.g. \"The reset link expires after 30 minutes\" states a policy, not a mechanism.",
+      "improvement": "Confirm the specific numeric thresholds (30 minutes, 12 characters, 3 attempts/hour) are negotiable business decisions rather than fixed constraints, or mark them as final if not."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "average",
+      "rationale": "The user benefit (regaining account access) is implied by \"A registered user should be able to reset their password\" but never stated explicitly as a goal or business reason.",
+      "improvement": "Add an explicit value statement, e.g. \"...so that users who forget their password can regain account access without contacting support.\""
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "good",
+      "rationale": "The five bullet points (email trigger, expiry, length rule, reuse rule, lockout rule) give enough scope detail to size the work, though the unregistered-email path and lockout duration are unclear and would need clarification before estimating precisely.",
+      "improvement": "Clarify behavior for unregistered emails and the lockout duration/reset condition so effort can be sized with confidence."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "very_good",
+      "rationale": "The requirement covers one coherent capability — password reset via email — without bundling unrelated features like account creation or login changes."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "average",
+      "rationale": "Most statements have observable outcomes (e.g. \"The reset link expires after 30 minutes\", \"must be at least 12 characters\"), but \"sends a reset link to the email address if it is registered\" leaves the outcome for an unregistered email unspecified, and \"further attempts are blocked\" does not state what a blocked attempt looks like to the user (error message, HTTP status, silent no-op).",
+      "improvement": "Define the observable outcome for unregistered-email submissions and for a blocked reset attempt (e.g. exact message shown, response code)."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "average",
+      "rationale": "The bullet list functions as informal acceptance criteria (link expiry, password length, reuse rule, lockout), but there are no explicit Given/When/Then style pass/fail conditions, and edge cases (unregistered email, lockout release) are not enumerated.",
+      "improvement": "Rewrite the bullets as explicit Given/When/Then acceptance criteria, including edge cases such as unregistered email and lockout expiry/release."
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "average",
+      "rationale": "The phrase \"After three failed reset attempts within an hour, further attempts are blocked\" does not say how long the block lasts, what unblocks it, or what response the user sees; likewise \"if it is registered\" leaves the response for a non-registered email undefined, both of which are open to interpretation.",
+      "improvement": "Specify the block duration/release condition and the exact system response for both registered and unregistered email submissions."
+    }
+  ],
+  "overall": {
+    "score": 2.88,
+    "rating": "good",
+    "verdict": "The requirement is close to test-ready but needs the lockout duration, blocked-attempt response, and unregistered-email behavior defined before generating reliable test cases."
+  },
+  "blocking_issues": [],
+  "missing_information": [
+    "Behavior/response when the submitted email address is not registered (e.g. same generic message to avoid user enumeration, or an error)",
+    "Duration of the block after three failed reset attempts within an hour, and what event/action lifts the block",
+    "Exact user-facing message or HTTP/error response returned when a reset attempt is blocked",
+    "Whether the reset link is single-use and what happens if it is used after expiry or reused after a successful reset",
+    "Password composition rules beyond minimum length (e.g. character classes required), if any"
+  ]
+}

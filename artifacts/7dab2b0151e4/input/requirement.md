@@ -1,0 +1,1 @@
+A workflow that reviews an OpenAPI spec. One agent checks naming and versioning consistency, another checks error responses and status codes, and a reviewer merges both into a prioritised list of changes.

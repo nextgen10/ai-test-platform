@@ -1,0 +1,83 @@
+{
+  "requirement_reference": "REQ-108",
+  "summary": "Institutional brokers need real-time cross-currency trade settlement with dual-authorization for large orders, margin validation, a 250ms latency target, circuit-breaker queuing, and ISO 20022 confirmation messaging.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "average",
+      "rationale": "The requirement relies on undefined external mechanisms it does not own or define, e.g. 'bilateral counterparty risk verification' and 'dual-authorization before routing', both of which imply separate, unstated authorization and risk-scoring services.",
+      "improvement": "Either specify the dual-authorization and risk-verification mechanisms inline, or explicitly reference the separate requirement/system that defines them."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "bad",
+      "rationale": "The text locks in specific implementation details rather than describing intent: 'Settlements must complete within 250ms' and 'Emits ISO 20022 compliant confirmation messages (pacs.008)' prescribe an exact protocol and exact latency figure instead of stating the desired outcome.",
+      "improvement": "Reframe as a business goal (e.g. 'settlements must complete fast enough to meet regulatory same-day finality') and move the 250ms/pacs.008 specifics into a technical design or acceptance-criteria annex that can be renegotiated."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "average",
+      "rationale": "A benefit is implied by 'execute real-time cross-currency trade settlements with bilateral counterparty risk verification' but no explicit business value (e.g. reduced settlement risk, regulatory compliance, client retention) is stated.",
+      "improvement": "Add an explicit value statement, e.g. 'so that institutional clients can trade with reduced counterparty exposure and faster capital turnover.'"
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "bad",
+      "rationale": "Effort cannot be sized because the requirement bundles five distinct capabilities (authorization, margin validation, latency SLA, circuit-breaker handling, messaging) each with unresolved unknowns, e.g. 'Tier-2 thresholds' is referenced but never defined.",
+      "improvement": "Split into separately estimable stories and define the Tier-2 threshold values and dual-authorization workflow before estimation."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "bad",
+      "rationale": "The requirement bundles at least five separable capabilities: dual-authorization for large orders, margin balance validation, a 250ms latency SLA, circuit-breaker queuing, and ISO 20022 confirmation messaging.",
+      "improvement": "Decompose into individual requirements, e.g. one for dual-authorization, one for margin validation, one for circuit-breaker handling, and one for confirmation messaging."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "good",
+      "rationale": "Most bullets have observable, measurable outcomes ('Orders above $1,000,000 USD require dual-authorization', 'complete within 250ms', 'transition order to queued settlement state'), but 'bilateral counterparty risk verification' has no defined pass/fail check.",
+      "improvement": "Define what constitutes a passing or failing counterparty risk verification (data checked, thresholds, and rejection behavior)."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "good",
+      "rationale": "The bullet list functions as de facto acceptance criteria with concrete numbers ('$1,000,000 USD', '250ms', 'pacs.008'), but there is no explicit Given/When/Then framing and no criteria for failure paths, e.g. what happens when dual-authorization is not granted or margin is insufficient.",
+      "improvement": "Add explicit pass/fail conditions for failure scenarios: insufficient margin, denied dual-authorization, and message delivery failure."
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "bad",
+      "rationale": "Several terms are undefined or vague: 'bilateral counterparty risk verification' has no specified method, 'normal market conditions' in 'complete within 250ms under normal market conditions' is not quantified, and 'Tier-2 thresholds' is named but never defined.",
+      "improvement": "Define 'normal market conditions' and 'Tier-2 thresholds' with concrete measurable values, and specify the exact checks performed during counterparty risk verification."
+    }
+  ],
+  "overall": {
+    "score": 1.75,
+    "rating": "average",
+    "verdict": "This requirement bundles multiple undefined-threshold features into one story and is not ready for reliable test design until it is decomposed and its vague terms are quantified."
+  },
+  "blocking_issues": [
+    "The requirement bundles five distinct capabilities (dual-authorization, margin validation, latency SLA, circuit-breaker queuing, ISO 20022 messaging) into a single item, making isolated test design and pass/fail attribution unreliable.",
+    "'Tier-2 thresholds' is referenced as the trigger for circuit-breaker behavior but its numeric definition is never given, so tests cannot be constructed for this trigger.",
+    "'bilateral counterparty risk verification' has no defined method, data source, or pass/fail criteria, so tests cannot verify correct or incorrect behavior."
+  ],
+  "missing_information": [
+    "Numeric definition of 'Tier-2 thresholds' for market volatility that triggers the circuit breaker.",
+    "Definition of 'normal market conditions' used to scope the 250ms settlement latency SLA (and expected behavior/SLA when conditions are not normal but below Tier-2).",
+    "The dual-authorization workflow: who the authorizers are, how authorization is captured, and timeout/expiry behavior if authorization is not granted.",
+    "The specific checks, data sources, and rejection behavior for 'bilateral counterparty risk verification'.",
+    "Error/failure behavior when margin balance is insufficient (rejection message, retry, partial fill).",
+    "Behavior for orders already in flight when a circuit-breaker transition to queued settlement occurs.",
+    "Recovery/retry behavior when the 250ms settlement SLA is missed.",
+    "List of supported currency pairs and any per-currency settlement rules.",
+    "Full ISO 20022 pacs.008 field mapping and any additional confirmation message types required for rejections/errors."
+  ]
+}

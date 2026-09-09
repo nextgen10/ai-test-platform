@@ -1,0 +1,1 @@
+REQ-001 As a user I must be able to log in with email and password. Valid credentials grant access within 2 seconds. After 3 failed attempts the account locks for 30 minutes.

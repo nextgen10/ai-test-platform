@@ -1,0 +1,168 @@
+INFO:     Started server process [56268]
+INFO:     Waiting for application startup.
+2026-08-29 21:26:00,353 INFO     ai-test-platform.security [-/-]: Auth enabled | 1 credential(s): 1x admin
+2026-08-29 21:26:00,401 INFO     alembic.runtime.plugins [-/-]: setup plugin alembic.autogenerate.schemas
+2026-08-29 21:26:00,401 INFO     alembic.runtime.plugins [-/-]: setup plugin alembic.autogenerate.tables
+2026-08-29 21:26:00,401 INFO     alembic.runtime.plugins [-/-]: setup plugin alembic.autogenerate.types
+2026-08-29 21:26:00,401 INFO     alembic.runtime.plugins [-/-]: setup plugin alembic.autogenerate.constraints
+2026-08-29 21:26:00,401 INFO     alembic.runtime.plugins [-/-]: setup plugin alembic.autogenerate.defaults
+2026-08-29 21:26:00,401 INFO     alembic.runtime.plugins [-/-]: setup plugin alembic.autogenerate.comments
+2026-08-29 21:26:00,411 INFO     alembic.runtime.migration [-/-]: Context impl SQLiteImpl.
+2026-08-29 21:26:00,411 INFO     alembic.runtime.migration [-/-]: Will assume non-transactional DDL.
+2026-08-29 21:26:00,423 INFO     ai-test-platform.queue [-/-]: worker Mac.sunrise.box-109963d6 started | concurrency=2 lease=120s poll=2.0s
+2026-08-29 21:26:00,423 INFO     ai-test-platform.scheduler [-/-]: scheduler started | tick=20s
+2026-08-29 21:26:00,423 INFO     ai-test-platform [-/-]: Orchestrator ready | executor=local engine=mock auth=token worker=on artifacts=/Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/artifacts
+2026-08-29 21:26:00,423 WARNING  ai-test-platform [-/-]: ENGINE=mock — jobs produce deterministic stand-in output, not real Copilot generation. Set ENGINE=copilot with a Copilot-enabled token for real runs.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8100 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63409 - "GET /api/v1/health HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/settings HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/models HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/chat/sessions?limit=50&offset=0 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/catalog HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/models HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/settings HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/chat/sessions?limit=50&offset=0 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/catalog HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63617 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63617 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63667 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=1 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/v1/jobs HTTP/1.1" 201 Created
+2026-08-29 21:26:52,720 INFO     ai-test-platform.queue [-/85e3fc0a6efe]: picked up job 85e3fc0a6efe (QUEUED, attempt 1)
+INFO:     127.0.0.1:63711 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/v1/jobs/85e3fc0a6efe/approve HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+2026-08-29 21:26:56,727 INFO     ai-test-platform.queue [-/85e3fc0a6efe]: picked up job 85e3fc0a6efe (RUNNING, attempt 2)
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/result HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63711 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63667 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=5 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/agents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63711 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/353e7eedc6e1 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1/result HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/353e7eedc6e1/result HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63820 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/catalog HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/catalog HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63820 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/agents?days=30 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/agents?days=30 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63838 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63820 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/85e3fc0a6efe HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/result HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/85e3fc0a6efe/result HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63820 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63820 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63838 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/v1/jobs HTTP/1.1" 201 Created
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63912 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/artifacts HTTP/1.1" 200 OK
+2026-08-29 21:27:35,221 INFO     ai-test-platform.queue [-/c7f8b76e4460]: picked up job c7f8b76e4460 (QUEUED, attempt 1)
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/v1/jobs/c7f8b76e4460/approve HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+2026-08-29 21:27:39,489 INFO     ai-test-platform.queue [-/c7f8b76e4460]: picked up job c7f8b76e4460 (RUNNING, attempt 2)
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/c7f8b76e4460 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/c7f8b76e4460/result HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63912 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs?limit=100 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63911 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/hub/workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63911 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/models HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/v1/jobs HTTP/1.1" 201 Created
+INFO:     127.0.0.1:64010 - "GET /api/v1/me HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/workflows HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/artifacts HTTP/1.1" 200 OK
+2026-08-29 21:27:57,635 INFO     ai-test-platform.queue [-/221e6826e676]: picked up job 221e6826e676 (QUEUED, attempt 1)
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/v1/jobs/221e6826e676/approve HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/221e6826e676 HTTP/1.1" 200 OK
+2026-08-29 21:28:03,873 INFO     ai-test-platform.queue [-/221e6826e676]: picked up job 221e6826e676 (RUNNING, attempt 2)
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/logs HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/artifacts HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/insights/jobs/221e6826e676 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/v1/jobs/221e6826e676/result HTTP/1.1" 200 OK

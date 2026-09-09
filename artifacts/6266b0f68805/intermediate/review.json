@@ -1,0 +1,43 @@
+{
+  "verdict": "pass",
+  "issues": [
+    {
+      "test_case_id": "TC-003",
+      "type": "duplicate",
+      "detail": "TC-003 (exactly-12-character password differing from previous) and TC-008 (exactly-12-character password at the stated minimum) exercise the same behaviour with the same near-identical password value and no meaningful additional coverage; TC-003 adds no verification beyond what TC-008 (boundary) and TC-011 (previous-password rejection) already cover.",
+      "action": "removed"
+    },
+    {
+      "test_case_id": "TC-006",
+      "type": "weak_expected_result",
+      "detail": "Expected result offered two mutually exclusive outcomes ('either accepted as still valid or rejected as expired') without committing to a verifiable behaviour, making the case impossible to execute or pass/fail objectively.",
+      "action": "rewrote"
+    },
+    {
+      "test_case_id": "TC-017",
+      "type": "weak_expected_result",
+      "detail": "Expected result said the outcome should be 'consistent with its handling of unregistered emails' without stating the concrete observable response, which is not directly verifiable by a tester.",
+      "action": "rewrote"
+    },
+    {
+      "test_case_id": "TC-019",
+      "type": "unsupported_assumption",
+      "detail": "Expected result asserted the plus-addressing variant is 'consistently matched or rejected' without stating which, and this email-normalization behaviour is not present in the requirement or in test_design.json's assumptions list.",
+      "action": "rewrote"
+    },
+    {
+      "test_case_id": "TC-020",
+      "type": "internal_inconsistency",
+      "detail": "Preconditions stated two failed attempts had already occurred more than an hour apart, but the steps then re-performed those same two attempts from scratch, contradicting the stated starting state.",
+      "action": "rewrote"
+    }
+  ],
+  "coverage_gaps": [
+    "test_design.json's own risk notes flag that the requirement does not address rate limiting on the initial reset-request endpoint (as opposed to failed reset attempts); no test case in the draft or design covers this because the requirement is silent on it, so no case was fabricated for it, but it remains an open gap for clarification.",
+    "No case explicitly verifies that a successful password change invalidates any other outstanding (not-yet-used) reset links previously issued for the same account; the requirement and design do not state this behaviour, so no case was added, but it is worth flagging for requirement clarification."
+  ],
+  "duplicates_removed": [
+    "TC-003 duplicated TC-008 (exactly-12-character minimum password acceptance); TC-008 was kept because it carries the correct boundary category and higher priority, and TC-011 already separately covers rejection of a password identical to the previous one."
+  ],
+  "stats": { "reviewed": 20, "modified": 4, "removed": 1, "added": 0 }
+}

@@ -1,0 +1,91 @@
+{
+  "workflow_id": "workflow-builder",
+  "status": "completed",
+  "engine": "copilot",
+  "runner": "generic",
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "stages": [
+    {
+      "agent_id": "workflow-architect",
+      "stage": "architect",
+      "status": "completed",
+      "duration_ms": 20624,
+      "detail": "\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\n\u25cf Create architecture_draft.json +1\n  \u2514 intermediate/architecture_draft.json\n\nArchitecture draft written to `intermediate/architecture_draft.json`: a 2-agent pipeline \u2014 `page-fetcher` (stage: fetch) extracts clean text from the URL, then `summary-writer` (stage: summarize, depends on fetch) produces the one-page summary with key points and open questions.",
+      "attempts": 1,
+      "contract": "workflow-architecture.schema.json",
+      "usage": {
+        "input_tokens": 213,
+        "output_tokens": 105,
+        "total_tokens": 318,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "architecture-reviewer",
+      "stage": "review-architecture",
+      "status": "completed",
+      "duration_ms": 13284,
+      "detail": "\u25cf Read architecture_draft.json\n  \u2502 intermediate/architecture_draft.json\n  \u2514 1 line read\n\n\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\nDraft architecture is sound and minimal\u2014matches the requirement exactly (fetch/clean agent \u2192 summarize agent), with correct dependency wiring. No missing agents or overlaps. Writing it through as approved.\n\n\u25cf Create architecture_approved.json +1\n  \u2514 intermediate/architecture_approved.json\n\nReviewed the draft against the requirement: two agents (fetch/clean, then summarize) with correct `depends_on` wiring, valid kebab-case IDs/stages, no gaps or overlaps. Approved as-is and wrote `intermediate/architecture_approved.json`.",
+      "attempts": 1,
+      "contract": "workflow-architecture.schema.json",
+      "usage": {
+        "input_tokens": 221,
+        "output_tokens": 170,
+        "total_tokens": 391,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "agent-writer",
+      "stage": "write-agents",
+      "status": "completed",
+      "duration_ms": 33106,
+      "detail": "\u25cf Read architecture_approved.json\n  \u2502 intermediate/architecture_approved.json\n  \u2514 1 line read\n\n\u25cf List directory schemas\n  \u2514 5 files found\n\nNow I'll write the workflow YAML and both agent files.\n\n\u25cf Create workflow-code_draft.md +120\n  \u2514 intermediate/workflow-code_draft.md\n\nGenerated `intermediate/workflow-code_draft.md` with the `url-summary.workflow.yaml` and both agent definitions (`page-fetcher.agent.md`, `summary-writer.agent.md`). The two agents are chained correctly: `page-fetcher` reads `input/requirement.md` and writes to `intermediate/page-fetcher_result.md`; `summary-writer` reads that file and writes the final `output/summary.md`, which matches the workflow's `primary_artifact`. Both agents include a Trust boundary section per the rules.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 187,
+        "output_tokens": 189,
+        "total_tokens": 377,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "agent-code-reviewer",
+      "stage": "review-code",
+      "status": "completed",
+      "duration_ms": 64347,
+      "detail": "\u25cf List directory ./schemas\n  \u2514 5 files found\n\n\u25cf List directory ./input\n  \u2514 1 file found\n\n\u25cf Read workflow-code_draft.md\n  \u2502 ./intermediate/workflow-code_draft.md\n  \u2514 120 lines read\n\n\u25cf List directory ./intermediate\n  \u2514 3 files found\n\n\u25cf Read requirement.md\n  \u2502 ./input/requirement.md\n  \u2514 1 line read\n\n\u25cf Read workflow-architecture.schema.json\n  \u2502 ./schemas/workflow-architecture.schema.json\n  \u2514 81 lines read\n\n\u25cf Read architecture_approved.json\n  \u2502 ./intermediate/architecture_approved.json\n  \u2514 1 line read\n\n\u25cf Read architecture_draft.json\n  \u2502 ./intermediate/architecture_draft.json\n  \u2514 1 line read\n\nReviewing draft against approved architecture (agents/stages/depends_on match \u2713). Found one correctness bug: `page-fetcher`'s tool list omits a web-fetch capability despite its job requiring one. Polishing prompts with stronger anti-hallucination constraints and fixing that gap, then writing final output.\n\n\u25cf Create workflow-code.md +156\n  \u2514 ./output/workflow-code.md\n\nReviewed and finalized `output/workflow-code.md`. Architecture (agents, stages, `depends_on`) unchanged from the approved design. Improvements made:\n\n- **Bug fix**: `page-fetcher` was missing a `fetch` tool despite needing to retrieve URLs \u2014 added `\"fetch\"` to its tools list.\n- **Anti-hallucination guards**: explicit \"don't invent URLs/titles/content/questions\" constraints, restricted output section structures, redaction guidance for sensitive data.\n- **Robustness**: agents now always produce their output artifact (even on failure/empty input), with defined multi-URL handling and clear failure-path formatting.\n- YAML syntax verified correct (indentation, block scalars for long descriptions).",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 185,
+        "output_tokens": 416,
+        "total_tokens": 601,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    }
+  ],
+  "total_duration_ms": 131361,
+  "usage": {
+    "input_tokens": 806,
+    "output_tokens": 880,
+    "total_tokens": 1687,
+    "estimated": true
+  },
+  "agents": [
+    "agent-code-reviewer",
+    "agent-writer",
+    "architecture-reviewer",
+    "workflow-architect"
+  ]
+}

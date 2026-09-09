@@ -1,0 +1,91 @@
+{
+  "workflow_id": "workflow-builder",
+  "status": "completed",
+  "engine": "copilot",
+  "runner": "generic",
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "stages": [
+    {
+      "agent_id": "workflow-architect",
+      "stage": "architect",
+      "status": "completed",
+      "duration_ms": 18034,
+      "detail": "\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\n\u25cf Create architecture_draft.json +1\n  \u2514 intermediate/architecture_draft.json\n\nDesigned a 4-agent workflow: `event-extractor` extracts timeline events, then `contributing-factors-analyzer` and `customer-impact-analyzer` run in parallel (both depending on extraction), and `postmortem-merger` merges both into the final report. Written to `intermediate/architecture_draft.json`, valid per the schema.",
+      "attempts": 1,
+      "contract": "workflow-architecture.schema.json",
+      "usage": {
+        "input_tokens": 213,
+        "output_tokens": 115,
+        "total_tokens": 328,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "architecture-reviewer",
+      "stage": "review-architecture",
+      "status": "completed",
+      "duration_ms": 15395,
+      "detail": "\u25cf Read architecture_draft.json\n  \u2502 intermediate/architecture_draft.json\n  \u2514 1 line read\n\n\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\nThis draft architecture matches the requirement well: sequential extraction \u2192 parallel factors/impact analysis \u2192 merge. Structure, dependencies, and stage naming are all correct. No flaws to fix.\n\n\u25cf Create architecture_approved.json +1\n  \u2514 intermediate/architecture_approved.json\n\nReviewed the draft against the requirement: extraction \u2192 parallel factors/customer-impact analysis \u2192 merge correctly models the requested workflow, with proper stage names, dependencies, and no overlapping responsibilities. No changes were needed. Written to `intermediate/architecture_approved.json`.",
+      "attempts": 1,
+      "contract": "workflow-architecture.schema.json",
+      "usage": {
+        "input_tokens": 221,
+        "output_tokens": 183,
+        "total_tokens": 405,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "agent-writer",
+      "stage": "write-agents",
+      "status": "completed",
+      "duration_ms": 57744,
+      "detail": "\u25cf List directory .\n  \u2514 7 files found\n\n\u25cf List directory ./schemas\n  \u2514 5 files found\n\n\u25cf List directory ./input\n  \u2514 1 file found\n\n\u25cf List directory ./intermediate\n  \u2514 2 files found\n\n\u25cf Read architecture_approved.json\n  \u2502 ./intermediate/architecture_approved.json\n  \u2514 1 line read\n\n\u25cf Read requirement.md\n  \u2502 ./input/requirement.md\n  \u2514 1 line read\n\n\u25cf Create workflow-code_draft.md +242\n  \u2514 ./intermediate/workflow-code_draft.md\n\nGenerated `intermediate/workflow-code_draft.md` with the workflow YAML (`incident-postmortem`) and all four agent files (event-extractor, contributing-factors-analyzer, customer-impact-analyzer, postmortem-merger). Artifacts are chained per stage dependencies: extractor reads `input/requirement.md`; both analyzers read the extractor's output; the merger reads both analyses and writes the final `output/postmortem-report.md`, matching the workflow's `primary_artifact`. Each agent includes a strict Trust boundary section.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 187,
+        "output_tokens": 236,
+        "total_tokens": 424,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    },
+    {
+      "agent_id": "agent-code-reviewer",
+      "stage": "review-code",
+      "status": "completed",
+      "duration_ms": 77359,
+      "detail": "\u25cf List directory .\n  \u2514 7 files found\n\n\u25cf List directory ./intermediate\n  \u2514 3 files found\n\n\u25cf List directory ./schemas\n  \u2514 5 files found\n\n\u25cf List directory ./output\n  \u2514 2 files found\n\n\u25cf List directory ./input\n  \u2514 1 file found\n\n\u25cf Read requirement.md\n  \u2502 ./input/requirement.md\n  \u2514 1 line read\n\n\u25cf Read workflow-code_draft.md\n  \u2502 ./intermediate/workflow-code_draft.md\n  \u2514 242 lines read\n\n\u25cf Read architecture_approved.json\n  \u2502 ./intermediate/architecture_approved.json\n  \u2514 1 line read\n\n\u25cf Read workflow-architecture.schema.json\n  \u2502 ./schemas/workflow-architecture.schema.json\n  \u2514 81 lines read\n\n\u25cf Read architecture_draft.json\n  \u2502 ./intermediate/architecture_draft.json\n  \u2514 1 line read\n\nI'll polish the draft slightly for prompt robustness (explicit section headings for reliable downstream parsing, defensive empty-input handling) while keeping the architecture untouched, then write the final output.\n\n\u25cf Create workflow-code.md +278\n  \u2514 output/workflow-code.md\n\nReviewed the draft against the approved architecture (`intermediate/architecture_approved.json`) \u2014 the 4-agent stage graph (extraction \u2192 factors-analysis/impact-analysis \u2192 merge) and `depends_on` (stage-based, per `workflow-architecture.schema.json`) were left untouched.\n\nImprovements made in `output/workflow-code.md`:\n- Added explicit, fixed Markdown section headings (e.g. `## Chronological Event Sequence`, `## Root Cause(s)`) each agent must produce, so downstream agents can reliably parse upstream output instead of guessing structure.\n- Added defensive \"empty/unreadable input\" handling to every agent (write a clear \"no analysis possible\" note and stop, rather than fabricating content).\n- Strengthened anti-hallucination language (no fabricated timestamps, numbers, root causes, or action items) and clarified inference-vs-fact distinctions.\n- Verified YAML indentation/syntax and frontmatter validity (including the merger's list-type `input_artifact`) \u2014 all correct.\n\nNo architecture or dependency changes were made.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 185,
+        "output_tokens": 495,
+        "total_tokens": 681,
+        "estimated": true
+      },
+      "resumed": false,
+      "fatal": false
+    }
+  ],
+  "total_duration_ms": 168532,
+  "usage": {
+    "input_tokens": 806,
+    "output_tokens": 1029,
+    "total_tokens": 1838,
+    "estimated": true
+  },
+  "agents": [
+    "agent-code-reviewer",
+    "agent-writer",
+    "architecture-reviewer",
+    "workflow-architect"
+  ]
+}

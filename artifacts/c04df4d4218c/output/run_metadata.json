@@ -1,0 +1,19 @@
+{
+  "engine": "copilot",
+  "copilot_model": "gpt-4o",
+  "stage": "quality",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "requirement-analyst"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": "GitHub Copilot CLI 1.0.81.\nRun 'copilot update' to check for updates.",
+  "input_hash": "7436b9ed2a59d7f4915a419ca15d734b1ba24ba9fba2bc28aaaed701d7d0ab54",
+  "output_hash": null,
+  "max_review_attempts": 2,
+  "status": "failed",
+  "error": "Agent 'requirement-analyst' exited 1: Error: No authentication information found. /  / Copilot can be authenticated with GitHub using an OAuth Token or a Fine-Grained Personal Access Token. /  / To authenticate, you can use any of the following methods: /   \u2022 Start 'copilot' and run the '/login' command /   \u2022 Set the COPILOT_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN environment variable /   \u2022 Run 'gh auth login' to authenticate with the GitHub CLI",
+  "duration_ms": 6971
+}

@@ -1,0 +1,53 @@
+{
+  "engine": "mock",
+  "copilot_model": "claude-sonnet-4.5",
+  "copilot_model_effective": "claude-sonnet-4.5",
+  "stage": "generate",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "test-designer",
+    "test-generator",
+    "test-reviewer",
+    "test-evaluator"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": null,
+  "input_hash": "7436b9ed2a59d7f4915a419ca15d734b1ba24ba9fba2bc28aaaed701d7d0ab54",
+  "output_hash": "85c6fd20ac0c4736290949ec794b354c9dfb245805f05c08cdee0dd75ebc22e6",
+  "max_review_attempts": 3,
+  "status": "completed",
+  "duration_ms": 299,
+  "review_attempts": 1,
+  "phases": [
+    {
+      "name": "test-designer",
+      "status": "completed",
+      "duration_ms": 0,
+      "artifact": "intermediate/test_design.json",
+      "detail": "8 scenarios"
+    },
+    {
+      "name": "test-generator",
+      "status": "completed",
+      "duration_ms": 0,
+      "artifact": "intermediate/draft_test_cases.json",
+      "detail": "8 draft cases"
+    },
+    {
+      "name": "test-reviewer",
+      "status": "completed",
+      "duration_ms": 0,
+      "artifact": "output/test_cases.json",
+      "detail": "8 validated cases"
+    },
+    {
+      "name": "test-evaluator",
+      "status": "completed",
+      "duration_ms": 103,
+      "artifact": "output/evaluation.json",
+      "detail": "very_good (100%), 0 gap(s)"
+    }
+  ]
+}

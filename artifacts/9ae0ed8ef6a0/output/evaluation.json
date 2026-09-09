@@ -1,0 +1,84 @@
+{
+  "requirement_reference": "REQ-089",
+  "scores": [
+    {
+      "id": "coverage",
+      "name": "Coverage",
+      "score": 88,
+      "rationale": "All five bundled rules (partial refund cap, 14-day original-method routing, fraud screening above 1.5% chargeback ratio, settled-dispute denial, immutable audit log with idempotency key) have functional, negative, boundary, and validation cases. The suite also covers currency mismatch (TC-028), non-settled dispute contrast (TC-029), and idempotency-key conflict with different parameters (TC-030), addressing points the quality report's missing_information called out. It deliberately omits fraud-screening timeout/unavailability, matching the requirement's own silence on that scenario, which is a reasonable but real residual gap."
+    },
+    {
+      "id": "completeness",
+      "name": "Completeness",
+      "score": 89,
+      "rationale": "Nearly every case has concrete preconditions (specific amounts, dates, ratios, statuses), numbered steps, and a single verifiable expected_result. TC-016 is the notable exception: its expected result ('may incur interchange penalties or different routing... reflects the outside-window handling') is hedged rather than a deterministic pass/fail oracle."
+    },
+    {
+      "id": "traceability",
+      "name": "Traceability",
+      "score": 84,
+      "rationale": "Every case cites requirement_reference REQ-089 and the assumptions section transparently maps each inferred rule (BR-6 through BR-10, e.g. concurrency, currency-mismatch, idempotency-conflict) back to a specific requirement gap, so there are no orphan cases. Traceability could be tightened by having each case's requirement_reference cite its specific BR identifier rather than only the umbrella REQ-089."
+    },
+    {
+      "id": "correctness",
+      "name": "Correctness",
+      "score": 80,
+      "rationale": "Core rules are asserted correctly per the requirement text: TC-013/014 correctly bound the amount at exactly 100.00, TC-017 correctly applies 'strictly greater than 1.5%' at the boundary, TC-015 correctly treats day 14 as inside the window, and TC-029 correctly limits the denial rule to 'settled' disputes only. TC-016 (day 15) asserts a specific-sounding but ultimately non-committal outcome for a scenario the requirement leaves genuinely undefined, which is the main correctness weakness."
+    },
+    {
+      "id": "uniqueness",
+      "name": "Uniqueness",
+      "score": 78,
+      "rationale": "Most cases are genuinely distinct (amount/day/ratio boundaries, dispute status contrast, currency mismatch, idempotency reuse vs. conflict). TC-025 (high volume) and TC-026 (low volume) both assert only 'processed successfully, no degradation' with no differentiating measurable criterion, making them near-duplicates of the same underlying assertion rather than two independently valuable scenarios."
+    }
+  ],
+  "overall": {
+    "score": 85.7,
+    "rating": "very_good",
+    "verdict": "A thorough, well-traced suite that fills the requirement's gaps (currency mismatch, dispute status, idempotency conflict) with transparent assumptions; tighten TC-016's hedged expected result and differentiate the volume-based duplicate pair to reach excellent."
+  },
+  "gaps": [
+    {
+      "area": "correctness",
+      "detail": "TC-016 (refund on day 15) does not assert a single deterministic expected outcome; it states the refund 'may incur interchange penalties or different routing' instead of one specific, checkable result.",
+      "severity": "medium"
+    },
+    {
+      "area": "coverage",
+      "detail": "No case covers the fraud-screening service being unavailable or timing out during a high-risk-account refund, even though the suite's own assumptions note this scenario is undefined and was deliberately left untested.",
+      "severity": "low"
+    },
+    {
+      "area": "uniqueness",
+      "detail": "TC-025 (high refund volume) and TC-026 (low refund volume) both assert only 'processed successfully with no degradation' with no differentiating measurable criterion (e.g. a specific latency or correctness threshold), making them largely redundant.",
+      "severity": "low"
+    },
+    {
+      "area": "coverage",
+      "detail": "No case verifies that querying/retrieving a refund's status after processing returns a stable, consistent result for a given idempotency key, which would round out the idempotency coverage started by TC-012 and TC-030.",
+      "severity": "low"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "revise_case",
+      "detail": "Rewrite TC-016's expected_result to assert one specific, deterministic outcome for a refund submitted on day 15 (e.g. explicitly state whether it is denied, routed to a fallback method, or approved with a named interchange penalty applied), clearly marking it as an assumption-based scenario rather than describing two possible outcomes.",
+      "target_ids": ["TC-016"]
+    },
+    {
+      "action": "add_cases",
+      "detail": "Add a case where a high-risk account's refund request is submitted while the fraud-screening service is unavailable or times out, with an explicitly stated assumed outcome (e.g. the refund is held/rejected pending manual review rather than silently approved).",
+      "target_ids": []
+    },
+    {
+      "action": "merge_cases",
+      "detail": "Combine or replace TC-025 and TC-026 with a single case that defines a concrete, measurable volume threshold and a specific pass/fail criterion (e.g. a stated processing-time SLA), instead of two cases that both assert generic 'no degradation'.",
+      "target_ids": ["TC-025", "TC-026"]
+    },
+    {
+      "action": "add_cases",
+      "detail": "Add a case verifying that retrieving/querying refund status by a previously used idempotency key after the refund has completed returns the same result deterministically, extending the idempotency coverage in TC-012 and TC-030.",
+      "target_ids": ["TC-012", "TC-030"]
+    }
+  ]
+}

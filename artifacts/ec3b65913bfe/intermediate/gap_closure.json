@@ -1,0 +1,24 @@
+{
+  "gaps_addressed": [],
+  "gaps_not_addressed": [
+    {
+      "area": "traceability",
+      "detail": "No case tests whether 'must not match the previous password' applies only to the single most recent password or to a history of N prior passwords; the quality report lists this scope as unresolved, and the suite silently assumes single-password comparison without a case probing reuse of an older (not immediately previous) password.",
+      "reason": "Mock engine closes only named missing-category gaps."
+    },
+    {
+      "area": "negative",
+      "detail": "No case verifies what happens once a user is 'blocked' after three failed attempts (e.g., whether the block is time-bound, requires support intervention, or is lifted only by the rolling-hour reset tested in TC-015); the quality report explicitly calls out that the block's duration and recovery mechanism are missing information.",
+      "reason": "Mock engine closes only named missing-category gaps."
+    },
+    {
+      "area": "data",
+      "detail": "No case tests whether failed-attempt counting is scoped per user account, per email address, or per source IP; TC-021 only demonstrates per-account isolation between two accounts but does not test the alternative (per-IP) interpretation the quality report flags as unspecified.",
+      "reason": "Mock engine closes only named missing-category gaps."
+    }
+  ],
+  "cases_added": [],
+  "cases_modified": [],
+  "cases_removed": [],
+  "cases_preserved": 22
+}

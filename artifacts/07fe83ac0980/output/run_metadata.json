@@ -1,0 +1,29 @@
+{
+  "engine": "mock",
+  "copilot_model": "claude-sonnet-4.5",
+  "copilot_model_effective": "claude-sonnet-4.5",
+  "stage": "quality",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "requirement-analyst"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": null,
+  "input_hash": "5da88d4610f537e56c97337db28316a8f048ac79d5a65e4fca53b14a71d602e9",
+  "output_hash": "79c4a327392d827afaf7a2896611f073d973fa30c5e5f4d283374c8d15bf27b7",
+  "max_review_attempts": 3,
+  "status": "completed",
+  "duration_ms": 352,
+  "review_attempts": 0,
+  "phases": [
+    {
+      "name": "requirement-analyst",
+      "status": "completed",
+      "duration_ms": 352,
+      "artifact": "output/quality_report.json",
+      "detail": "very_good (3.75/4)"
+    }
+  ]
+}

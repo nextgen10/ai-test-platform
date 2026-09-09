@@ -1,0 +1,18 @@
+{
+  "verdict": "pass",
+  "issues": [
+    {
+      "test_case_id": "TC-027",
+      "type": "duplicate",
+      "detail": "TC-027 ('Refund processing correctly identifies a high-risk account and applies mandatory fraud screening') tests the same behaviour as TC-005 ('Refund on a high-risk account with chargeback ratio above 1.5% triggers automated fraud screening') — both submit a refund against an account flagged high-risk with a chargeback ratio above 1.5% and assert that fraud screening runs before processing. The only difference is the specific ratio value used (2.0% vs 3.0%), which is not a meaningful variation. TC-005 is the stronger case (critical priority, more specific expected result about screening completing before routing/settlement).",
+      "action": "removed"
+    }
+  ],
+  "coverage_gaps": [
+    "test_design.json explicitly flags in its 'risks' section that concurrency behaviour for simultaneous partial refund requests on the same transaction is unconfirmed and could affect BR-7 enforcement (cumulative refunds must not exceed the original amount), but no draft test case exercised this. Added a new case covering two concurrent partial refunds that together would exceed the original transaction amount."
+  ],
+  "duplicates_removed": [
+    "TC-027 duplicated TC-005 (both verify high-risk account chargeback ratio > 1.5% triggers automated fraud screening; only the specific ratio value differed)"
+  ],
+  "stats": { "reviewed": 27, "modified": 0, "removed": 1, "added": 1 }
+}

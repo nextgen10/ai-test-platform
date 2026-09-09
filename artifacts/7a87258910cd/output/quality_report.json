@@ -1,0 +1,82 @@
+{
+  "requirement_reference": "REQ-108",
+  "summary": "The requirement asks for a real-time cross-currency trade settlement and clearing capability that enforces dual-authorization above $1,000,000, validates margin balance, meets a 250ms settlement latency target, degrades to a queued state on Tier-2 volatility, and emits ISO 20022 pacs.008 confirmations.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "average",
+      "rationale": "The requirement leans on several unstated external systems and definitions: the 'dual-authorization' workflow, the 'margin balance' calculation engine, and the 'Tier-2 thresholds' circuit-breaker classification are all referenced but never defined here, implying dependency on other requirements or systems not included.",
+      "improvement": "Either inline the definitions (or link to the specific requirement/spec) for the authorization workflow, margin calculation, and Tier-2 threshold classification so this requirement can be built without waiting on undocumented external decisions."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "bad",
+      "rationale": "Every bullet is a locked-in implementation detail rather than an outcome: '250ms', 'ISO 20022 compliant confirmation messages (pacs.008)', 'dual-authorization', and 'Tier-2 thresholds' prescribe exact mechanisms with no stated rationale for why these specific choices were made.",
+      "improvement": "Reframe bullets around the outcome desired (e.g., 'settlements must be confirmed to counterparties quickly and in a regulator-recognized format') and move the specific numbers/protocol choices into a separate design or acceptance-criteria section that can be revisited."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "bad",
+      "rationale": "The opening line 'As an institutional broker, execute real-time cross-currency trade settlements with bilateral counterparty risk verification' states an action, not a benefit — there is no statement of why this matters (e.g., reduced settlement risk, regulatory compliance, capital efficiency).",
+      "improvement": "Add an explicit benefit clause, e.g., 'so that counterparty exposure and settlement failure risk are minimized during high-volatility trading.'"
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "average",
+      "rationale": "The five bullets outline distinct pieces of work (authorization gate, margin check, latency SLA, circuit-breaker state transition, message emission), giving a rough shape, but sizing is blocked by unknowns like the margin-sufficiency algorithm and the Tier-2 threshold definition.",
+      "improvement": "Specify the margin calculation formula/source system and the exact Tier-2 volatility threshold values so effort can be sized without additional discovery."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "bad",
+      "rationale": "The requirement bundles five separable capabilities: dual-authorization above $1,000,000, margin balance validation, a 250ms settlement SLA, circuit-breaker-triggered queuing, and ISO 20022 pacs.008 messaging — each is independently testable and shippable work, not one coherent capability.",
+      "improvement": "Split into separate requirements, e.g., 'Dual-authorization for large orders', 'Margin validation before lock-in', 'Settlement latency SLA', 'Circuit-breaker queuing behavior', and 'ISO 20022 confirmation messaging'."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "bad",
+      "rationale": "Key statements lack observable outcomes: 'under normal market conditions' is not defined, 'sufficient margin balance' has no stated threshold or formula, and 'Tier-2 thresholds' is referenced with no numeric definition, so a tester cannot construct a pass/fail scenario for these.",
+      "improvement": "Replace vague qualifiers with measurable values, e.g., define 'normal market conditions' by a volatility index range, and state the exact margin-sufficiency formula and Tier-2 threshold values."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "bad",
+      "rationale": "The document is a flat bullet list of behaviors with no Given/When/Then or explicit pass/fail conditions; for example, 'Settlements must complete within 250ms under normal market conditions' has no stated measurement window, sample size, or failure handling for the case where it is exceeded.",
+      "improvement": "Add an explicit acceptance-criteria section per bullet, e.g., 'Given an order under $1,000,000 and normal market volatility (index < X), when submitted, then settlement confirmation is emitted within 250ms in 99% of trades.'"
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "bad",
+      "rationale": "Several vague terms appear without definition: 'normal market conditions', 'sufficient margin balance', and 'Tier-2 thresholds (circuit breaker)' are all undefined qualifiers that different readers could interpret differently.",
+      "improvement": "Define each vague term numerically or by reference to an authoritative source, e.g., link 'Tier-2 thresholds' to the specific circuit-breaker policy document and its numeric bands."
+    }
+  ],
+  "overall": {
+    "score": 1.25,
+    "rating": "bad",
+    "verdict": "This requirement bundles multiple large, loosely-defined capabilities with no acceptance criteria and several undefined thresholds, so it is not ready for test design until it is split up and its vague terms are quantified."
+  },
+  "blocking_issues": [
+    "No numeric definition is given for 'Tier-2 thresholds (circuit breaker)', so the queued-settlement trigger cannot be reliably tested.",
+    "No formula or data source is stated for validating 'sufficient margin balance', making that check untestable as written.",
+    "'Normal market conditions' used to scope the 250ms settlement SLA is undefined, leaving the performance requirement without a testable boundary.",
+    "The requirement bundles five distinct features (authorization, margin validation, latency SLA, circuit-breaker queuing, ISO 20022 messaging) with no acceptance criteria for any of them."
+  ],
+  "missing_information": [
+    "Exact numeric definition of Tier-2 volatility thresholds that trigger the circuit breaker.",
+    "The margin-sufficiency formula or the system of record used to validate margin balance before lock-in.",
+    "Definition of 'normal market conditions' (e.g., volatility index range) that bounds the 250ms settlement SLA.",
+    "The dual-authorization workflow: who the authorizers are, how authorization is captured, and the timeout/rejection behavior.",
+    "Expected behavior and error messaging when margin balance is insufficient or dual-authorization is not obtained.",
+    "The measurement point and acceptable failure rate for the 250ms settlement SLA (e.g., percentile target, sample window).",
+    "Content/field requirements of the pacs.008 confirmation message beyond stating the message type."
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "engine": "copilot",
+  "copilot_model": "claude-sonnet-4.5",
+  "copilot_model_effective": "claude-sonnet-4.5",
+  "stage": "generate",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "test-designer",
+    "test-generator",
+    "test-reviewer",
+    "test-evaluator"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": "GitHub Copilot CLI 1.0.83.\nRun 'copilot update' to check for updates.",
+  "input_hash": "7436b9ed2a59d7f4915a419ca15d734b1ba24ba9fba2bc28aaaed701d7d0ab54",
+  "output_hash": "0c19145c936d65db8ebe279118e5fb606e95a1672419b872b478802ec2f31050",
+  "max_review_attempts": 3,
+  "status": "completed",
+  "duration_ms": 308192,
+  "review_attempts": 1,
+  "phases": [
+    {
+      "name": "test-designer",
+      "status": "completed",
+      "duration_ms": 57741,
+      "artifact": "intermediate/test_design.json",
+      "detail": "18 scenarios"
+    },
+    {
+      "name": "test-generator",
+      "status": "completed",
+      "duration_ms": 59926,
+      "artifact": "intermediate/draft_test_cases.json",
+      "detail": "20 draft cases"
+    },
+    {
+      "name": "test-reviewer",
+      "status": "completed",
+      "duration_ms": 142494,
+      "artifact": "output/test_cases.json",
+      "detail": "19 validated cases"
+    },
+    {
+      "name": "test-evaluator",
+      "status": "completed",
+      "duration_ms": 47461,
+      "artifact": "output/evaluation.json",
+      "detail": "very_good (84%), 3 gap(s)"
+    }
+  ],
+  "model_fallback": {
+    "used": true,
+    "requested_model": "claude-sonnet-4.5",
+    "effective_model": "account-default",
+    "reason": "Requested model not permitted on Copilot account; fell back to default model"
+  }
+}

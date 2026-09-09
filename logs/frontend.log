@@ -1,0 +1,118 @@
+
+> ai-test-platform-frontend@0.1.0 dev
+> node scripts/dev.cjs
+
+   ▲ Next.js 15.3.3
+   - Local:        http://localhost:3100
+   - Network:      http://0.0.0.0:3100
+
+ ✓ Starting...
+
+  Local    http://localhost:3100
+  Network  http://192.168.1.109:3100
+  Do not open http://0.0.0.0 — that is a bind address, not a URL.
+
+ ✓ Ready in 1901ms
+ ○ Compiling / ...
+ ✓ Compiled / in 8.4s (3476 modules)
+ GET / 200 in 9629ms
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 4.9s (3607 modules)
+ GET /chat 200 in 5517ms
+ ○ Compiling /registry ...
+ ✓ Compiled /registry in 2.3s (3652 modules)
+ GET /registry 200 in 2921ms
+ ○ Compiling /jobs ...
+ ✓ Compiled /jobs in 771ms (3665 modules)
+ GET /jobs 200 in 1044ms
+ ○ Compiling /api/v1/[...path] ...
+ ✓ Compiled /api/v1/[...path] in 514ms (3684 modules)
+ GET /api/v1/hub/catalog 200 in 1252ms
+ GET /chat 200 in 354ms
+ ✓ Compiled /_not-found in 408ms (3685 modules)
+ GET /fonts/FrutigerforUBSWeb-Lt.woff2 404 in 768ms
+ GET /fonts/FrutigerforUBSWeb-Md.woff2 404 in 776ms
+ GET /fonts/FrutigerforUBSWeb-Lt.woff 404 in 90ms
+ GET /fonts/FrutigerforUBSWeb-Md.woff 404 in 89ms
+ GET /api/v1/hub/workflows 200 in 47ms
+ GET /api/v1/hub/models 200 in 24ms
+ GET /api/v1/settings 200 in 61ms
+ GET /api/v1/chat/sessions?limit=50&offset=0 200 in 77ms
+ GET /api/v1/hub/catalog 200 in 91ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/frontend/.next/server/app-paths-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/frontend/.next/server/app-paths-manifest.json',
+  page: '/chat'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_not-found in 2.4s (3534 modules)
+ ✓ Compiled (3537 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /chat 200 in 1173ms
+ GET /_next/static/webpack/9a94378c40890034.webpack.hot-update.json 404 in 1172ms
+ GET /chat 500 in 3898ms
+ ✓ Compiled / in 317ms (2199 modules)
+ GET / 200 in 1042ms
+ GET /chat 200 in 211ms
+ ✓ Compiled /registry in 231ms (2213 modules)
+ GET /registry 200 in 456ms
+ ✓ Compiled /jobs in 242ms (2221 modules)
+ GET /jobs 200 in 509ms
+ ○ Compiling /generate ...
+ ✓ Compiled /generate in 811ms (4035 modules)
+ GET /generate 200 in 1106ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /chat 200 in 262ms
+ ○ Compiling /automation ...
+ ✓ Compiled /automation in 1530ms (4056 modules)
+ GET /_next/static/css/app/layout.css?v=1788698449762 404 in 1665ms
+ GET /automation 200 in 1915ms
+ GET /_next/static/chunks/main-app.js?v=1788698449762 404 in 1648ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 83ms
+ GET /_next/static/chunks/app/error.js 404 in 83ms
+ GET /_next/static/chunks/app/layout.js 404 in 78ms
+ ✓ Compiled /api/v1/[...path] in 385ms (2257 modules)
+ GET /_next/static/chunks/app/not-found.js 404 in 943ms
+ GET /_next/static/chunks/app/chat/page.js 404 in 943ms
+ GET /_next/static/chunks/app/loading.js 404 in 916ms
+ GET /api/v1/hub/catalog 200 in 1134ms
+ GET /chat 200 in 205ms
+ GET /chat 200 in 294ms
+ GET /_next/static/css/app/layout.css?v=1788698576521 404 in 110ms
+ GET /_next/static/chunks/main-app.js?v=1788698576521 404 in 241ms
+ GET /_next/static/chunks/app/error.js 404 in 238ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 240ms
+ GET /_next/static/chunks/app/layout.js 404 in 239ms
+ GET /_next/static/chunks/app/not-found.js 404 in 238ms
+ GET /_next/static/chunks/app/chat/page.js 404 in 238ms
+ GET /_next/static/chunks/app/loading.js 404 in 37ms
+ GET / 200 in 627ms
+ GET /_next/static/css/app/layout.css?v=1788698594966 404 in 72ms
+ GET /_next/static/chunks/main-app.js?v=1788698594966 404 in 57ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 245ms
+ GET /_next/static/chunks/app/not-found.js 404 in 245ms
+ GET /_next/static/chunks/app/layout.js 404 in 245ms
+ GET /_next/static/chunks/app/error.js 404 in 246ms
+ GET /_next/static/chunks/app/page.js 404 in 245ms
+ GET /_next/static/chunks/app/loading.js 404 in 244ms
+ GET / 200 in 518ms
+ GET /_next/static/css/app/layout.css?v=1788698605886 404 in 71ms
+ GET /_next/static/chunks/main-app.js?v=1788698605886 404 in 112ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 203ms
+ GET /_next/static/chunks/app/error.js 404 in 202ms
+ GET /_next/static/chunks/app/layout.js 404 in 249ms
+ GET /_next/static/chunks/app/not-found.js 404 in 250ms
+ GET /_next/static/chunks/app/page.js 404 in 250ms
+ GET /_next/static/chunks/app/loading.js 404 in 144ms
+ GET / 200 in 538ms
+ GET /_next/static/css/app/layout.css?v=1788698618897 404 in 57ms
+ GET /_next/static/chunks/main-app.js?v=1788698618897 404 in 116ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 268ms
+ GET /_next/static/chunks/app/error.js 404 in 253ms
+ GET /_next/static/chunks/app/not-found.js 404 in 208ms
+ GET /_next/static/chunks/app/layout.js 404 in 213ms
+ GET /_next/static/chunks/app/page.js 404 in 206ms
+ GET /_next/static/chunks/app/loading.js 404 in 44ms
+ GET /icon.svg?v=3 404 in 35ms

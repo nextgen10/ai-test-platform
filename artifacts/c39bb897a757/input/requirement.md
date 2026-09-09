@@ -1,0 +1,1 @@
+A workflow that takes a URL, has one agent fetch and clean the page text, and a second agent write a one-page summary with key points and open questions.

@@ -1,0 +1,87 @@
+{
+  "workflow_id": "workflow-builder",
+  "status": "completed",
+  "engine": "copilot",
+  "runner": "generic",
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "stages": [
+    {
+      "agent_id": "workflow-architect",
+      "stage": "architect",
+      "status": "completed",
+      "duration_ms": 29783,
+      "detail": "\u25cf List directory schemas\n  \u2514 4 files found\n\n\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\n\u25cf Edit\n  \u2514 Create intermediate/architecture_draft.json\n\n\u25cf Read architecture_draft.json\n  \u2502 intermediate/architecture_draft.json\n  \u2514 28 lines read\n\n{\"workflow_id\":\"openapi-spec-review\",\"name\":\"OpenAPI Specification Review\",\"description\":\"Reviews an OpenAPI specification for naming, versioning, error response, and status code issues, then prioritizes the resulting changes.\",\"agents\":[{\"id\":\"naming-versioning-auditor\",\"stage\":\"naming-versioning-audit\",\"description\":\"Checks the OpenAPI specification for consistent resource, operation, parameter, schema, and version naming conventions.\",\"depends_on\":[]},{\"id\":\"error-response-auditor\",\"stage\":\"error-response-audit\",\"description\":\"Checks error response definitions, HTTP status code usage, and consistency across the OpenAPI specification.\",\"depends_on\":[]},{\"id\":\"openapi-reviewer\",\"stage\":\"review-and-prioritize\",\"description\":\"Merges findings from both audits, removes duplicates, and produces a prioritized list of recommended specification changes.\",\"depends_on\":[\"naming-versioning-audit\",\"error-response-audit\"]}]}",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 184,
+        "output_tokens": 295,
+        "total_tokens": 479,
+        "estimated": true
+      },
+      "resumed": false
+    },
+    {
+      "agent_id": "architecture-reviewer",
+      "stage": "review-architecture",
+      "status": "completed",
+      "duration_ms": 27339,
+      "detail": "\u25cf List directory schemas\n  \u2514 4 files found\n\n\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\n\u25cf Read architecture_draft.json\n  \u2502 intermediate/architecture_draft.json\n  \u2514 28 lines read\n\n\u25cf Edit\n  \u2514 Create intermediate/architecture_approved.json\n\n\u25cf Read architecture_approved.json\n  \u2502 intermediate/architecture_approved.json\n  \u2514 28 lines read\n\nApproved architecture written to `intermediate/architecture_approved.json`. It preserves the two independent audit agents and makes the prioritization reviewer depend on both audit stages.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 192,
+        "output_tokens": 135,
+        "total_tokens": 327,
+        "estimated": true
+      },
+      "resumed": false
+    },
+    {
+      "agent_id": "agent-writer",
+      "stage": "write-agents",
+      "status": "completed",
+      "duration_ms": 62090,
+      "detail": "\u25cf List directory schemas\n  \u2514 4 files found\n\n\u25cf Read architecture_approved.json\n  \u2502 intermediate/architecture_approved.json\n  \u2514 28 lines read\n\n\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\nI\u2019m generating the workflow draft with the two independent audit agents chained into the prioritization agent, including artifact paths and trust boundaries required by the workspace contract.\n\n\u25cf Edit\n  \u2514 Create intermediate/workflow-code_draft.md\n\n\u25cf Read workflow-code_draft.md\n  \u2502 intermediate/workflow-code_draft.md\n  \u2514 172 lines read\n\nGenerated `intermediate/workflow-code_draft.md` containing:\n\n- Valid kebab-case workflow and agent IDs.\n- Workflow YAML with correct stages and dependencies.\n- Agent definitions for naming/versioning audit, error-response audit, and final prioritization.\n- Correct artifact chaining, including `output/result.md`.\n- Trust boundary instructions for every agent.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 187,
+        "output_tokens": 226,
+        "total_tokens": 413,
+        "estimated": true
+      },
+      "resumed": false
+    },
+    {
+      "agent_id": "agent-code-reviewer",
+      "stage": "review-code",
+      "status": "completed",
+      "duration_ms": 94841,
+      "detail": "\u25cf List directory schemas\n  \u2514 4 files found\n\n\u25cf Read workflow-code_draft.md\n  \u2502 intermediate/workflow-code_draft.md\n  \u2514 172 lines read\n\n\u25cf Read requirement.md\n  \u2502 input/requirement.md\n  \u2514 1 line read\n\n\u25cf List directory .\n  \u2514 6 files found\n\n\u25cf Read quality-report.schema.json\n  \u2502 schemas/quality-report.schema.json\n  \u2514 119 lines read\n\n\u25cf Read evaluation.schema.json\n  \u2502 schemas/evaluation.schema.json\n  \u2514 138 lines read\n\nI\u2019m polishing the draft in place without changing its three-agent architecture or dependency flow, with emphasis on artifact wiring, deterministic finding formats, and defensive handling of malformed or instruction-like specification content.\n\n\u25cf Edit\n  \u2514 Create output/workflow-code.md\n\n\u25cf Read workflow-code.md\n  \u2502 output/workflow-code.md\n  \u2514 L1:260 (241 lines read)\n\n\u25cf Edit\n  \u2514 Edit output/workflow-code.md\n\n\u25cf Read workflow-code.md\n  \u2502 output/workflow-code.md\n  \u2514 L35:125 (91 lines read)\n\n\u25cf Read workflow-code.md\n  \u2502 output/workflow-code.md\n  \u2514 L125:240 (116 lines read)\n\n\u25cf Edit\n  \u2514 Edit output/workflow-code.md\n\n\u25cf Read workflow-code.md\n  \u2502 output/workflow-code.md\n  \u2514 L205:250 (37 lines read)\n\nCreated `output/workflow-code.md` with the polished OpenAPI review workflow and all three agent Markdown files.\n\nThe workflow architecture and dependencies remain unchanged. Prompts now include deterministic output formats, stable finding IDs, explicit evidence and assumption handling, trust-boundary protections, sensitive-data redaction, and malformed-input safeguards.",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {
+        "input_tokens": 185,
+        "output_tokens": 370,
+        "total_tokens": 555,
+        "estimated": true
+      },
+      "resumed": false
+    }
+  ],
+  "total_duration_ms": 214053,
+  "usage": {
+    "input_tokens": 748,
+    "output_tokens": 1026,
+    "total_tokens": 1774,
+    "estimated": true
+  },
+  "agents": [
+    "agent-code-reviewer",
+    "agent-writer",
+    "architecture-reviewer",
+    "workflow-architect"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "engine": "copilot",
+  "copilot_model": "gpt-4o",
+  "stage": "generate",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "test-designer",
+    "test-generator",
+    "test-reviewer",
+    "test-evaluator"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": "GitHub Copilot CLI 1.0.82.\nRun 'copilot update' to check for updates.",
+  "input_hash": "7436b9ed2a59d7f4915a419ca15d734b1ba24ba9fba2bc28aaaed701d7d0ab54",
+  "output_hash": "b938f681c22a22e93650696b60972419c5b5cd71391224c247b454593303ee11",
+  "max_review_attempts": 2,
+  "status": "completed",
+  "duration_ms": 421597,
+  "review_attempts": 1,
+  "phases": [
+    {
+      "name": "test-designer",
+      "status": "completed",
+      "duration_ms": 69071,
+      "artifact": "intermediate/test_design.json",
+      "detail": "14 scenarios"
+    },
+    {
+      "name": "test-generator",
+      "status": "completed",
+      "duration_ms": 185450,
+      "artifact": "intermediate/draft_test_cases.json",
+      "detail": "15 draft cases"
+    },
+    {
+      "name": "test-reviewer",
+      "status": "completed",
+      "duration_ms": 110970,
+      "artifact": "output/test_cases.json",
+      "detail": "14 validated cases"
+    },
+    {
+      "name": "test-evaluator",
+      "status": "completed",
+      "duration_ms": 54900,
+      "artifact": "output/evaluation.json",
+      "detail": "very_good (85%), 4 gap(s)"
+    }
+  ],
+  "model_fallback": {
+    "used": true,
+    "requested_model": "gpt-4o",
+    "effective_model": "account-default",
+    "reason": "Requested model not permitted on Copilot account; fell back to default model"
+  }
+}

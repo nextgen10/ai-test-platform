@@ -1,0 +1,60 @@
+{
+  "requirement_reference": "REQ-042",
+  "summary": "A registered user can reset a forgotten password by requesting a reset link sent to their registered email address. The link is time-limited (expires after 30 minutes) and, once used, the user must set a new password that is at least 12 characters long and different from the previous password. To prevent abuse, the system blocks further reset attempts after three failures within a one-hour window.",
+  "actors": ["registered user", "unregistered/unknown user", "password reset service", "email delivery service"],
+  "business_rules": [
+    { "id": "BR-1", "rule": "The system sends a password reset link to the email address if it is registered.", "source": "stated" },
+    { "id": "BR-2", "rule": "The reset link expires after 30 minutes.", "source": "stated" },
+    { "id": "BR-3", "rule": "The new password must be at least 12 characters.", "source": "stated" },
+    { "id": "BR-4", "rule": "The new password must not match the previous password.", "source": "stated" },
+    { "id": "BR-5", "rule": "After three failed reset attempts within an hour, further attempts are blocked.", "source": "stated" },
+    { "id": "BR-6", "rule": "Requesting a reset for an unregistered email does not reveal whether the email exists (generic confirmation message shown regardless).", "source": "inferred" },
+    { "id": "BR-7", "rule": "A reset link can only be used once; after successful use it becomes invalid even if not yet expired.", "source": "inferred" },
+    { "id": "BR-8", "rule": "The failed-attempt counter resets once the rolling one-hour window has elapsed since the first counted failure.", "source": "inferred" }
+  ],
+  "scenarios": [
+    { "id": "SC-1", "description": "User requests a password reset using a registered email address and receives a reset link.", "category": "functional", "priority": "high", "rationale": "Primary documented entry point of the feature." },
+    { "id": "SC-2", "description": "User clicks a valid, unexpired reset link and successfully sets a new password meeting the length and history rules.", "category": "functional", "priority": "critical", "rationale": "Core success path; failure here blocks the entire feature." },
+    { "id": "SC-3", "description": "User logs in successfully with the newly set password after a completed reset.", "category": "functional", "priority": "high", "rationale": "Confirms the reset actually takes effect end to end." },
+    { "id": "SC-4", "description": "User requests a reset with an email address that is not registered in the system.", "category": "negative", "priority": "medium", "rationale": "Verifies handling of unknown accounts without leaking account existence." },
+    { "id": "SC-5", "description": "User attempts to use a reset link after it has expired (more than 30 minutes old).", "category": "negative", "priority": "high", "rationale": "Directly stated expiry rule; must be enforced." },
+    { "id": "SC-6", "description": "User attempts to set a new password that matches the previous password.", "category": "negative", "priority": "high", "rationale": "Directly stated password-history rule." },
+    { "id": "SC-7", "description": "User makes a fourth reset attempt within the same hour after three prior failed attempts and is blocked.", "category": "negative", "priority": "critical", "rationale": "Directly stated abuse-prevention rule; security relevant." },
+    { "id": "SC-8", "description": "User attempts to reuse an already-successfully-used reset link a second time.", "category": "negative", "priority": "medium", "rationale": "Guards against link replay; based on inferred single-use rule." },
+    { "id": "SC-9", "description": "User uses the reset link at exactly the 30-minute expiry boundary.", "category": "boundary", "priority": "high", "rationale": "Exact-boundary check for the stated expiry rule." },
+    { "id": "SC-10", "description": "User uses the reset link a few seconds before the 30-minute expiry (still valid).", "category": "boundary", "priority": "medium", "rationale": "Just-inside-boundary check complementing SC-9." },
+    { "id": "SC-11", "description": "User sets a new password that is exactly 12 characters long (minimum boundary).", "category": "boundary", "priority": "high", "rationale": "Exact minimum-length boundary for the stated password rule." },
+    { "id": "SC-12", "description": "User sets a new password that is 11 characters long, one below the minimum.", "category": "boundary", "priority": "high", "rationale": "Just-below-minimum boundary check." },
+    { "id": "SC-13", "description": "User's third failed reset attempt within the hour is still allowed (not yet blocked).", "category": "boundary", "priority": "critical", "rationale": "Boundary of the three-attempt lockout threshold." },
+    { "id": "SC-14", "description": "User's failed-attempt counter resets and a new reset attempt succeeds once the one-hour window has elapsed.", "category": "boundary", "priority": "medium", "rationale": "Time-window boundary for the rolling lockout counter." },
+    { "id": "SC-15", "description": "User submits the reset request form with an empty email field.", "category": "validation", "priority": "medium", "rationale": "Required-field validation on the request form." },
+    { "id": "SC-16", "description": "User submits the reset request form with a malformed email address (invalid format).", "category": "validation", "priority": "medium", "rationale": "Field-format validation on the request form." },
+    { "id": "SC-17", "description": "User submits the new-password form with an empty password field.", "category": "validation", "priority": "medium", "rationale": "Required-field validation on the reset completion form." },
+    { "id": "SC-18", "description": "User submits a new password containing only whitespace characters.", "category": "validation", "priority": "low", "rationale": "Edge-case input validation not explicitly covered by length rule alone." },
+    { "id": "SC-19", "description": "Reset flow is exercised for an email address containing plus-addressing or mixed case, verifying case-insensitive/canonical email matching.", "category": "data", "priority": "low", "rationale": "Data-variation coverage for email formats." },
+    { "id": "SC-20", "description": "Reset flow is exercised for two different registered accounts to confirm the failed-attempt lockout counter is tracked per account, not globally.", "category": "data", "priority": "medium", "rationale": "Data/state variation ensuring lockout isolation between users." },
+    { "id": "SC-21", "description": "Reset link expiry is verified consistently across requests issued in different time zones/locales.", "category": "data", "priority": "low", "rationale": "Data variation ensuring expiry timing is computed on a consistent (e.g. server/UTC) clock." }
+  ],
+  "coverage_dimensions": {
+    "functional": ["Reset request for registered email", "Successful password change via valid link", "Login with new password after reset"],
+    "negative": ["Unregistered email", "Expired link", "Reused previous password", "Lockout after three failed attempts", "Reused (already-used) reset link"],
+    "boundary": ["Link used at exactly 30 minutes", "Link used just before expiry", "Password exactly 12 characters", "Password 11 characters", "Third attempt allowed", "Counter reset after one-hour window"],
+    "validation": ["Empty email field", "Malformed email format", "Empty new-password field", "Whitespace-only new password"],
+    "data": ["Plus-addressed/mixed-case email", "Per-account lockout isolation", "Cross-timezone expiry consistency"]
+  },
+  "assumptions": [
+    "REQ-042 has an explicit ID in the source document, so it is used as requirement_reference.",
+    "Assumed the system shows a generic confirmation message for reset requests regardless of whether the email is registered, to avoid account enumeration; the requirement does not state this.",
+    "Assumed a reset link is single-use and becomes invalid immediately after a successful password change, even if the 30-minute window has not elapsed; the requirement does not state this explicitly.",
+    "Assumed the three-failed-attempt lockout counter is scoped per account and resets on a rolling one-hour basis from the first failure; the requirement does not specify the counter's scope or exact reset mechanics.",
+    "Assumed no additional password complexity rules (character classes, symbols) apply beyond the stated 12-character minimum and the previous-password-mismatch rule.",
+    "Assumed the reset request form has a single email field and the reset completion form has a single new-password field, with no explicit confirm-password field mentioned in the requirement."
+  ],
+  "risks": [
+    "The requirement is silent on the lockout duration and the exact mechanism/timing for un-blocking a user after three failed attempts, which could lead to inconsistent implementation.",
+    "The requirement is silent on whether reset requests reveal account existence (email enumeration), a potential security concern if not addressed deliberately.",
+    "The requirement is silent on whether a reset link is single-use, leaving replay behavior open to interpretation.",
+    "The requirement is silent on password complexity beyond minimum length, so validation scenarios beyond length/history are based on inference rather than stated rules.",
+    "No instruction-like or prompt-injection content was found in the requirement text; none was ignored."
+  ]
+}

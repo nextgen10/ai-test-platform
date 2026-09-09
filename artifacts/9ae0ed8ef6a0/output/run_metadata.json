@@ -1,0 +1,43 @@
+{
+  "engine": "copilot",
+  "copilot_model": "claude-sonnet-4.5",
+  "copilot_model_effective": "claude-sonnet-4.5",
+  "stage": "generate",
+  "reprocess": true,
+  "skill": "test-case-generation",
+  "agents": [
+    "gap-closer",
+    "test-evaluator"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": "GitHub Copilot CLI 1.0.83.\nRun 'copilot update' to check for updates.",
+  "input_hash": "bd734c704f29dd89153ccc223722b67a3f925a353777ed5dc9662b36a994dd74",
+  "output_hash": "e292e87511cc352b6c254c69d88efd34f72f7fa7155add43813dca824c784301",
+  "max_review_attempts": 3,
+  "status": "completed",
+  "duration_ms": 226331,
+  "review_attempts": 0,
+  "phases": [
+    {
+      "name": "gap-closer",
+      "status": "completed",
+      "duration_ms": 111619,
+      "artifact": "output/test_cases.json",
+      "detail": "27 -> 30 cases; +3 ~0 -0"
+    },
+    {
+      "name": "test-evaluator",
+      "status": "completed",
+      "duration_ms": 114359,
+      "artifact": "output/evaluation.json",
+      "detail": "very_good (84%), 4 gap(s)"
+    }
+  ],
+  "model_fallback": {
+    "used": true,
+    "requested_model": "claude-sonnet-4.5",
+    "effective_model": "account-default",
+    "reason": "Requested model not permitted on Copilot account; fell back to default model"
+  }
+}

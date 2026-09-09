@@ -1,0 +1,70 @@
+{
+  "requirement_reference": "REQ-089",
+  "summary": "The system must expose a multi-tier refund processing API for global ecommerce merchants. It must allow partial refunds up to the original transaction amount, route refunds requested within 14 days back to the original payment method without incurring interchange penalties, apply automated fraud screening for high-risk accounts (chargeback ratio greater than 1.5%), deny refunds on transactions with settled chargeback disputes, and generate immutable, idempotent audit logs for every refund transaction.",
+  "actors": [
+    "merchant",
+    "ecommerce platform / API consumer",
+    "refund processing service",
+    "fraud screening service",
+    "payment processor / original payment method",
+    "audit logging system",
+    "chargeback dispute system",
+    "cardholder / customer"
+  ],
+  "business_rules": [
+    { "id": "BR-1", "rule": "Partial refunds are permitted up to the total original transaction amount.", "source": "stated" },
+    { "id": "BR-2", "rule": "Refunds requested within 14 days of the original transaction must route to the original payment method without interchange penalties.", "source": "stated" },
+    { "id": "BR-3", "rule": "Accounts flagged as high-risk with a chargeback ratio greater than 1.5% require an automated fraud screening step before the refund is processed.", "source": "stated" },
+    { "id": "BR-4", "rule": "Refund requests on transactions with settled chargeback disputes must be denied.", "source": "stated" },
+    { "id": "BR-5", "rule": "Every refund transaction must generate an immutable audit log entry that includes an idempotency key.", "source": "stated" },
+    { "id": "BR-6", "rule": "Refunds requested after the 14-day window may still be permitted but are not guaranteed to route to the original payment method without interchange penalties.", "source": "inferred" },
+    { "id": "BR-7", "rule": "The sum of all partial refunds issued for a transaction cannot exceed the original transaction amount, so remaining refundable balance decreases with each partial refund.", "source": "inferred" },
+    { "id": "BR-8", "rule": "Submitting a refund request with a previously used idempotency key must not create a duplicate refund or duplicate audit log entry.", "source": "inferred" },
+    { "id": "BR-9", "rule": "A refund request must reference a valid, existing original transaction; refunds cannot be created against unknown or non-existent transactions.", "source": "inferred" }
+  ],
+  "scenarios": [
+    { "id": "SC-1", "description": "Merchant submits a full refund for a standard-risk account within the 14-day window", "category": "functional", "priority": "critical", "rationale": "Primary documented happy path combining routing and timing rules" },
+    { "id": "SC-2", "description": "Merchant submits a partial refund less than the original transaction amount", "category": "functional", "priority": "high", "rationale": "Explicitly permitted behaviour (BR-1)" },
+    { "id": "SC-3", "description": "Merchant submits multiple sequential partial refunds whose sum equals the original transaction amount", "category": "functional", "priority": "high", "rationale": "Validates cumulative partial refund tracking (BR-1, BR-7)" },
+    { "id": "SC-4", "description": "Refund requested within 14 days routes to the original payment method and no interchange penalty is applied", "category": "functional", "priority": "critical", "rationale": "Directly verifies BR-2" },
+    { "id": "SC-5", "description": "Refund on a high-risk account (chargeback ratio > 1.5%) triggers the automated fraud screening step before processing", "category": "functional", "priority": "critical", "rationale": "Directly verifies BR-3" },
+    { "id": "SC-6", "description": "Refund request generates an immutable audit log entry containing a unique idempotency key", "category": "functional", "priority": "critical", "rationale": "Directly verifies BR-5" },
+    { "id": "SC-7", "description": "Refund request submitted for a transaction amount exceeding the original transaction amount is rejected", "category": "negative", "priority": "high", "rationale": "Violates BR-1 upper bound" },
+    { "id": "SC-8", "description": "Refund request submitted against a transaction with a settled chargeback dispute is denied", "category": "negative", "priority": "critical", "rationale": "Directly verifies BR-4" },
+    { "id": "SC-9", "description": "Refund request submitted for a non-existent or invalid transaction ID is rejected", "category": "negative", "priority": "high", "rationale": "System should not process refunds against unknown transactions (BR-9)" },
+    { "id": "SC-10", "description": "Refund request that fails automated fraud screening is blocked and not routed to the payment processor", "category": "negative", "priority": "critical", "rationale": "Fraud screening must be able to reject, not just delay (BR-3)" },
+    { "id": "SC-11", "description": "Refund request submitted with a duplicate idempotency key does not create a second refund or audit log entry", "category": "negative", "priority": "high", "rationale": "Verifies idempotency guarantee (BR-8)" },
+    { "id": "SC-12", "description": "Partial refund amount exactly equal to the original transaction amount is accepted (upper boundary)", "category": "boundary", "priority": "high", "rationale": "Boundary at the maximum permitted refund amount (BR-1)" },
+    { "id": "SC-13", "description": "Refund amount of one currency unit above the original transaction amount is rejected (upper boundary + 1)", "category": "boundary", "priority": "high", "rationale": "Boundary just past the permitted limit (BR-1)" },
+    { "id": "SC-14", "description": "Refund requested exactly on day 14 is treated as within the window and routes without interchange penalty", "category": "boundary", "priority": "high", "rationale": "Boundary at the edge of the 14-day rule (BR-2)" },
+    { "id": "SC-15", "description": "Refund requested on day 15 (one day past the window) may incur interchange penalties or different routing", "category": "boundary", "priority": "medium", "rationale": "Boundary just past the 14-day window (BR-2, BR-6)" },
+    { "id": "SC-16", "description": "Account with a chargeback ratio of exactly 1.5% is evaluated against the fraud screening threshold boundary", "category": "boundary", "priority": "medium", "rationale": "Boundary at the exact threshold value stated in BR-3 ('greater than 1.5%')" },
+    { "id": "SC-17", "description": "Refund request with a zero or negative refund amount is rejected", "category": "validation", "priority": "high", "rationale": "Field-level constraint check on refund amount" },
+    { "id": "SC-18", "description": "Refund request missing a required idempotency key is rejected", "category": "validation", "priority": "high", "rationale": "Idempotency key is required per BR-5" },
+    { "id": "SC-19", "description": "Refund request missing a required transaction reference is rejected", "category": "validation", "priority": "medium", "rationale": "Transaction reference is required per BR-9" },
+    { "id": "SC-20", "description": "Refund request with a malformed or non-numeric refund amount is rejected", "category": "validation", "priority": "medium", "rationale": "Type/format validation on numeric fields" },
+    { "id": "SC-21", "description": "Refund processing behaves consistently across different currencies and merchant locales", "category": "data", "priority": "medium", "rationale": "Global ecommerce merchants imply multi-currency and locale variation" },
+    { "id": "SC-22", "description": "Refund processing behaves consistently for merchants with high refund transaction volume versus low volume", "category": "data", "priority": "low", "rationale": "Data-state variation across merchant transaction volumes" },
+    { "id": "SC-23", "description": "Refund processing distinguishes correctly between standard-risk and high-risk merchant account data states", "category": "data", "priority": "high", "rationale": "Verifies fraud screening applies only to the correct account risk data state (BR-3)" }
+  ],
+  "coverage_dimensions": {
+    "functional": ["Full refund within 14 days", "Partial refund", "Cumulative partial refunds", "Original payment method routing", "Fraud screening trigger", "Audit log generation"],
+    "negative": ["Refund exceeding original amount", "Refund on settled chargeback dispute", "Refund on invalid transaction", "Fraud screening rejection", "Duplicate idempotency key"],
+    "boundary": ["Refund equal to original amount", "Refund one unit over original amount", "Exactly day 14", "Day 15 (past window)", "Chargeback ratio exactly 1.5%"],
+    "validation": ["Zero/negative refund amount", "Missing idempotency key", "Missing transaction reference", "Malformed refund amount"],
+    "data": ["Multi-currency/locale behaviour", "High vs low transaction volume", "Standard-risk vs high-risk account state"]
+  },
+  "assumptions": [
+    "No explicit requirement ID was present in the source document; REQ-089 (from the document title) is used as the requirement_reference.",
+    "The requirement does not state what happens to refunds requested after the 14-day window; assumed they may still be permitted but without the no-interchange-penalty guarantee (BR-6).",
+    "The requirement does not explicitly define idempotency-key duplicate handling; assumed duplicate keys must not create duplicate refunds or audit entries (BR-8).",
+    "The requirement does not explicitly state that refunds must reference a valid existing transaction; assumed as a baseline data-integrity rule (BR-9).",
+    "The requirement does not specify supported currencies or locales explicitly; 'global ecommerce merchants' is assumed to imply multi-currency support."
+  ],
+  "risks": [
+    "The requirement does not specify what happens when fraud screening fails (block, hold for manual review, or flag only) — scenario SC-10 assumes a block, but actual behaviour should be confirmed.",
+    "The requirement does not define the outcome for refunds requested after the 14-day window beyond losing the penalty-free guarantee; actual routing/fee behaviour is unconfirmed.",
+    "The requirement does not specify concurrency behaviour for simultaneous partial refund requests on the same transaction, which could affect BR-7 enforcement.",
+    "No instruction-like or suspicious content was found embedded in the requirement text; the document was treated purely as a specification."
+  ]
+}

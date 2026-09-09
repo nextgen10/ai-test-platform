@@ -1,0 +1,43 @@
+{
+  "gaps_addressed": [
+    {
+      "area": "negative",
+      "detail": "No case covers a refund request submitted in a currency different from the original transaction's currency (e.g. refunding a USD transaction in EUR), which the 'global ecommerce merchants' multi-currency assumption implies should be rejected or converted.",
+      "resolution": "Added TC-028, a negative case where a refund request specifies EUR against a USD transaction, expecting rejection with a currency-mismatch error. Recorded the underlying assumption (BR-10) in the assumptions array since the requirement does not explicitly define this behaviour.",
+      "case_ids": ["TC-028"]
+    },
+    {
+      "area": "negative",
+      "detail": "No case covers a refund request against a transaction with a chargeback dispute in a non-settled state (e.g. 'open' or 'pending'), to confirm the denial rule applies only to 'settled' disputes and not other dispute states.",
+      "resolution": "Added TC-029, contrasting with TC-009, verifying that an 'open' (non-settled) dispute does not trigger denial and the refund proceeds normally, per the requirement's explicit 'settled chargeback disputes' denial rule.",
+      "case_ids": ["TC-029"]
+    },
+    {
+      "area": "validation",
+      "detail": "No case covers reusing the same idempotency key with a different refund amount or transaction ID, which would test whether idempotency key collision detection is scoped correctly versus TC-012's same-amount replay.",
+      "resolution": "Added TC-030, a validation case reusing an idempotency key against a different transaction, expecting a conflict error distinct from TC-012's exact-replay outcome. Extended the existing idempotency assumption (BR-8) to cover this scenario explicitly.",
+      "case_ids": ["TC-030"]
+    }
+  ],
+  "gaps_not_addressed": [
+    {
+      "area": "negative",
+      "detail": "No case covers the fraud screening service being unavailable or timing out (as opposed to actively failing/rejecting the check in TC-011), even though missing_information in the quality report explicitly flags timeout/failure handling as undefined and testable once specified.",
+      "reason": "The requirement does not define any fallback behaviour for a fraud-screening service outage or timeout (e.g. hold for manual review vs. fail-open vs. fail-closed). Asserting a specific outcome would invent a business rule the requirement does not contain, which the evaluation itself flags as a correctness risk (see TC-011/TC-016 rationale). Left open pending clarification of the requirement."
+    },
+    {
+      "area": "correctness",
+      "detail": "Revise TC-016 to state a single deterministic expected outcome for refunds submitted on day 15 (e.g. explicitly 'interchange penalty is applied and routing to original method is not guaranteed') instead of the current hedged wording, once the post-14-day behavior is clarified in the requirement.",
+      "reason": "The requirement specifies only the within-14-days routing guarantee and is silent on post-window handling. TC-016's hedged wording is a deliberate, honest reflection of that gap (per the suite's own assumption on BR-6). Rewriting it to assert a single deterministic outcome would require inventing a rule the requirement does not state, so it was left unchanged pending requirement clarification."
+    },
+    {
+      "area": "traceability",
+      "detail": "Add explicit sub-rule identifiers (e.g. BR-1 through BR-9, matching the suite's own assumptions section) to each test case's requirement_reference or a new field, so every case maps to a specific bullet/derived rule rather than only the umbrella REQ-089 reference.",
+      "reason": "The output schema (test-case.schema.json) sets additionalProperties to false and requires requirement_reference to be a simple string identifying the source requirement; it does not define a sub-rule field. The BR-1..BR-9 identifiers are the suite's own internal shorthand and do not appear in the source requirement document, so using them as requirement_reference would fail the 'requirement_reference must appear in the source requirement set' quality gate. This recommendation cannot be implemented without violating the schema or the quality gate, so it was left open."
+    }
+  ],
+  "cases_added": ["TC-028", "TC-029", "TC-030"],
+  "cases_modified": [],
+  "cases_removed": [],
+  "cases_preserved": 27
+}

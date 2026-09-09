@@ -1,0 +1,42 @@
+{
+  "requirement_reference": "REQ-042",
+  "scores": [
+    {
+      "id": "coverage",
+      "name": "Coverage",
+      "score": 100.0,
+      "rationale": "5 of 5 categories represented across 8 cases."
+    },
+    {
+      "id": "completeness",
+      "name": "Completeness",
+      "score": 100.0,
+      "rationale": "0 case(s) have a thin expected result; 0 have fewer than 3 steps."
+    },
+    {
+      "id": "traceability",
+      "name": "Traceability",
+      "score": 100.0,
+      "rationale": "0 case(s) reference something other than REQ-042."
+    },
+    {
+      "id": "correctness",
+      "name": "Correctness",
+      "score": 100.0,
+      "rationale": "Heuristic proxy: expected results that are too short to be verifiable."
+    },
+    {
+      "id": "uniqueness",
+      "name": "Uniqueness",
+      "score": 100.0,
+      "rationale": "0 duplicate title(s) detected."
+    }
+  ],
+  "overall": {
+    "score": 100.0,
+    "rating": "very_good",
+    "verdict": "Mock heuristic evaluation: very good (100.0/100)."
+  },
+  "gaps": [],
+  "recommendations": []
+}

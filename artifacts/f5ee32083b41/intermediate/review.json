@@ -1,0 +1,12 @@
+{
+  "verdict": "pass",
+  "issues": [],
+  "coverage_gaps": [],
+  "duplicates_removed": [],
+  "stats": {
+    "reviewed": 8,
+    "modified": 0,
+    "removed": 0,
+    "added": 0
+  }
+}

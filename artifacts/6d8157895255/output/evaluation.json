@@ -1,0 +1,102 @@
+{
+  "requirement_reference": "REQ-042",
+  "scores": [
+    {
+      "id": "coverage",
+      "name": "Coverage",
+      "score": 88,
+      "rationale": "The suite covers registered-email link delivery, successful reset, unregistered email behavior, expiry, password-length boundaries, previous-password reuse, and the three-failure limit. It lacks an executable case for the exact one-hour rate-limit boundary and does not resolve the unspecified definition and scope of a failed attempt."
+    },
+    {
+      "id": "completeness",
+      "name": "Completeness",
+      "score": 82,
+      "rationale": "Most cases have concrete preconditions, steps, and observable outcomes. TC-006 and TC-014 intentionally allow either outcome and record a clarification rather than asserting a pass/fail result, and TC-011/TC-012 use vague 'attempt' and 'valid reset data' wording."
+    },
+    {
+      "id": "traceability",
+      "name": "Traceability",
+      "score": 87,
+      "rationale": "Every case references REQ-042 and the main rules are represented. TC-014 tests whether newer links invalidate older links, which the requirement does not state, while some rate-limit assumptions add an account scope and attempt semantics not defined by the requirement."
+    },
+    {
+      "id": "correctness",
+      "name": "Correctness",
+      "score": 84,
+      "rationale": "The expected results generally match the stated requirements, including the 30-minute expiry and minimum 12-character password. TC-003 correctly checks that no link is sent but cannot assert the unspecified response, and TC-006/TC-014 cannot establish correctness because they accept either behavior. The rate-limit expectations depend on unspecified counting and block semantics."
+    },
+    {
+      "id": "uniqueness",
+      "name": "Uniqueness",
+      "score": 92,
+      "rationale": "The cases are substantially distinct: functional success, rejected inputs, expiry boundaries, password validation, and rate-limit windows are separately exercised. TC-004 and TC-005/TC-006 are complementary time-boundary scenarios rather than simple duplicates."
+    }
+  ],
+  "overall": {
+    "score": 86.1,
+    "rating": "very_good",
+    "verdict": "The suite broadly covers the stated rules, but several cases are exploratory rather than executable because the requirement leaves response, attempt-counting, scope, and boundary behavior undefined."
+  },
+  "gaps": [
+    {
+      "area": "rate_limit",
+      "detail": "No case verifies behavior when a failed attempt is exactly one hour old, or when the block should lift after the unspecified blocking duration.",
+      "severity": "medium"
+    },
+    {
+      "area": "rate_limit",
+      "detail": "No case identifies which operation is counted as a failed reset attempt, such as requesting a link, using an invalid link, or submitting a password that fails validation.",
+      "severity": "high"
+    },
+    {
+      "area": "security",
+      "detail": "The suite does not verify whether registered and unregistered email reset requests have indistinguishable responses, leaving account-enumeration behavior untested.",
+      "severity": "medium"
+    },
+    {
+      "area": "reset_state",
+      "detail": "No executable case verifies whether a reset link is single-use or whether a successful reset invalidates other outstanding links.",
+      "severity": "medium"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "add_cases",
+      "detail": "After the product defines the rate-limit key, add cases for a failure at exactly one hour, three failures split so that only failures inside the rolling one-hour window count, and an attempt after the block duration expires, with explicit allow/block expectations.",
+      "target_ids": [
+        "TC-011",
+        "TC-013"
+      ]
+    },
+    {
+      "action": "add_cases",
+      "detail": "Define what counts as a failed reset attempt, then add separate cases for each counted failure type and assert the counter, block state, and unchanged password after the third failure.",
+      "target_ids": [
+        "TC-011",
+        "TC-012"
+      ]
+    },
+    {
+      "action": "add_cases",
+      "detail": "Add a security-response case comparing registered and unregistered email reset requests and assert the specified generic response, while retaining the check that no email is sent to the unregistered address.",
+      "target_ids": [
+        "TC-001",
+        "TC-003"
+      ]
+    },
+    {
+      "action": "clarify_expected",
+      "detail": "Replace TC-006's 'either outcome' expectation with the product-defined inclusive or exclusive 30-minute boundary and assert that exact behavior.",
+      "target_ids": [
+        "TC-006"
+      ]
+    },
+    {
+      "action": "clarify_expected",
+      "detail": "Replace TC-014's 'either outcome' expectation with an explicit single-use/newer-link policy and assert whether the older link is accepted or rejected.",
+      "target_ids": [
+        "TC-014"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "workflow_id": "workflow-builder",
+  "status": "completed",
+  "engine": "mock",
+  "runner": "generic",
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "stages": [
+    {
+      "agent_id": "workflow-architect",
+      "stage": "architect",
+      "status": "completed",
+      "duration_ms": 209,
+      "detail": "Mock execution completed",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {},
+      "resumed": false
+    },
+    {
+      "agent_id": "architecture-reviewer",
+      "stage": "review-architecture",
+      "status": "completed",
+      "duration_ms": 206,
+      "detail": "Mock execution completed",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {},
+      "resumed": false
+    },
+    {
+      "agent_id": "agent-writer",
+      "stage": "write-agents",
+      "status": "completed",
+      "duration_ms": 206,
+      "detail": "Mock execution completed",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {},
+      "resumed": false
+    },
+    {
+      "agent_id": "agent-code-reviewer",
+      "stage": "review-code",
+      "status": "completed",
+      "duration_ms": 206,
+      "detail": "Mock execution completed",
+      "attempts": 1,
+      "contract": "no schema declared",
+      "usage": {},
+      "resumed": false
+    }
+  ],
+  "total_duration_ms": 827,
+  "usage": {},
+  "agents": [
+    "agent-code-reviewer",
+    "agent-writer",
+    "architecture-reviewer",
+    "workflow-architect"
+  ]
+}

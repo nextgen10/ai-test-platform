@@ -1,0 +1,18 @@
+{
+  "valid": true,
+  "errors": [],
+  "warnings": [
+    {
+      "code": "schema_skipped",
+      "detail": "jsonschema not installed; schema layer skipped",
+      "where": ""
+    }
+  ],
+  "stats": {},
+  "gate": {
+    "minimum_test_cases": 5,
+    "max_duplicate_rate": 0.1,
+    "min_steps_per_case": 2,
+    "required_categories": 3
+  }
+}

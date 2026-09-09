@@ -1,0 +1,10 @@
+{
+  "verdict": "pass",
+  "issues": [],
+  "coverage_gaps": [
+    "No case verifies behaviour when an idempotency key already used for a refund is resubmitted with different request parameters (e.g. a different refund amount) against the same transaction; only the exact-duplicate replay case (TC-009) was covered.",
+    "No case verifies that a refund is still allowed to proceed when a transaction has an open/pending (not yet settled) chargeback dispute, which is the necessary contrast case to the settled-dispute denial in TC-007 and clarifies the boundary of BR-4."
+  ],
+  "duplicates_removed": [],
+  "stats": { "reviewed": 23, "modified": 0, "removed": 0, "added": 2 }
+}

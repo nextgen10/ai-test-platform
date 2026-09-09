@@ -1,0 +1,89 @@
+{
+  "requirement_reference": "REQ-108",
+  "scores": [
+    {
+      "id": "coverage",
+      "name": "Coverage",
+      "score": 80,
+      "rationale": "All five bulleted behaviors (dual-authorization threshold, margin validation, 250ms SLA, Tier-2 circuit-breaker queuing, pacs.008 emission) plus the opening bilateral counterparty risk clause are each represented across functional, negative, boundary, validation, and data categories in reasonable proportion. Gap: the circuit-breaker scenarios (TC-007, TC-014, TC-026) only test volatility already exceeding Tier-2 at or before submission; none tests an order already locked-in/mid-settlement being transitioned to queued state when volatility crosses the threshold during processing, which is the more literal reading of 'automatically transition order to queued settlement state'."
+    },
+    {
+      "id": "completeness",
+      "name": "Completeness",
+      "score": 85,
+      "rationale": "Nearly every case has concrete preconditions, an ordered sequence of specific steps, and a verifiable expected result (e.g., exact dollar amounts, exact ms boundaries, named currency pairs). A few validation cases (TC-015 to TC-018) are slightly thinner, listing only a single generic 'observe validation response' step rather than a distinct verification action, but this is a minor deduction given the requirement itself specifies no field list."
+    },
+    {
+      "id": "traceability",
+      "name": "Traceability",
+      "score": 85,
+      "rationale": "Every case carries requirement_reference REQ-108 and maps to an explicit clause in the requirement text or its opening sentence (bilateral risk verification); no orphan cases were found. The assumptions block explicitly documents where the suite had to extrapolate beyond the text (e.g., strictly-greater-than threshold interpretation, consequence of insufficient margin), which is good practice, but this necessarily means some expected results trace to an assumption rather than a stated fact, capping the score below the top band."
+    },
+    {
+      "id": "correctness",
+      "name": "Correctness",
+      "score": 70,
+      "rationale": "Given the quality report rates 'testable' and 'unambiguous' as bad and confirms no numeric Tier-2 threshold, margin formula, or definition of 'normal market conditions' exists in the source, the suite cannot be checked for correctness against a concrete spec for those dimensions; it can only be checked for internal consistency with its own documented assumptions, which it maintains consistently (e.g., >$1,000,000 requires auth, <=250ms is compliant). The suite is judged correct relative to what the requirement actually states, but several expected results (e.g., 'exactly 250ms is compliant', exact Tier-2 threshold value) are assumption-driven inferences rather than requirement-stated facts, so this cannot score in the very-high band."
+    },
+    {
+      "id": "uniqueness",
+      "name": "Uniqueness",
+      "score": 68,
+      "rationale": "Most cases are genuinely distinct scenarios (different failure modes, different threshold boundaries). However TC-020, TC-021, and TC-022 are the same steps and same expected-result template with only the currency-pair string swapped, and TC-023/TC-024 are the same pattern with only the risk rating swapped; these read as data-table rows rather than independently reasoned test cases and add limited incremental verification value over one representative case plus a data table."
+    }
+  ],
+  "overall": {
+    "score": 80.45,
+    "rating": "good",
+    "verdict": "A solid, well-documented suite given how underspecified the source requirement is; tighten the circuit-breaker mid-settlement scenario and collapse the repetitive currency-pair/risk-rating data cases into a clearer data-driven set."
+  },
+  "gaps": [
+    {
+      "area": "circuit-breaker",
+      "detail": "No case models an order that is already locked-in or mid-settlement when volatility crosses the Tier-2 threshold; all existing circuit-breaker cases (TC-007, TC-014, TC-026) only test volatility already at/above the threshold at the moment of submission.",
+      "severity": "medium"
+    },
+    {
+      "area": "margin validation",
+      "detail": "No boundary case tests a trading account whose margin balance is exactly equal to the amount required for the trade (only 'sufficient' and 'clearly insufficient' are covered in TC-001 and TC-005).",
+      "severity": "medium"
+    },
+    {
+      "area": "dual-authorization",
+      "detail": "No case covers a dual-authorization request where one approver never responds (timeout/no-action) as distinct from an explicit rejection, even though this is flagged in the requirement's own quality report as an undefined but relevant workflow state.",
+      "severity": "low"
+    },
+    {
+      "area": "pacs.008 messaging",
+      "detail": "No case verifies that the two pacs.008 confirmation messages sent to the two counterparties contain party-specific fields correctly addressed to each counterparty (TC-019 only checks generic schema validity, not per-recipient content correctness).",
+      "severity": "low"
+    }
+  ],
+  "recommendations": [
+    {
+      "action": "add_cases",
+      "detail": "Add a test case where an order is already locked-in and in-flight toward settlement when simulated market volatility rises to cross the Tier-2 threshold mid-processing, expecting the in-flight order to be automatically transitioned to the queued settlement state (distinct from TC-007's pre-submission scenario).",
+      "target_ids": ["TC-007", "TC-014", "TC-026"]
+    },
+    {
+      "action": "add_cases",
+      "detail": "Add a boundary test case where the trading account margin balance is exactly equal to the amount required for the submitted trade, expecting the margin check to pass and the trade to proceed to lock-in.",
+      "target_ids": ["TC-001", "TC-005"]
+    },
+    {
+      "action": "add_cases",
+      "detail": "Add a test case for a dual-authorization request where one designated approver takes no action within the assumed approval window, expecting the order to remain blocked/expired distinct from an explicit rejection.",
+      "target_ids": ["TC-006"]
+    },
+    {
+      "action": "consolidate_cases",
+      "detail": "Merge TC-020, TC-021, and TC-022 into a single data-driven test case with a data table of currency pairs (USD/EUR, USD/JPY, GBP/CHF), and similarly merge TC-023 and TC-024 into one data-driven case parameterized by counterparty risk rating (high, low), since each group currently repeats identical steps and expected-result wording with only one value swapped.",
+      "target_ids": ["TC-020", "TC-021", "TC-022", "TC-023", "TC-024"]
+    },
+    {
+      "action": "add_cases",
+      "detail": "Add a case verifying that the two pacs.008 confirmation messages emitted for a completed settlement are each correctly addressed to their respective counterparty (party-specific fields), not just schema-valid in general.",
+      "target_ids": ["TC-019"]
+    }
+  ]
+}

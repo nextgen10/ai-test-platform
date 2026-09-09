@@ -1,0 +1,5 @@
+[14:11:16]   staged .github/agents from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/agents
+[14:11:16]   staged .github/skills from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/skills
+[14:11:17] Phase 1/1  requirement-analyst -> quality_report.json
+[14:11:17]   exec: /Users/aniketmarwadi/.nvm/versions/node/v22.21.1/bin/copilot --agent requirement-analyst
+[14:11:22] FAILED: Agent 'requirement-analyst' exited 1: Error: No authentication information found. /  / Copilot can be authenticated with GitHub using an OAuth Token or a Fine-Grained Personal Access Token. /  / To authenticate, you can use any of the following methods: /   • Start 'copilot' and run the '/login' command /   • Set the COPILOT_GITHUB_TOKEN, GH_TOKEN, or GITHUB_TOKEN environment variable /   • Run 'gh auth login' to authenticate with the GitHub CLI

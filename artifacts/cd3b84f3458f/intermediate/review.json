@@ -1,0 +1,16 @@
+{
+  "verdict": "pass",
+  "issues": [
+    {
+      "test_case_id": "TC-009",
+      "type": "unsupported_assumption",
+      "detail": "The case asserts that a settlement completing at exactly 250ms is treated as compliant with the SLA, but whether the 250ms boundary is inclusive or exclusive was never recorded in the draft's assumptions array, even though it is a genuine interpretive choice not stated in the requirement.",
+      "action": "recorded assumption explicitly; test case content left unchanged since the inclusive interpretation is a reasonable reading of 'within 250ms'"
+    }
+  ],
+  "coverage_gaps": [
+    "No case verifies that dual-authorization sign-off obtained twice from the same approver (rather than from two distinct approvers) is rejected. This directly tests the 'distinct approvers' qualifier of inferred rule BR-7, which the design's SC-15 rationale calls out but the draft only partially covers via a single-approver case (TC-020)."
+  ],
+  "duplicates_removed": [],
+  "stats": { "reviewed": 20, "modified": 0, "removed": 0, "added": 1 }
+}

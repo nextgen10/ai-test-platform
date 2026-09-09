@@ -1,0 +1,169 @@
+{
+  "requirement_reference": "REQ-108",
+  "summary": "An institutional broker platform must execute real-time cross-currency trade settlements with bilateral counterparty risk verification. Orders exceeding $1,000,000 USD require dual-authorization prior to routing. Before lock-in, the clearing engine validates that the trading account holds sufficient margin balance. Settlements must complete within 250ms under normal market conditions, but if market volatility exceeds Tier-2 circuit-breaker thresholds, the order automatically transitions to a queued settlement state instead of failing. Upon completion, ISO 20022 compliant pacs.008 confirmation messages are emitted to both counterparties.",
+  "actors": [
+    "institutional broker",
+    "counterparty",
+    "clearing engine",
+    "trading account",
+    "circuit breaker / market volatility monitor",
+    "ISO 20022 messaging system"
+  ],
+  "business_rules": [
+    { "id": "BR-1", "rule": "Orders above $1,000,000 USD require dual-authorization before routing.", "source": "stated" },
+    { "id": "BR-2", "rule": "The clearing engine must validate sufficient margin balance in the trading account before lock-in.", "source": "stated" },
+    { "id": "BR-3", "rule": "Settlements must complete within 250ms under normal market conditions.", "source": "stated" },
+    { "id": "BR-4", "rule": "If market volatility exceeds Tier-2 thresholds (circuit breaker), the order automatically transitions to a queued settlement state.", "source": "stated" },
+    { "id": "BR-5", "rule": "ISO 20022 compliant confirmation messages (pacs.008) are emitted to both parties upon completion.", "source": "stated" },
+    { "id": "BR-6", "rule": "An order valued at exactly $1,000,000 USD does not require dual-authorization, since the rule applies only to amounts 'above' the threshold.", "source": "inferred" },
+    { "id": "BR-7", "rule": "Dual-authorization requires sign-off from two distinct authorized approvers before the order can route.", "source": "inferred" },
+    { "id": "BR-8", "rule": "Market volatility below the Tier-2 circuit-breaker threshold (e.g. Tier-1 or normal) does not trigger the queued settlement state.", "source": "inferred" }
+  ],
+  "scenarios": [
+    {
+      "id": "SC-1",
+      "description": "Order below $1,000,000 USD settles without dual-authorization and confirmation messages are emitted to both parties within 250ms.",
+      "category": "functional",
+      "priority": "high",
+      "rationale": "Primary documented happy path for standard-value orders."
+    },
+    {
+      "id": "SC-2",
+      "description": "Order above $1,000,000 USD with valid dual-authorization completes routing and settlement successfully.",
+      "category": "functional",
+      "priority": "high",
+      "rationale": "Primary documented happy path for large-value orders requiring dual-authorization."
+    },
+    {
+      "id": "SC-3",
+      "description": "Order above $1,000,000 USD submitted without dual-authorization is blocked and not routed.",
+      "category": "negative",
+      "priority": "critical",
+      "rationale": "Enforces BR-1; failure to block risks unauthorized large-value settlement."
+    },
+    {
+      "id": "SC-4",
+      "description": "Order is rejected at lock-in when the trading account has insufficient margin balance.",
+      "category": "negative",
+      "priority": "critical",
+      "rationale": "Enforces BR-2; a missed check risks settling an under-funded trade."
+    },
+    {
+      "id": "SC-5",
+      "description": "Bilateral counterparty risk verification fails due to an unrecognized or invalid counterparty, and the trade is not settled.",
+      "category": "negative",
+      "priority": "high",
+      "rationale": "Counterparty risk verification is a stated precondition of settlement; failure paths must be verified."
+    },
+    {
+      "id": "SC-6",
+      "description": "Order valued at exactly $1,000,000 USD is evaluated against the dual-authorization threshold boundary.",
+      "category": "boundary",
+      "priority": "high",
+      "rationale": "Tests the exact boundary of the 'above $1,000,000' rule (BR-6)."
+    },
+    {
+      "id": "SC-7",
+      "description": "Order valued at $1,000,000.01 USD (just above the threshold) is required to have dual-authorization.",
+      "category": "boundary",
+      "priority": "medium",
+      "rationale": "Confirms the threshold is exclusive and enforced immediately above the boundary."
+    },
+    {
+      "id": "SC-8",
+      "description": "Trading account margin balance exactly equal to the required amount allows lock-in to proceed.",
+      "category": "boundary",
+      "priority": "medium",
+      "rationale": "Tests the boundary of 'sufficient margin balance' when balance equals the exact requirement."
+    },
+    {
+      "id": "SC-9",
+      "description": "Settlement duration approaches and then exceeds the 250ms SLA under normal market conditions, verifying SLA breach handling.",
+      "category": "boundary",
+      "priority": "medium",
+      "rationale": "Tests the time-boundary condition of BR-3 under stated normal conditions."
+    },
+    {
+      "id": "SC-10",
+      "description": "Market volatility exceeds the Tier-2 circuit-breaker threshold during settlement, causing the order to transition to a queued settlement state instead of failing or completing immediately.",
+      "category": "functional",
+      "priority": "high",
+      "rationale": "Verifies the documented automatic queuing behavior of BR-4."
+    },
+    {
+      "id": "SC-11",
+      "description": "Market volatility remains at or below Tier-1 (below the Tier-2 circuit-breaker threshold), and the order proceeds normally without being queued.",
+      "category": "data",
+      "priority": "low",
+      "rationale": "Validates inferred rule BR-8 distinguishing sub-threshold volatility states from Tier-2 circuit-breaker events."
+    },
+    {
+      "id": "SC-12",
+      "description": "Confirmation message emitted after settlement completion is validated as a well-formed, ISO 20022 pacs.008 compliant message.",
+      "category": "validation",
+      "priority": "high",
+      "rationale": "Directly verifies BR-5's message-format compliance requirement."
+    },
+    {
+      "id": "SC-13",
+      "description": "Order submission with a missing or malformed trade amount, currency code, or counterparty identifier is rejected before clearing checks are performed.",
+      "category": "validation",
+      "priority": "medium",
+      "rationale": "Field-level input validation is a prerequisite to all downstream business-rule checks, though not explicitly detailed in the requirement."
+    },
+    {
+      "id": "SC-14",
+      "description": "Cross-currency trade settlements are processed correctly across differing currency pairs (e.g., USD/EUR, USD/JPY, GBP/USD).",
+      "category": "data",
+      "priority": "medium",
+      "rationale": "Requirement explicitly scopes the feature to cross-currency settlement; behavior across currency pairs must be verified."
+    },
+    {
+      "id": "SC-15",
+      "description": "Dual-authorization is attempted with only a single approver's sign-off and is rejected as incomplete.",
+      "category": "data",
+      "priority": "medium",
+      "rationale": "Validates inferred rule BR-7 that dual-authorization needs two distinct approvers, using a representative authorization-state data variation."
+    }
+  ],
+  "coverage_dimensions": {
+    "functional": [
+      "Standard order settlement without dual-authorization",
+      "Large-value order settlement with valid dual-authorization",
+      "Automatic transition to queued settlement state under Tier-2 volatility"
+    ],
+    "negative": [
+      "Large-value order routed without required dual-authorization",
+      "Insufficient margin balance blocking lock-in",
+      "Failed bilateral counterparty risk verification"
+    ],
+    "boundary": [
+      "Order value exactly at the $1,000,000 dual-authorization threshold",
+      "Order value just above the $1,000,000 threshold",
+      "Margin balance exactly equal to the required amount",
+      "Settlement duration at/exceeding the 250ms SLA"
+    ],
+    "validation": [
+      "ISO 20022 pacs.008 message format compliance",
+      "Missing or malformed order fields (amount, currency, counterparty ID)"
+    ],
+    "data": [
+      "Multiple cross-currency pairs",
+      "Sub-Tier-2 (normal/Tier-1) volatility states",
+      "Incomplete dual-authorization (single approver only)"
+    ]
+  },
+  "assumptions": [
+    "The requirement has no explicit rule for volatility states below the Tier-2 circuit-breaker threshold; assumed such orders proceed without queuing (BR-8).",
+    "The $1,000,000 threshold in 'orders above $1,000,000 USD' is assumed to be exclusive, so an order of exactly $1,000,000 does not require dual-authorization (BR-6).",
+    "Dual-authorization is assumed to require two distinct authorized approvers, since the requirement does not define the authorization mechanics (BR-7).",
+    "The requirement does not specify field-level validation rules (required fields, formats) for order submission; a generic validation scenario (SC-13) is included as a reasonable inference, not a stated rule.",
+    "No prompt-injection or instruction-like content was found embedded in the requirement text; the document was treated purely as data."
+  ],
+  "risks": [
+    "The requirement does not specify the error handling, messaging, or notification behavior when margin validation or counterparty risk verification fails; downstream test cases can only assert rejection/no-settlement, not exact error content.",
+    "The requirement does not define what happens if the 250ms SLA is missed under normal (non-Tier-2) market conditions, e.g. whether it is logged, retried, or escalated; SC-9 is exploratory in nature.",
+    "The requirement does not enumerate specific currency pairs in scope, so data coverage for cross-currency settlement (SC-14) is representative rather than exhaustive.",
+    "The requirement does not define dual-authorization approver roles or workflow, so SC-15 relies on an inferred business rule rather than stated behavior."
+  ]
+}

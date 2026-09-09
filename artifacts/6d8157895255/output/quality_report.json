@@ -1,0 +1,79 @@
+{
+  "requirement_reference": "REQ-042",
+  "summary": "A registered user can reset a password through a registered email address subject to link expiry, password-history, and failed-attempt restrictions.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "good",
+      "rationale": "The requirement describes one password-reset capability and its rules, but it assumes existing user registration and email-delivery behavior without defining those dependencies.",
+      "improvement": "State the required preconditions and dependencies, including how registration status and email delivery are represented during testing."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "good",
+      "rationale": "It specifies the outcome and constraints—\"reset their password,\" a reset link, a 30-minute expiry, and password rules—without prescribing a particular implementation.",
+      "improvement": "Clarify the user and security outcomes while leaving the mechanism for issuing, storing, and invalidating reset links open."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "good",
+      "rationale": "The user benefit is explicit: \"A registered user should be able to reset their password using a registered email address.\"",
+      "improvement": "Add the business or security rationale, such as account recovery without support intervention while preventing abuse."
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "good",
+      "rationale": "The scope is bounded by email-based recovery, link lifetime, password validation, password history, and attempt limiting, so the main implementation areas can be sized.",
+      "improvement": "Define the omitted interaction and integration details, including reset-request responses, email delivery expectations, and what constitutes an attempt."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "good",
+      "rationale": "The bullets are related rules for a single password-reset capability rather than unrelated features.",
+      "improvement": "If the rate-limiting or password-history work is independently delivered, split those rules into separate stories with explicit dependencies."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "good",
+      "rationale": "The stated outcomes include observable checks: a link is sent for a registered address, it expires after 30 minutes, passwords have at least 12 characters, the new password differs from the previous one, and attempts are blocked after three failures.",
+      "improvement": "Define boundary behavior and observable responses for exactly 30 minutes, invalid or unregistered addresses, invalid passwords, and blocked attempts."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "good",
+      "rationale": "The five bullets provide an enumerable set of conditions, but they omit pass/fail expectations for important branches such as an unregistered email, an expired link, and a blocked request.",
+      "improvement": "Rewrite each bullet as an explicit Given/When/Then condition and add the expected system response for every rejected case."
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "average",
+      "rationale": "Terms such as \"registered user,\" \"if it is registered,\" \"failed reset attempts,\" and \"further attempts are blocked\" do not specify the relevant state, counting scope, or exact behavior.",
+      "improvement": "Define whether attempts are counted per account, email, IP, or user, what time boundaries apply, which actions count as failures, and whether the block affects requests, token use, or both."
+    }
+  ],
+  "overall": {
+    "score": 2.88,
+    "rating": "good",
+    "verdict": "Add explicit behavior for unregistered addresses, failure counting and block scope, expiry boundaries, and rejected-request responses before generating tests."
+  },
+  "blocking_issues": [
+    "The requirement does not define the response or security behavior for an unregistered email address, so negative and account-enumeration tests would be unreliable.",
+    "The meaning and scope of \"three failed reset attempts within an hour\" and \"further attempts are blocked\" are unspecified, preventing reliable rate-limit tests."
+  ],
+  "missing_information": [
+    "Expected response for an unregistered email address, including whether it must be indistinguishable from the registered-email response.",
+    "Whether the 30-minute expiry is measured from link issuance or delivery, and whether the boundary instant is valid or expired.",
+    "What qualifies as a failed reset attempt: requesting a link, submitting an invalid token, failing password validation, or successfully reaching the reset form.",
+    "The rate-limit key and scope (account, email address, IP address, device, or combination), when the one-hour window starts, and when the block is lifted.",
+    "Whether existing reset links are invalidated after a successful reset or after issuing a newer link.",
+    "Expected error messages, status codes, and whether the password is changed only after all validations pass."
+  ]
+}

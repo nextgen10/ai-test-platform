@@ -1,0 +1,31 @@
+{
+  "workflow_id": "incident-postmortem-workflow",
+  "name": "Blameless Incident Post-Mortem Workflow",
+  "description": "Reads an incident timeline and produces a blameless post-mortem report by extracting events, analyzing contributing factors and customer impact in parallel, then merging into a final report with action items.",
+  "agents": [
+    {
+      "id": "event-extractor",
+      "stage": "event-extraction",
+      "description": "Reads the incident timeline and extracts a structured, chronological sequence of events (timestamps, actors, actions, system states).",
+      "depends_on": []
+    },
+    {
+      "id": "contributing-factors-analyzer",
+      "stage": "contributing-factors-analysis",
+      "description": "Analyzes the extracted event sequence to identify contributing factors and root causes, framed in a blameless manner focused on systems and processes rather than individuals.",
+      "depends_on": ["event-extraction"]
+    },
+    {
+      "id": "customer-impact-analyzer",
+      "stage": "customer-impact-analysis",
+      "description": "Analyzes the extracted event sequence to assess customer impact, including affected users, duration, severity, and business consequences.",
+      "depends_on": ["event-extraction"]
+    },
+    {
+      "id": "postmortem-merger",
+      "stage": "report-merge",
+      "description": "Merges the event timeline, contributing factors, and customer impact analyses into a cohesive blameless post-mortem report, including a list of concrete action items.",
+      "depends_on": ["contributing-factors-analysis", "customer-impact-analysis"]
+    }
+  ]
+}

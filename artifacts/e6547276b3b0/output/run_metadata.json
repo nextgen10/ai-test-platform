@@ -1,0 +1,39 @@
+{
+  "engine": "copilot",
+  "copilot_model": "claude-sonnet-4.5",
+  "copilot_model_effective": "claude-sonnet-4.5",
+  "stage": "generate",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "test-designer",
+    "test-generator",
+    "test-reviewer",
+    "test-evaluator"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": "GitHub Copilot CLI 1.0.83.\nRun 'copilot update' to check for updates.",
+  "input_hash": "7436b9ed2a59d7f4915a419ca15d734b1ba24ba9fba2bc28aaaed701d7d0ab54",
+  "output_hash": null,
+  "max_review_attempts": 3,
+  "status": "failed",
+  "error": "You have exceeded your monthly quota (Request ID: F694:2B2142:1C0C83:22B21E:6AA07F5D) / Changes    +0 -0 / AI Credits 0 (3s) / Resume     copilot --resume=fd926b07-d3d5-40bb-b909-f2e3950791ad",
+  "duration_ms": 142911,
+  "phases": [
+    {
+      "name": "test-designer",
+      "status": "completed",
+      "duration_ms": 62746,
+      "artifact": "intermediate/test_design.json",
+      "detail": "20 scenarios"
+    },
+    {
+      "name": "test-generator",
+      "status": "completed",
+      "duration_ms": 71515,
+      "artifact": "intermediate/draft_test_cases.json",
+      "detail": "22 draft cases"
+    }
+  ]
+}

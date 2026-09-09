@@ -3,13 +3,6 @@
 .idea/
 .vscode/
 
-# Generated job workspaces and artifacts
-artifacts/
-logs/
-
-# Per-job control files and credentials. Never commit these.
-.job-runtime/
-
 # Local job database. Tracked on purpose for prodv1 historical runs.
 # Keep ignoring other *.db scratch files if they appear elsewhere.
 *.db

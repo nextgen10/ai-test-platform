@@ -1,0 +1,81 @@
+{
+  "requirement_reference": "REQ-089",
+  "summary": "Provide a multi-tier refund processing API covering partial refunds, timed routing to original payment methods, fraud screening for high-risk accounts, denial on settled disputes, and immutable audit logging.",
+  "criteria": [
+    {
+      "id": "independent",
+      "name": "Independent",
+      "rating": "average",
+      "rationale": "The requirement depends on unstated external systems: 'High-risk accounts flagged with chargeback ratio > 1.5% require automated fraud screening step' assumes a fraud-screening service and account flagging mechanism defined elsewhere, and 'Deny refund requests on settled chargeback disputes' assumes an external dispute-status source. This is coupled to features not described here.",
+      "improvement": "State or reference the owning systems/APIs for fraud screening and dispute status so this requirement can be built and tested without waiting on unstated dependencies."
+    },
+    {
+      "id": "negotiable",
+      "name": "Negotiable",
+      "rating": "good",
+      "rationale": "The bullets describe business rules ('Partial refunds are permitted up to the total original transaction amount', 'route to original payment method without interchange penalties') rather than locking in a specific implementation or technology stack.",
+      "improvement": "Clarify whether the 14-day and 1.5% thresholds are configurable business parameters or fixed, so negotiation scope is explicit."
+    },
+    {
+      "id": "valuable",
+      "name": "Valuable",
+      "rating": "bad",
+      "rationale": "No sentence states the user or business benefit; the text is entirely rule statements ('Partial refunds are permitted...', 'Deny refund requests on settled chargeback disputes') with no 'so that' or benefit framing for merchants or the business.",
+      "improvement": "Add an explicit value statement, e.g., 'so that merchants reduce chargeback losses and refund processing costs while maintaining compliance.'"
+    },
+    {
+      "id": "estimable",
+      "name": "Estimable",
+      "rating": "average",
+      "rationale": "Some scope is clear (refund cap, 14-day window, 1.5% threshold), but the phrase 'multi-tier refund processing API' plus an undefined 'automated fraud screening step' leaves the overall size and integration surface unclear enough that a confident estimate cannot be made.",
+      "improvement": "Define the API endpoints/tiers explicitly and specify what the fraud screening step entails (inputs, outputs, SLAs) to enable sizing."
+    },
+    {
+      "id": "small",
+      "name": "Small",
+      "rating": "bad",
+      "rationale": "The requirement bundles at least five distinct capabilities: partial refund limits, time-based payment routing, fraud screening for high-risk accounts, dispute-based denial, and immutable audit logging with idempotency keys. This is a bundle of several features, not one coherent capability.",
+      "improvement": "Split into separate requirements, e.g., one for refund amount limits, one for routing/interchange rules, one for fraud screening, one for dispute denial, and one for audit logging."
+    },
+    {
+      "id": "testable",
+      "name": "Testable",
+      "rating": "good",
+      "rationale": "Most statements have observable outcomes: 'up to the total original transaction amount', 'within 14 days must route to original payment method', and 'chargeback ratio > 1.5%' are all measurable. However, 'without interchange penalties' lacks a defined verification mechanism.",
+      "improvement": "Specify how 'without interchange penalties' is observed or verified (e.g., a fee field in the transaction record equals zero)."
+    },
+    {
+      "id": "acceptance_criteria",
+      "name": "Acceptance Criteria",
+      "rating": "bad",
+      "rationale": "The document is a flat bullet list of business rules with no enumerated pass/fail conditions, expected responses, or error codes. There is no Given/When/Then or numbered acceptance criteria for any rule, e.g., no stated response when a refund exceeds the original amount or when a dispute is settled.",
+      "improvement": "Add explicit acceptance criteria per rule, including expected API responses, status codes, and error messages for each success and failure path."
+    },
+    {
+      "id": "unambiguous",
+      "name": "Unambiguous",
+      "rating": "average",
+      "rationale": "Numeric thresholds like '14 days' and '1.5%' are precise, but terms such as 'High-risk accounts flagged' (flagged by whom/how) and 'without interchange penalties' (no defined calculation or verification) are vague and open to interpretation.",
+      "improvement": "Define how accounts are flagged as high-risk and how interchange penalty avoidance is measured or confirmed."
+    }
+  ],
+  "overall": {
+    "score": 1.88,
+    "rating": "average",
+    "verdict": "This requirement needs to be decomposed into smaller, independently testable rules with explicit acceptance criteria and a stated business value before reliable test cases can be generated."
+  },
+  "blocking_issues": [
+    "The requirement bundles five distinct capabilities (refund limits, routing rules, fraud screening, dispute denial, audit logging) into one statement, making it unclear which behavior a generated test targets.",
+    "No acceptance criteria, expected responses, or error codes are defined for any of the five rules, so pass/fail conditions for generated tests would have to be assumed rather than derived from the text."
+  ],
+  "missing_information": [
+    "Definition and source of the 'high-risk account' flag beyond the 1.5% chargeback ratio threshold.",
+    "Expected API response/error code when a refund request exceeds the original transaction amount.",
+    "Expected behavior and response when a refund is requested after the 14-day window (routing, fees, error message).",
+    "Definition of 'automated fraud screening step' inputs, outputs, and pass/fail outcome.",
+    "Response/error message returned when a refund is denied due to a settled chargeback dispute.",
+    "Format and required fields of the immutable audit log entries.",
+    "Format, generation rule, and collision-handling behavior for idempotency keys.",
+    "How 'without interchange penalties' is calculated or verified in a refund transaction record."
+  ]
+}

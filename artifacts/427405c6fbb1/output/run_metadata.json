@@ -1,0 +1,52 @@
+{
+  "engine": "mock",
+  "copilot_model": "default",
+  "stage": "generate",
+  "reprocess": false,
+  "skill": "test-case-generation",
+  "agents": [
+    "test-designer",
+    "test-generator",
+    "test-reviewer",
+    "test-evaluator"
+  ],
+  "runner_version": "0.1.0",
+  "skill_version": "test-case-generation:v1",
+  "copilot_cli_version": null,
+  "input_hash": "8df8bc31191e3cb64f09fd2cdcd9a7b5f0460e670dd1d47fd986af5699e3fdec",
+  "output_hash": "7c3332d91d738aa8fbf78bf269a971ac83eeb54c052a92c7b3e715b8ff83e130",
+  "max_review_attempts": 2,
+  "status": "completed",
+  "duration_ms": 163,
+  "review_attempts": 1,
+  "phases": [
+    {
+      "name": "test-designer",
+      "status": "completed",
+      "duration_ms": 0,
+      "artifact": "intermediate/test_design.json",
+      "detail": "8 scenarios"
+    },
+    {
+      "name": "test-generator",
+      "status": "completed",
+      "duration_ms": 0,
+      "artifact": "intermediate/draft_test_cases.json",
+      "detail": "8 draft cases"
+    },
+    {
+      "name": "test-reviewer",
+      "status": "completed",
+      "duration_ms": 0,
+      "artifact": "output/test_cases.json",
+      "detail": "8 validated cases"
+    },
+    {
+      "name": "test-evaluator",
+      "status": "completed",
+      "duration_ms": 79,
+      "artifact": "output/evaluation.json",
+      "detail": "very_good (100%), 0 gap(s)"
+    }
+  ]
+}

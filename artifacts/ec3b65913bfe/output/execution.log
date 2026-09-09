@@ -1,0 +1,13 @@
+[12:38:49] Run budget: 2430s of the job's 2700s
+[12:38:49]   staged schemas/ from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/schemas
+[12:38:49]   staged .github/agents from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/agents
+[12:38:49]   staged .github/skills from /Users/aniketmarwadi/Aniket/Agent-Hub/ai-test-platform/agent-hub/skills
+[12:38:49] ENGINE=mock — deterministic stand-in, NOT real Copilot generation
+[12:38:49] REPROCESS: closing the gaps the evaluator named
+[12:38:49] Phase 1/1  gap-closer -> test_cases.json (3 gap(s), 3 recommendation(s))
+[12:38:49]   PASS: 22 test cases, categories=boundary,data,functional,negative,validation, duplicate_rate=0.0%
+[12:38:49]   gap closure complete: 22 -> 22 cases; +0 ~0 -0
+[12:38:49] Evaluation  test-evaluator -> evaluation.json
+[12:38:49]   PASS: evaluation.json conforms to evaluation.schema.json
+[12:38:49]   evaluation: very_good — score 99% (3.96/4.0)
+[12:38:49] Stage generate completed in 198ms

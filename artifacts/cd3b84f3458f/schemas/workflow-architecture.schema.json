@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agenthub.local/schemas/workflow-architecture.schema.json",
+  "title": "Workflow Architecture",
+  "description": "The multi-agent design the architect produces and the reviewer refines, before it is written out as a .workflow.yaml. Constrained to what the registry and the execution graph will actually accept, so a design that could not be installed fails here rather than at install time.",
+  "type": "object",
+  "required": [
+    "workflow_id",
+    "name",
+    "agents"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case. The registry rejects anything else, and the filename stem must equal it."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "skill": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 1,
+      "description": "At least one, or there is no workflow to write.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "stage"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "description": "Kebab-case, and the name of the .agent.md file that must accompany it."
+          },
+          "stage": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique within the workflow. This is what depends_on refers to — not the agent id."
+          },
+          "description": {
+            "type": "string"
+          },
+          "depends_on": {
+            "type": "array",
+            "description": "Stage names that must finish first. Empty or absent means the stage is ready immediately.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optional": {
+            "type": "boolean",
+            "description": "Whether a failure here is survivable."
+          },
+          "when": {
+            "type": "string",
+            "description": "How this stage reacts to its dependencies' outcomes.",
+            "enum": [
+              "all_succeeded",
+              "any_succeeded",
+              "always"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

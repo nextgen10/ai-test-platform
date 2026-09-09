@@ -1,0 +1,419 @@
+{
+  "requirement_reference": "REQ-089",
+  "assumptions": [
+    "No explicit requirement ID was present in the source document; REQ-089 (from the document title) is used as the requirement_reference.",
+    "The 14-day window is assumed to be inclusive of day 14 itself, since the requirement does not clarify whether the boundary day counts as 'within' the window.",
+    "The chargeback ratio threshold of 1.5% is assumed to be exclusive ('greater than 1.5%' triggers screening; exactly 1.5% does not), based on the literal wording '> 1.5%'.",
+    "Behaviour for refunds requested after the 14-day window (routing method, whether interchange penalties apply) is not specified; assumed to still be processable but without the penalty exemption guarantee.",
+    "Duplicate-request handling via idempotency keys (i.e. that a repeated key must not create a second refund) is inferred from the stated audit-log requirement, since the requirement does not explicitly describe deduplication behaviour.",
+    "Validation rules for malformed transaction IDs, non-positive amounts, and idempotency key format are inferred as reasonable API input constraints; the requirement does not state explicit field-level validation rules.",
+    "Behaviour when automated fraud screening flags a refund is assumed to be an outright denial/hold (refund not settled), since the requirement does not specify deny vs. hold vs. delay.",
+    "No instruction-like or prompt-injection content was found in the requirement document or design; both were treated purely as descriptive business content.",
+    "Reusing an existing idempotency key with different request parameters (e.g. a different refund amount) is assumed to be rejected as a conflicting request, since the requirement does not explicitly define behaviour for mismatched idempotency key reuse.",
+    "A chargeback dispute that is open/pending but not yet settled is assumed not to trigger the denial rule in BR-4, since that rule explicitly refers only to 'settled' disputes."
+  ],
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "title": "Full refund equal to original transaction amount is approved",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists with a known total amount and a valid transaction ID.",
+        "The merchant account is in good standing (not high-risk, no settled chargeback disputes)."
+      ],
+      "steps": [
+        "Submit a refund request referencing the original transaction ID with a refund amount equal to the total original transaction amount.",
+        "Include a valid, unique idempotency key in the request.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund is approved and processed for the full original transaction amount, and the transaction's remaining refundable balance becomes zero.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-002",
+      "title": "Partial refund less than original transaction amount is approved",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists with a known total amount and a valid transaction ID.",
+        "The merchant account is in good standing (not high-risk, no settled chargeback disputes)."
+      ],
+      "steps": [
+        "Submit a refund request referencing the original transaction ID with a refund amount less than the total original transaction amount.",
+        "Include a valid, unique idempotency key in the request.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The partial refund is approved and processed for the requested amount, and the transaction's remaining refundable balance is reduced by that amount but remains greater than zero.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-003",
+      "title": "Refund requested within 14 days routes to original payment method without interchange penalty",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists that was paid 5 days ago.",
+        "The merchant account is in good standing."
+      ],
+      "steps": [
+        "Submit a refund request referencing the original transaction ID within the 14-day window since the original transaction date.",
+        "Include a valid refund amount and a unique idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund is routed to the original payment method used for the transaction, and no interchange penalty is applied to the merchant.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-004",
+      "title": "Refund on high-risk account (chargeback ratio > 1.5%) is routed through fraud screening before approval",
+      "category": "functional",
+      "priority": "critical",
+      "preconditions": [
+        "A completed original transaction exists for a merchant account flagged high-risk with a chargeback ratio greater than 1.5%.",
+        "The automated fraud screening service is available and configured to approve this refund."
+      ],
+      "steps": [
+        "Submit a refund request referencing the original transaction ID with a valid refund amount and idempotency key.",
+        "Observe the refund processing pipeline for the high-risk account.",
+        "Allow the fraud screening service to evaluate and approve the request."
+      ],
+      "expected_result": "The refund request is routed through the automated fraud screening step, and only after the fraud screening service returns an approval is the refund processed and settled.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-005",
+      "title": "Successfully processed refund generates an immutable audit log entry with idempotency key",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists with a known total amount.",
+        "The merchant account is in good standing."
+      ],
+      "steps": [
+        "Submit a refund request referencing the original transaction ID with a valid refund amount and a unique idempotency key.",
+        "Wait for the refund to be processed successfully.",
+        "Query the audit logging service for the entry corresponding to this refund transaction."
+      ],
+      "expected_result": "An immutable audit log entry is created for the refund, containing the unique idempotency key supplied in the request, and the entry cannot be modified or deleted afterward.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-006",
+      "title": "Sequential partial refunds accumulate correctly up to the original transaction total",
+      "category": "functional",
+      "priority": "medium",
+      "preconditions": [
+        "A completed original transaction exists with a total amount of 300.00.",
+        "No prior refunds have been issued against this transaction."
+      ],
+      "steps": [
+        "Submit a first partial refund request for 100.00 against the transaction with a unique idempotency key.",
+        "Submit a second partial refund request for 100.00 against the same transaction with a different unique idempotency key.",
+        "Submit a third partial refund request for 100.00 against the same transaction with a different unique idempotency key."
+      ],
+      "expected_result": "All three partial refunds are approved and processed, the cumulative refunded amount equals 300.00 (the original transaction total), and the remaining refundable balance is zero.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-007",
+      "title": "Refund request on transaction with settled chargeback dispute is denied",
+      "category": "negative",
+      "priority": "critical",
+      "preconditions": [
+        "A completed original transaction exists that has an associated settled chargeback dispute in the chargeback management system."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a valid refund amount and idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund request is denied with an error indicating the transaction has a settled chargeback dispute, and no refund is processed.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-008",
+      "title": "Refund request exceeding the original transaction amount is rejected",
+      "category": "negative",
+      "priority": "critical",
+      "preconditions": [
+        "A completed original transaction exists with a total amount of 50.00.",
+        "No prior refunds have been issued against this transaction."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a refund amount of 75.00, which exceeds the original transaction amount.",
+        "Include a valid idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund request is rejected with an error indicating the requested amount exceeds the original transaction amount, and no refund is processed.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-009",
+      "title": "Resubmitting a refund with the same idempotency key after success does not create a duplicate refund",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists.",
+        "A refund has already been successfully processed against this transaction using idempotency key 'idem-key-001'."
+      ],
+      "steps": [
+        "Submit a second refund request against the same transaction using the identical idempotency key 'idem-key-001' and the same refund amount.",
+        "Submit the request to the refund API.",
+        "Query the audit logging service for entries related to this transaction."
+      ],
+      "expected_result": "No second refund is created or settled, the system returns the result of the original request (or an idempotent-replay indication) rather than processing a new refund, and only one audit log entry exists for that idempotency key.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-010",
+      "title": "Refund for high-risk account is held or denied when fraud screening fails",
+      "category": "negative",
+      "priority": "critical",
+      "preconditions": [
+        "A completed original transaction exists for a merchant account flagged high-risk with a chargeback ratio greater than 1.5%.",
+        "The automated fraud screening service is configured to reject this refund request."
+      ],
+      "steps": [
+        "Submit a refund request referencing the original transaction ID with a valid refund amount and idempotency key.",
+        "Allow the automated fraud screening service to evaluate the request and return a failure/rejection result."
+      ],
+      "expected_result": "The refund is not settled; it is either denied outright or placed on hold pending manual review, and the transaction's refundable balance remains unchanged.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-011",
+      "title": "Refund request for a non-existent or malformed transaction ID is rejected",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "No transaction exists in the system with ID 'txn-does-not-exist-999'."
+      ],
+      "steps": [
+        "Submit a refund request referencing transaction ID 'txn-does-not-exist-999' with a valid refund amount and idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund request is rejected with an error indicating the transaction was not found or the transaction ID is malformed, and no refund is processed.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-012",
+      "title": "Refund requested exactly on day 14 still routes to original payment method without interchange penalty",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists whose transaction date is exactly 14 days before the current date."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID exactly 14 days after the original transaction date.",
+        "Include a valid refund amount and a unique idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund is routed to the original payment method and no interchange penalty is applied, confirming day 14 is treated as within the window.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-013",
+      "title": "Refund requested on day 15 (one day past the 14-day window) is processed under different routing/penalty behaviour",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists whose transaction date is exactly 15 days before the current date."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID exactly 15 days after the original transaction date.",
+        "Include a valid refund amount and a unique idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund is processed but is no longer guaranteed exemption from interchange penalties, distinguishing its outcome from a refund requested within the 14-day window.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-014",
+      "title": "Account with chargeback ratio exactly at 1.5% is evaluated against the fraud screening threshold",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists for a merchant account whose chargeback ratio is exactly 1.5%."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a valid refund amount and idempotency key.",
+        "Observe whether the automated fraud screening step is invoked for this account."
+      ],
+      "expected_result": "Because the threshold is defined as 'greater than 1.5%', an account exactly at 1.5% is not routed through the automated fraud screening step and proceeds directly to normal refund processing.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-015",
+      "title": "Final partial refund brings cumulative refunded amount to exactly the original transaction total",
+      "category": "boundary",
+      "priority": "medium",
+      "preconditions": [
+        "A completed original transaction exists with a total amount of 200.00.",
+        "A prior partial refund of 150.00 has already been processed against this transaction, leaving a refundable balance of 50.00."
+      ],
+      "steps": [
+        "Submit a final partial refund request for exactly 50.00 against the transaction with a unique idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund is approved, the cumulative refunded amount equals the original transaction total of 200.00 exactly, and the remaining refundable balance becomes zero.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-016",
+      "title": "Refund for the smallest non-zero monetary unit (one cent) is processed correctly",
+      "category": "boundary",
+      "priority": "low",
+      "preconditions": [
+        "A completed original transaction exists with a total amount of at least 0.01."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a refund amount of 0.01.",
+        "Include a valid idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund of 0.01 is approved and processed successfully, and the transaction's refundable balance is reduced by exactly 0.01.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-017",
+      "title": "Refund request with a zero or missing refund amount is rejected with a validation error",
+      "category": "validation",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists with a valid transaction ID."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with the refund amount field set to 0.",
+        "Submit a second refund request referencing the transaction ID with the refund amount field omitted entirely.",
+        "Observe the API response for both requests."
+      ],
+      "expected_result": "Both requests are rejected with a validation error stating the refund amount must be a positive value, and no refund is processed for either request.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-018",
+      "title": "Refund request with a negative refund amount is rejected with a validation error",
+      "category": "validation",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists with a valid transaction ID."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with the refund amount field set to -25.00.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The request is rejected with a validation error stating the refund amount must not be negative, and no refund is processed.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-019",
+      "title": "Refund request missing the required idempotency key is rejected with a validation error",
+      "category": "validation",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists with a valid transaction ID."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a valid refund amount but omit the idempotency key field.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The request is rejected with a validation error stating the idempotency key is required, and no refund or audit log entry is created.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-020",
+      "title": "Refund request with a malformed or non-unique idempotency key format is rejected with a validation error",
+      "category": "validation",
+      "priority": "medium",
+      "preconditions": [
+        "A completed original transaction exists with a valid transaction ID.",
+        "The API defines an expected idempotency key format (e.g. UUID)."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a valid refund amount and an idempotency key value of '!!!not-a-valid-key!!!' that does not conform to the expected format.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The request is rejected with a validation error stating the idempotency key format is invalid, and no refund is processed.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-021",
+      "title": "Refund requests are processed consistently across merchants in different countries and currencies",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Completed original transactions exist for merchants located in at least two different countries, denominated in at least two different currencies (e.g. USD and EUR)."
+      ],
+      "steps": [
+        "Submit a valid partial refund request against the USD-denominated transaction with a unique idempotency key.",
+        "Submit a valid partial refund request against the EUR-denominated transaction with a unique idempotency key.",
+        "Compare the processing outcomes and audit log entries for both requests."
+      ],
+      "expected_result": "Both refunds are approved and processed consistently according to the same business rules, each refund is settled in its transaction's original currency, and each produces a valid audit log entry with an idempotency key.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-022",
+      "title": "Refund on a low-risk account skips the fraud screening step entirely",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "A completed original transaction exists for a merchant account with a chargeback ratio well under 1.5% (e.g. 0.2%)."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a valid refund amount and idempotency key.",
+        "Observe the refund processing pipeline to determine whether the fraud screening service is invoked."
+      ],
+      "expected_result": "The refund is processed and approved without being routed through the automated fraud screening step, since the account's chargeback ratio does not exceed the 1.5% threshold.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-023",
+      "title": "Refunds route back to the original method across card, wallet, and bank transfer payment types",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "Completed original transactions exist that were paid via a card, a digital wallet, and a bank transfer respectively, each within the 14-day window."
+      ],
+      "steps": [
+        "Submit a valid refund request against the card-paid transaction with a unique idempotency key.",
+        "Submit a valid refund request against the wallet-paid transaction with a unique idempotency key.",
+        "Submit a valid refund request against the bank-transfer-paid transaction with a unique idempotency key."
+      ],
+      "expected_result": "Each refund is routed back to its own original payment method (card, wallet, bank transfer respectively) without interchange penalties, confirming the routing rule generalizes across payment method types.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-024",
+      "title": "Reusing an idempotency key with a different refund amount against the same transaction is rejected as conflicting",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "A completed original transaction exists.",
+        "A refund has already been successfully processed against this transaction using idempotency key 'idem-key-002' for an amount of 40.00."
+      ],
+      "steps": [
+        "Submit a second refund request against the same transaction using the identical idempotency key 'idem-key-002' but with a different refund amount of 60.00.",
+        "Submit the request to the refund API.",
+        "Query the audit logging service for entries related to this transaction and idempotency key."
+      ],
+      "expected_result": "The second request is rejected with an error indicating the idempotency key was already used with different request parameters, no second refund is created or settled, and only the original audit log entry for 'idem-key-002' exists.",
+      "requirement_reference": "REQ-089"
+    },
+    {
+      "id": "TC-025",
+      "title": "Refund proceeds normally when a chargeback dispute exists but is not yet settled",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "A completed original transaction exists that has an associated chargeback dispute in the chargeback management system with a status of 'open' (not settled)."
+      ],
+      "steps": [
+        "Submit a refund request referencing the transaction ID with a valid refund amount and idempotency key.",
+        "Submit the request to the refund API."
+      ],
+      "expected_result": "The refund is approved and processed normally, since the denial rule applies only to transactions with a settled chargeback dispute and this dispute remains open.",
+      "requirement_reference": "REQ-089"
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "requirement_reference": "REQ-042",
+  "assumptions": [
+    "The source requirement's explicit identifier REQ-042 is used as the requirement reference.",
+    "A reset attempt includes an attempt to complete password reset; the requirement does not define whether request-stage failures, invalid links, or password validation failures are counted.",
+    "The exact behavior at precisely 30 minutes and precisely one hour is not specified and requires product clarification.",
+    "The duration for which an account remains blocked after the third failed attempt is not specified.",
+    "The requirement does not specify the user-facing messages, whether an unregistered email receives a generic response, or whether reset requests are rate-limited before three failed attempts.",
+    "The requirement does not specify whether issuing a newer reset link invalidates older links.",
+    "The requirement does not specify password character composition, maximum length, whitespace handling, or confirmation-field behavior."
+  ],
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "title": "Send a reset link for a registered email address",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A user account exists with the registered email address 'user@example.com'.",
+        "The email delivery service is available."
+      ],
+      "steps": [
+        "Open the password reset form.",
+        "Enter 'user@example.com' in the email field and submit the reset request."
+      ],
+      "expected_result": "The system accepts the request and the email delivery service sends a reset link to 'user@example.com'.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-002",
+      "title": "Complete a password reset with a qualifying new password",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A registered account for 'user@example.com' has a valid, unexpired reset link.",
+        "The previous password is 'OldPassword123'."
+      ],
+      "steps": [
+        "Open the valid reset link.",
+        "Enter 'NewPassword456' as the new password and submit the reset form.",
+        "Sign in with 'user@example.com' and 'NewPassword456'."
+      ],
+      "expected_result": "The password reset succeeds, the new password is accepted, and the user can sign in with 'NewPassword456'.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-003",
+      "title": "Reject a reset request for an unregistered email",
+      "category": "negative",
+      "priority": "medium",
+      "preconditions": [
+        "No account is registered with 'unknown@example.com'."
+      ],
+      "steps": [
+        "Open the password reset form.",
+        "Enter 'unknown@example.com' in the email field and submit the reset request."
+      ],
+      "expected_result": "The system does not send a reset link to 'unknown@example.com'.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-004",
+      "title": "Reject a reset link after 30 minutes",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A reset link was issued for a registered account 30 minutes and 1 second ago."
+      ],
+      "steps": [
+        "Open the issued reset link.",
+        "Submit a qualifying new password through the reset form."
+      ],
+      "expected_result": "The system rejects the reset link as expired and does not change the account password.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-005",
+      "title": "Use a reset link immediately before its 30-minute expiry",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A reset link was issued for a registered account 29 minutes and 59 seconds ago."
+      ],
+      "steps": [
+        "Open the issued reset link.",
+        "Submit a qualifying new password."
+      ],
+      "expected_result": "The system treats the link as valid immediately before 30 minutes and completes the reset.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-006",
+      "title": "Apply consistent behavior at exactly 30 minutes",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A reset link was issued for a registered account exactly 30 minutes ago."
+      ],
+      "steps": [
+        "Open the reset link at the exact 30-minute timestamp.",
+        "Attempt to submit a qualifying new password.",
+        "Repeat with an independently issued link at the same exact boundary."
+      ],
+      "expected_result": "Both attempts produce the same observable outcome—either both complete the reset or both reject the link—and the outcome is recorded for product clarification.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-007",
+      "title": "Reject an 11-character new password",
+      "category": "validation",
+      "priority": "high",
+      "preconditions": [
+        "A registered account has a valid, unexpired reset link.",
+        "The submitted password differs from the previous password."
+      ],
+      "steps": [
+        "Open the valid reset link.",
+        "Enter the 11-character password 'Abcdef12345' and submit the form."
+      ],
+      "expected_result": "The system rejects the password because it is shorter than 12 characters and does not change the account password.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-008",
+      "title": "Accept a 12-character new password",
+      "category": "boundary",
+      "priority": "high",
+      "preconditions": [
+        "A registered account has a valid, unexpired reset link.",
+        "The previous password is different from the submitted password."
+      ],
+      "steps": [
+        "Open the valid reset link.",
+        "Enter the exactly 12-character password 'Abcdef123456' and submit the form."
+      ],
+      "expected_result": "The system accepts the password at the stated minimum length and completes the password reset.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-009",
+      "title": "Accept a new password longer than 12 characters",
+      "category": "functional",
+      "priority": "medium",
+      "preconditions": [
+        "A registered account has a valid, unexpired reset link.",
+        "The submitted password differs from the previous password."
+      ],
+      "steps": [
+        "Open the valid reset link.",
+        "Enter the 13-character password 'Abcdef1234567' and submit the form."
+      ],
+      "expected_result": "The system accepts the password longer than the minimum and completes the password reset.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-010",
+      "title": "Reject reuse of the previous password",
+      "category": "negative",
+      "priority": "high",
+      "preconditions": [
+        "A registered account has a valid, unexpired reset link.",
+        "The current password is 'OldPassword123'."
+      ],
+      "steps": [
+        "Open the valid reset link.",
+        "Enter 'OldPassword123' as the new password and submit the form."
+      ],
+      "expected_result": "The system rejects the reset because the new password matches the previous password and leaves the previous password active.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-011",
+      "title": "Block the fourth failed reset attempt after three failures within one hour",
+      "category": "boundary",
+      "priority": "critical",
+      "preconditions": [
+        "A registered account has three recorded failed reset attempts within the preceding hour.",
+        "The account's block state is clear before the fourth attempt."
+      ],
+      "steps": [
+        "Initiate a fourth reset attempt for the account within the same one-hour window.",
+        "Submit the fourth reset attempt."
+      ],
+      "expected_result": "The fourth reset attempt is blocked and no password reset is completed.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-012",
+      "title": "Allow another reset attempt before three failures",
+      "category": "functional",
+      "priority": "high",
+      "preconditions": [
+        "A registered account has two recorded failed reset attempts within the preceding hour.",
+        "The account is not blocked."
+      ],
+      "steps": [
+        "Initiate a third reset attempt for the account.",
+        "Submit the attempt with valid reset data."
+      ],
+      "expected_result": "The system does not block the attempt solely because two failures have occurred; it processes the third attempt according to its submitted data.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-013",
+      "title": "Do not combine failures separated by more than one hour",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "A registered account has two failed reset attempts older than one hour.",
+        "The account is not blocked."
+      ],
+      "steps": [
+        "Make a new failed reset attempt after the earlier failures are more than one hour old.",
+        "Make another reset attempt for the same account."
+      ],
+      "expected_result": "The system evaluates the new attempt using the stated one-hour window and does not block the account based only on failures outside that window.",
+      "requirement_reference": "REQ-042"
+    },
+    {
+      "id": "TC-014",
+      "title": "Evaluate an older reset link after a newer link is issued",
+      "category": "data",
+      "priority": "medium",
+      "preconditions": [
+        "A registered account has an older unexpired reset link.",
+        "A second reset request has issued a newer reset link for the same account."
+      ],
+      "steps": [
+        "Open the older reset link.",
+        "Attempt to complete the reset with a qualifying new password."
+      ],
+      "expected_result": "The older link produces one observable outcome: it either completes the reset or is rejected; that outcome is recorded to resolve the unspecified multiple-link behavior.",
+      "requirement_reference": "REQ-042"
+    }
+  ]
+}

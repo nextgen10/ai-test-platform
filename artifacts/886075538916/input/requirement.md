@@ -1,0 +1,1 @@
+A workflow that reads an incident timeline and produces a blameless post-mortem. One agent extracts the sequence of events, two agents work in parallel on contributing factors and customer impact, and a final agent merges them into a report with action items.

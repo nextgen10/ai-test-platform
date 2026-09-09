@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agenthub.local/schemas/test-design.schema.json",
+  "title": "Test Design",
+  "description": "The intermediate design a test-designer agent produces: actors, business rules and scenarios, but not yet concrete test cases. Deliberately tolerant of extra keys — over-strict schemas fail real model output for no benefit.",
+  "type": "object",
+  "required": [
+    "scenarios"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "requirement_reference": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional: the job already knows this."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-paragraph restatement of the requirement."
+    },
+    "actors": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "business_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["rule"],
+        "properties": {
+          "id": { "type": "string" },
+          "rule": { "type": "string", "minLength": 1 },
+          "source": {
+            "type": "string",
+            "description": "Where the rule came from — 'stated' when the requirement says it, 'assumed' when the agent inferred it.",
+            "enum": ["stated", "inferred", "assumed"]
+          }
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "description": "At least one scenario, or there is nothing for the generator to work from.",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["description", "category"],
+        "properties": {
+          "id": { "type": "string" },
+          "description": { "type": "string", "minLength": 1 },
+          "category": {
+            "type": "string",
+            "enum": ["functional", "negative", "boundary", "validation", "data"]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "rationale": { "type": "string" }
+        }
+      }
+    },
+    "coverage_dimensions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

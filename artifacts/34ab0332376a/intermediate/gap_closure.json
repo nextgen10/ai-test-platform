@@ -1,0 +1,33 @@
+{
+  "gaps_addressed": [
+    {
+      "area": "audit logging",
+      "detail": "No case attempts to modify or delete an existing audit log entry to confirm the system rejects the change; current cases (TC-005, TC-009, TC-024) only check that an entry exists and that duplicates are not created, not that the entry is actually immutable.",
+      "resolution": "Added TC-026, which attempts a direct modification and a direct deletion of an existing audit log entry and asserts both are rejected and the original entry remains unchanged.",
+      "case_ids": ["TC-026"]
+    },
+    {
+      "area": "rule interaction",
+      "detail": "No case covers a refund request on an account that is both flagged high-risk (chargeback ratio > 1.5%) and has a settled chargeback dispute, so the precedence between the fraud-screening rule and the outright-denial rule is untested.",
+      "resolution": "Added TC-027, covering a high-risk account with a settled chargeback dispute, asserting denial for the settled-dispute reason and that fraud screening is never invoked, establishing rule precedence.",
+      "case_ids": ["TC-027"]
+    },
+    {
+      "area": "concurrency",
+      "detail": "No case covers two requests submitted simultaneously (racing) with the same idempotency key, which is the scenario most likely to expose a deduplication bug beyond the sequential-resubmission case already covered (TC-009).",
+      "resolution": "Added TC-028, submitting two concurrent (racing) refund requests with the identical idempotency key and asserting exactly one refund settles and exactly one audit log entry is created.",
+      "case_ids": ["TC-028"]
+    },
+    {
+      "area": "interchange penalty verification",
+      "detail": "No case defines or checks a concrete field/mechanism (e.g., an interchange-fee amount equal to zero on the transaction record) to verify 'without interchange penalties'; TC-003/TC-012/TC-023 assert the outcome narratively without a measurable check, mirroring the ambiguity flagged in the quality report for this exact phrase.",
+      "resolution": "Added TC-029, checking a concrete 'interchange_fee' field on the transaction/refund record is equal to 0 for a within-14-day refund, and recorded the field-name assumption in the assumptions list.",
+      "case_ids": ["TC-029"]
+    }
+  ],
+  "gaps_not_addressed": [],
+  "cases_added": ["TC-026", "TC-027", "TC-028", "TC-029"],
+  "cases_modified": [],
+  "cases_removed": [],
+  "cases_preserved": 25
+}

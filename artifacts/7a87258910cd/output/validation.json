@@ -1,0 +1,36 @@
+{
+  "valid": true,
+  "errors": [],
+  "warnings": [],
+  "stats": {
+    "total": 26,
+    "by_category": {
+      "functional": 3,
+      "negative": 5,
+      "boundary": 6,
+      "validation": 5,
+      "data": 7
+    },
+    "by_priority": {
+      "high": 10,
+      "critical": 4,
+      "medium": 12
+    },
+    "duplicate_title_count": 0,
+    "duplicate_rate": 0.0,
+    "categories_covered": [
+      "boundary",
+      "data",
+      "functional",
+      "negative",
+      "validation"
+    ],
+    "assumptions": 11
+  },
+  "gate": {
+    "minimum_test_cases": 5,
+    "max_duplicate_rate": 0.1,
+    "min_steps_per_case": 2,
+    "required_categories": 3
+  }
+}
